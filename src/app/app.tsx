@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { createQueryClient } from '@/app/query-client';
 import { createAppRouter } from '@/app/router';
+import { installSessionHooks } from '@/features/auth';
 import { initTheme } from '@/shared/theme';
 import { Toaster } from '@/shared/ui/sonner';
 
@@ -12,6 +13,7 @@ export function App() {
   const [router] = useState(() => createAppRouter(queryClient));
   useState(() => {
     initTheme();
+    installSessionHooks();
     return null;
   });
 

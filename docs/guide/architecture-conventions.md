@@ -15,7 +15,7 @@
 
 ```
 src/
-  app/          엔트리·providers·라우터 생성. shared·routes만 본다
+  app/          엔트리·providers·라우터 생성. shared·routes와 features의 index.ts만 본다(부팅 훅 설치)
   routes/       TanStack Router 파일 라우트. features의 index.ts와 shared만 본다
   features/<area>/
     api/        graphql() 문서 + 쿼리 키·queryOptions 팩토리(queries.ts)

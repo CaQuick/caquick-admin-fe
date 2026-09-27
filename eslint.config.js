@@ -60,6 +60,10 @@ export default tseslint.config(
               },
             },
             {
+              from: { element: { type: 'app' } },
+              allow: { to: { element: { type: 'feature', fileInternalPath: 'index.ts' } } },
+            },
+            {
               from: { element: { type: 'routes' } },
               allow: { to: { element: { types: { anyOf: ['routes', 'shared', 'app'] } } } },
             },
@@ -113,6 +117,11 @@ export default tseslint.config(
     // 라우트 파일은 Route 객체를, shadcn 컴포넌트는 variants를 함께 export한다
     files: ['src/routes/**', 'src/shared/ui/**'],
     rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
+    // TanStack Router는 redirect()/notFound() 객체를 throw하는 게 규약이다
+    files: ['src/routes/**'],
+    rules: { '@typescript-eslint/only-throw-error': 'off' },
   },
   {
     // 스펙은 어느 계층이든 test 헬퍼·feature·shared를 가져온다 — 경계 규칙은 소스에만
