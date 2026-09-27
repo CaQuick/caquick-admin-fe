@@ -14,8 +14,30 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedShellRouteImport } from './routes/_authed/_shell'
 import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/change-password'
 import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
+import { Route as AuthedShellAdminsRouteImport } from './routes/_authed/_shell/admins'
+import { Route as AuthedShellAuditLogsRouteImport } from './routes/_authed/_shell/audit-logs'
+import { Route as AuthedShellCategoriesRouteImport } from './routes/_authed/_shell/categories'
+import { Route as AuthedShellRegionsRouteImport } from './routes/_authed/_shell/regions'
+import { Route as AuthedShellReviewCommentsRouteImport } from './routes/_authed/_shell/review-comments'
+import { Route as AuthedShellReviewsRouteImport } from './routes/_authed/_shell/reviews'
+import { Route as AuthedShellTagsRouteImport } from './routes/_authed/_shell/tags'
+import { Route as AuthedShellBannersIndexRouteImport } from './routes/_authed/_shell/banners/index'
+import { Route as AuthedShellBannersBannerIdRouteImport } from './routes/_authed/_shell/banners/$bannerId'
+import { Route as AuthedShellBannersNewRouteImport } from './routes/_authed/_shell/banners/new'
+import { Route as AuthedShellNotificationsSendRouteImport } from './routes/_authed/_shell/notifications/send'
 import { Route as AuthedShellOrdersIndexRouteImport } from './routes/_authed/_shell/orders/index'
 import { Route as AuthedShellOrdersOrderIdRouteImport } from './routes/_authed/_shell/orders/$orderId'
+import { Route as AuthedShellProductsIndexRouteImport } from './routes/_authed/_shell/products/index'
+import { Route as AuthedShellProductsProductIdRouteImport } from './routes/_authed/_shell/products/$productId'
+import { Route as AuthedShellReportsIndexRouteImport } from './routes/_authed/_shell/reports/index'
+import { Route as AuthedShellReportsReportIdRouteImport } from './routes/_authed/_shell/reports/$reportId'
+import { Route as AuthedShellSellersIndexRouteImport } from './routes/_authed/_shell/sellers/index'
+import { Route as AuthedShellSellersAccountIdRouteImport } from './routes/_authed/_shell/sellers/$accountId'
+import { Route as AuthedShellSellersNewRouteImport } from './routes/_authed/_shell/sellers/new'
+import { Route as AuthedShellStoresIndexRouteImport } from './routes/_authed/_shell/stores/index'
+import { Route as AuthedShellStoresStoreIdRouteImport } from './routes/_authed/_shell/stores/$storeId'
+import { Route as AuthedShellUsersIndexRouteImport } from './routes/_authed/_shell/users/index'
+import { Route as AuthedShellUsersAccountIdRouteImport } from './routes/_authed/_shell/users/$accountId'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -40,6 +62,64 @@ const AuthedShellIndexRoute = AuthedShellIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedShellRoute,
 } as any)
+const AuthedShellAdminsRoute = AuthedShellAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellAuditLogsRoute = AuthedShellAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellCategoriesRoute = AuthedShellCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellRegionsRoute = AuthedShellRegionsRouteImport.update({
+  id: '/regions',
+  path: '/regions',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellReviewCommentsRoute =
+  AuthedShellReviewCommentsRouteImport.update({
+    id: '/review-comments',
+    path: '/review-comments',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellReviewsRoute = AuthedShellReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellTagsRoute = AuthedShellTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellBannersIndexRoute = AuthedShellBannersIndexRouteImport.update({
+  id: '/banners/',
+  path: '/banners/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellBannersBannerIdRoute =
+  AuthedShellBannersBannerIdRouteImport.update({
+    id: '/banners/$bannerId',
+    path: '/banners/$bannerId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellBannersNewRoute = AuthedShellBannersNewRouteImport.update({
+  id: '/banners/new',
+  path: '/banners/new',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellNotificationsSendRoute =
+  AuthedShellNotificationsSendRouteImport.update({
+    id: '/notifications/send',
+    path: '/notifications/send',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
 const AuthedShellOrdersIndexRoute = AuthedShellOrdersIndexRouteImport.update({
   id: '/orders/',
   path: '/orders/',
@@ -51,20 +131,125 @@ const AuthedShellOrdersOrderIdRoute =
     path: '/orders/$orderId',
     getParentRoute: () => AuthedShellRoute,
   } as any)
+const AuthedShellProductsIndexRoute =
+  AuthedShellProductsIndexRouteImport.update({
+    id: '/products/',
+    path: '/products/',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellProductsProductIdRoute =
+  AuthedShellProductsProductIdRouteImport.update({
+    id: '/products/$productId',
+    path: '/products/$productId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellReportsIndexRoute = AuthedShellReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellReportsReportIdRoute =
+  AuthedShellReportsReportIdRouteImport.update({
+    id: '/reports/$reportId',
+    path: '/reports/$reportId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellSellersIndexRoute = AuthedShellSellersIndexRouteImport.update({
+  id: '/sellers/',
+  path: '/sellers/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellSellersAccountIdRoute =
+  AuthedShellSellersAccountIdRouteImport.update({
+    id: '/sellers/$accountId',
+    path: '/sellers/$accountId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellSellersNewRoute = AuthedShellSellersNewRouteImport.update({
+  id: '/sellers/new',
+  path: '/sellers/new',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellStoresIndexRoute = AuthedShellStoresIndexRouteImport.update({
+  id: '/stores/',
+  path: '/stores/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellStoresStoreIdRoute =
+  AuthedShellStoresStoreIdRouteImport.update({
+    id: '/stores/$storeId',
+    path: '/stores/$storeId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellUsersIndexRoute = AuthedShellUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellUsersAccountIdRoute =
+  AuthedShellUsersAccountIdRouteImport.update({
+    id: '/users/$accountId',
+    path: '/users/$accountId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/admins': typeof AuthedShellAdminsRoute
+  '/audit-logs': typeof AuthedShellAuditLogsRoute
+  '/categories': typeof AuthedShellCategoriesRoute
+  '/regions': typeof AuthedShellRegionsRoute
+  '/review-comments': typeof AuthedShellReviewCommentsRoute
+  '/reviews': typeof AuthedShellReviewsRoute
+  '/tags': typeof AuthedShellTagsRoute
+  '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
+  '/banners/new': typeof AuthedShellBannersNewRoute
+  '/notifications/send': typeof AuthedShellNotificationsSendRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/products/$productId': typeof AuthedShellProductsProductIdRoute
+  '/reports/$reportId': typeof AuthedShellReportsReportIdRoute
+  '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
+  '/sellers/new': typeof AuthedShellSellersNewRoute
+  '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
+  '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
+  '/banners/': typeof AuthedShellBannersIndexRoute
   '/orders/': typeof AuthedShellOrdersIndexRoute
+  '/products/': typeof AuthedShellProductsIndexRoute
+  '/reports/': typeof AuthedShellReportsIndexRoute
+  '/sellers/': typeof AuthedShellSellersIndexRoute
+  '/stores/': typeof AuthedShellStoresIndexRoute
+  '/users/': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/admins': typeof AuthedShellAdminsRoute
+  '/audit-logs': typeof AuthedShellAuditLogsRoute
+  '/categories': typeof AuthedShellCategoriesRoute
+  '/regions': typeof AuthedShellRegionsRoute
+  '/review-comments': typeof AuthedShellReviewCommentsRoute
+  '/reviews': typeof AuthedShellReviewsRoute
+  '/tags': typeof AuthedShellTagsRoute
+  '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
+  '/banners/new': typeof AuthedShellBannersNewRoute
+  '/notifications/send': typeof AuthedShellNotificationsSendRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/products/$productId': typeof AuthedShellProductsProductIdRoute
+  '/reports/$reportId': typeof AuthedShellReportsReportIdRoute
+  '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
+  '/sellers/new': typeof AuthedShellSellersNewRoute
+  '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
+  '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
+  '/banners': typeof AuthedShellBannersIndexRoute
   '/orders': typeof AuthedShellOrdersIndexRoute
+  '/products': typeof AuthedShellProductsIndexRoute
+  '/reports': typeof AuthedShellReportsIndexRoute
+  '/sellers': typeof AuthedShellSellersIndexRoute
+  '/stores': typeof AuthedShellStoresIndexRoute
+  '/users': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -72,25 +257,122 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/_shell': typeof AuthedShellRouteWithChildren
   '/_authed/change-password': typeof AuthedChangePasswordRoute
+  '/_authed/_shell/admins': typeof AuthedShellAdminsRoute
+  '/_authed/_shell/audit-logs': typeof AuthedShellAuditLogsRoute
+  '/_authed/_shell/categories': typeof AuthedShellCategoriesRoute
+  '/_authed/_shell/regions': typeof AuthedShellRegionsRoute
+  '/_authed/_shell/review-comments': typeof AuthedShellReviewCommentsRoute
+  '/_authed/_shell/reviews': typeof AuthedShellReviewsRoute
+  '/_authed/_shell/tags': typeof AuthedShellTagsRoute
   '/_authed/_shell/': typeof AuthedShellIndexRoute
+  '/_authed/_shell/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
+  '/_authed/_shell/banners/new': typeof AuthedShellBannersNewRoute
+  '/_authed/_shell/notifications/send': typeof AuthedShellNotificationsSendRoute
   '/_authed/_shell/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/_authed/_shell/products/$productId': typeof AuthedShellProductsProductIdRoute
+  '/_authed/_shell/reports/$reportId': typeof AuthedShellReportsReportIdRoute
+  '/_authed/_shell/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
+  '/_authed/_shell/sellers/new': typeof AuthedShellSellersNewRoute
+  '/_authed/_shell/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
+  '/_authed/_shell/users/$accountId': typeof AuthedShellUsersAccountIdRoute
+  '/_authed/_shell/banners/': typeof AuthedShellBannersIndexRoute
   '/_authed/_shell/orders/': typeof AuthedShellOrdersIndexRoute
+  '/_authed/_shell/products/': typeof AuthedShellProductsIndexRoute
+  '/_authed/_shell/reports/': typeof AuthedShellReportsIndexRoute
+  '/_authed/_shell/sellers/': typeof AuthedShellSellersIndexRoute
+  '/_authed/_shell/stores/': typeof AuthedShellStoresIndexRoute
+  '/_authed/_shell/users/': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/change-password' | '/orders/$orderId' | '/orders/'
+    | '/'
+    | '/login'
+    | '/change-password'
+    | '/admins'
+    | '/audit-logs'
+    | '/categories'
+    | '/regions'
+    | '/review-comments'
+    | '/reviews'
+    | '/tags'
+    | '/banners/$bannerId'
+    | '/banners/new'
+    | '/notifications/send'
+    | '/orders/$orderId'
+    | '/products/$productId'
+    | '/reports/$reportId'
+    | '/sellers/$accountId'
+    | '/sellers/new'
+    | '/stores/$storeId'
+    | '/users/$accountId'
+    | '/banners/'
+    | '/orders/'
+    | '/products/'
+    | '/reports/'
+    | '/sellers/'
+    | '/stores/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/change-password' | '/orders/$orderId' | '/orders'
+  to:
+    | '/'
+    | '/login'
+    | '/change-password'
+    | '/admins'
+    | '/audit-logs'
+    | '/categories'
+    | '/regions'
+    | '/review-comments'
+    | '/reviews'
+    | '/tags'
+    | '/banners/$bannerId'
+    | '/banners/new'
+    | '/notifications/send'
+    | '/orders/$orderId'
+    | '/products/$productId'
+    | '/reports/$reportId'
+    | '/sellers/$accountId'
+    | '/sellers/new'
+    | '/stores/$storeId'
+    | '/users/$accountId'
+    | '/banners'
+    | '/orders'
+    | '/products'
+    | '/reports'
+    | '/sellers'
+    | '/stores'
+    | '/users'
   id:
     | '__root__'
     | '/_authed'
     | '/login'
     | '/_authed/_shell'
     | '/_authed/change-password'
+    | '/_authed/_shell/admins'
+    | '/_authed/_shell/audit-logs'
+    | '/_authed/_shell/categories'
+    | '/_authed/_shell/regions'
+    | '/_authed/_shell/review-comments'
+    | '/_authed/_shell/reviews'
+    | '/_authed/_shell/tags'
     | '/_authed/_shell/'
+    | '/_authed/_shell/banners/$bannerId'
+    | '/_authed/_shell/banners/new'
+    | '/_authed/_shell/notifications/send'
     | '/_authed/_shell/orders/$orderId'
+    | '/_authed/_shell/products/$productId'
+    | '/_authed/_shell/reports/$reportId'
+    | '/_authed/_shell/sellers/$accountId'
+    | '/_authed/_shell/sellers/new'
+    | '/_authed/_shell/stores/$storeId'
+    | '/_authed/_shell/users/$accountId'
+    | '/_authed/_shell/banners/'
     | '/_authed/_shell/orders/'
+    | '/_authed/_shell/products/'
+    | '/_authed/_shell/reports/'
+    | '/_authed/_shell/sellers/'
+    | '/_authed/_shell/stores/'
+    | '/_authed/_shell/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -135,6 +417,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShellIndexRouteImport
       parentRoute: typeof AuthedShellRoute
     }
+    '/_authed/_shell/admins': {
+      id: '/_authed/_shell/admins'
+      path: '/admins'
+      fullPath: '/admins'
+      preLoaderRoute: typeof AuthedShellAdminsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/audit-logs': {
+      id: '/_authed/_shell/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AuthedShellAuditLogsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/categories': {
+      id: '/_authed/_shell/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof AuthedShellCategoriesRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/regions': {
+      id: '/_authed/_shell/regions'
+      path: '/regions'
+      fullPath: '/regions'
+      preLoaderRoute: typeof AuthedShellRegionsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/review-comments': {
+      id: '/_authed/_shell/review-comments'
+      path: '/review-comments'
+      fullPath: '/review-comments'
+      preLoaderRoute: typeof AuthedShellReviewCommentsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/reviews': {
+      id: '/_authed/_shell/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof AuthedShellReviewsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/tags': {
+      id: '/_authed/_shell/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof AuthedShellTagsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/banners/': {
+      id: '/_authed/_shell/banners/'
+      path: '/banners'
+      fullPath: '/banners/'
+      preLoaderRoute: typeof AuthedShellBannersIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/banners/$bannerId': {
+      id: '/_authed/_shell/banners/$bannerId'
+      path: '/banners/$bannerId'
+      fullPath: '/banners/$bannerId'
+      preLoaderRoute: typeof AuthedShellBannersBannerIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/banners/new': {
+      id: '/_authed/_shell/banners/new'
+      path: '/banners/new'
+      fullPath: '/banners/new'
+      preLoaderRoute: typeof AuthedShellBannersNewRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/notifications/send': {
+      id: '/_authed/_shell/notifications/send'
+      path: '/notifications/send'
+      fullPath: '/notifications/send'
+      preLoaderRoute: typeof AuthedShellNotificationsSendRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
     '/_authed/_shell/orders/': {
       id: '/_authed/_shell/orders/'
       path: '/orders'
@@ -149,19 +508,140 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShellOrdersOrderIdRouteImport
       parentRoute: typeof AuthedShellRoute
     }
+    '/_authed/_shell/products/': {
+      id: '/_authed/_shell/products/'
+      path: '/products'
+      fullPath: '/products/'
+      preLoaderRoute: typeof AuthedShellProductsIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/products/$productId': {
+      id: '/_authed/_shell/products/$productId'
+      path: '/products/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof AuthedShellProductsProductIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/reports/': {
+      id: '/_authed/_shell/reports/'
+      path: '/reports'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof AuthedShellReportsIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/reports/$reportId': {
+      id: '/_authed/_shell/reports/$reportId'
+      path: '/reports/$reportId'
+      fullPath: '/reports/$reportId'
+      preLoaderRoute: typeof AuthedShellReportsReportIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/sellers/': {
+      id: '/_authed/_shell/sellers/'
+      path: '/sellers'
+      fullPath: '/sellers/'
+      preLoaderRoute: typeof AuthedShellSellersIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/sellers/$accountId': {
+      id: '/_authed/_shell/sellers/$accountId'
+      path: '/sellers/$accountId'
+      fullPath: '/sellers/$accountId'
+      preLoaderRoute: typeof AuthedShellSellersAccountIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/sellers/new': {
+      id: '/_authed/_shell/sellers/new'
+      path: '/sellers/new'
+      fullPath: '/sellers/new'
+      preLoaderRoute: typeof AuthedShellSellersNewRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/stores/': {
+      id: '/_authed/_shell/stores/'
+      path: '/stores'
+      fullPath: '/stores/'
+      preLoaderRoute: typeof AuthedShellStoresIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/stores/$storeId': {
+      id: '/_authed/_shell/stores/$storeId'
+      path: '/stores/$storeId'
+      fullPath: '/stores/$storeId'
+      preLoaderRoute: typeof AuthedShellStoresStoreIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/users/': {
+      id: '/_authed/_shell/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof AuthedShellUsersIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/users/$accountId': {
+      id: '/_authed/_shell/users/$accountId'
+      path: '/users/$accountId'
+      fullPath: '/users/$accountId'
+      preLoaderRoute: typeof AuthedShellUsersAccountIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
   }
 }
 
 interface AuthedShellRouteChildren {
+  AuthedShellAdminsRoute: typeof AuthedShellAdminsRoute
+  AuthedShellAuditLogsRoute: typeof AuthedShellAuditLogsRoute
+  AuthedShellCategoriesRoute: typeof AuthedShellCategoriesRoute
+  AuthedShellRegionsRoute: typeof AuthedShellRegionsRoute
+  AuthedShellReviewCommentsRoute: typeof AuthedShellReviewCommentsRoute
+  AuthedShellReviewsRoute: typeof AuthedShellReviewsRoute
+  AuthedShellTagsRoute: typeof AuthedShellTagsRoute
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
+  AuthedShellBannersBannerIdRoute: typeof AuthedShellBannersBannerIdRoute
+  AuthedShellBannersNewRoute: typeof AuthedShellBannersNewRoute
+  AuthedShellNotificationsSendRoute: typeof AuthedShellNotificationsSendRoute
   AuthedShellOrdersOrderIdRoute: typeof AuthedShellOrdersOrderIdRoute
+  AuthedShellProductsProductIdRoute: typeof AuthedShellProductsProductIdRoute
+  AuthedShellReportsReportIdRoute: typeof AuthedShellReportsReportIdRoute
+  AuthedShellSellersAccountIdRoute: typeof AuthedShellSellersAccountIdRoute
+  AuthedShellSellersNewRoute: typeof AuthedShellSellersNewRoute
+  AuthedShellStoresStoreIdRoute: typeof AuthedShellStoresStoreIdRoute
+  AuthedShellUsersAccountIdRoute: typeof AuthedShellUsersAccountIdRoute
+  AuthedShellBannersIndexRoute: typeof AuthedShellBannersIndexRoute
   AuthedShellOrdersIndexRoute: typeof AuthedShellOrdersIndexRoute
+  AuthedShellProductsIndexRoute: typeof AuthedShellProductsIndexRoute
+  AuthedShellReportsIndexRoute: typeof AuthedShellReportsIndexRoute
+  AuthedShellSellersIndexRoute: typeof AuthedShellSellersIndexRoute
+  AuthedShellStoresIndexRoute: typeof AuthedShellStoresIndexRoute
+  AuthedShellUsersIndexRoute: typeof AuthedShellUsersIndexRoute
 }
 
 const AuthedShellRouteChildren: AuthedShellRouteChildren = {
+  AuthedShellAdminsRoute: AuthedShellAdminsRoute,
+  AuthedShellAuditLogsRoute: AuthedShellAuditLogsRoute,
+  AuthedShellCategoriesRoute: AuthedShellCategoriesRoute,
+  AuthedShellRegionsRoute: AuthedShellRegionsRoute,
+  AuthedShellReviewCommentsRoute: AuthedShellReviewCommentsRoute,
+  AuthedShellReviewsRoute: AuthedShellReviewsRoute,
+  AuthedShellTagsRoute: AuthedShellTagsRoute,
   AuthedShellIndexRoute: AuthedShellIndexRoute,
+  AuthedShellBannersBannerIdRoute: AuthedShellBannersBannerIdRoute,
+  AuthedShellBannersNewRoute: AuthedShellBannersNewRoute,
+  AuthedShellNotificationsSendRoute: AuthedShellNotificationsSendRoute,
   AuthedShellOrdersOrderIdRoute: AuthedShellOrdersOrderIdRoute,
+  AuthedShellProductsProductIdRoute: AuthedShellProductsProductIdRoute,
+  AuthedShellReportsReportIdRoute: AuthedShellReportsReportIdRoute,
+  AuthedShellSellersAccountIdRoute: AuthedShellSellersAccountIdRoute,
+  AuthedShellSellersNewRoute: AuthedShellSellersNewRoute,
+  AuthedShellStoresStoreIdRoute: AuthedShellStoresStoreIdRoute,
+  AuthedShellUsersAccountIdRoute: AuthedShellUsersAccountIdRoute,
+  AuthedShellBannersIndexRoute: AuthedShellBannersIndexRoute,
   AuthedShellOrdersIndexRoute: AuthedShellOrdersIndexRoute,
+  AuthedShellProductsIndexRoute: AuthedShellProductsIndexRoute,
+  AuthedShellReportsIndexRoute: AuthedShellReportsIndexRoute,
+  AuthedShellSellersIndexRoute: AuthedShellSellersIndexRoute,
+  AuthedShellStoresIndexRoute: AuthedShellStoresIndexRoute,
+  AuthedShellUsersIndexRoute: AuthedShellUsersIndexRoute,
 }
 
 const AuthedShellRouteWithChildren = AuthedShellRoute._addFileChildren(
