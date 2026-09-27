@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedShellRouteImport } from './routes/_authed/_shell'
 import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/change-password'
 import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
+import { Route as AuthedShellAdminsRouteImport } from './routes/_authed/_shell/admins'
 import { Route as AuthedShellAuditLogsRouteImport } from './routes/_authed/_shell/audit-logs'
 import { Route as AuthedShellCategoriesRouteImport } from './routes/_authed/_shell/categories'
 import { Route as AuthedShellRegionsRouteImport } from './routes/_authed/_shell/regions'
@@ -59,6 +60,11 @@ const AuthedChangePasswordRoute = AuthedChangePasswordRouteImport.update({
 const AuthedShellIndexRoute = AuthedShellIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellAdminsRoute = AuthedShellAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
   getParentRoute: () => AuthedShellRoute,
 } as any)
 const AuthedShellAuditLogsRoute = AuthedShellAuditLogsRouteImport.update({
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/admins': typeof AuthedShellAdminsRoute
   '/audit-logs': typeof AuthedShellAuditLogsRoute
   '/categories': typeof AuthedShellCategoriesRoute
   '/regions': typeof AuthedShellRegionsRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/admins': typeof AuthedShellAdminsRoute
   '/audit-logs': typeof AuthedShellAuditLogsRoute
   '/categories': typeof AuthedShellCategoriesRoute
   '/regions': typeof AuthedShellRegionsRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/_shell': typeof AuthedShellRouteWithChildren
   '/_authed/change-password': typeof AuthedChangePasswordRoute
+  '/_authed/_shell/admins': typeof AuthedShellAdminsRoute
   '/_authed/_shell/audit-logs': typeof AuthedShellAuditLogsRoute
   '/_authed/_shell/categories': typeof AuthedShellCategoriesRoute
   '/_authed/_shell/regions': typeof AuthedShellRegionsRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/change-password'
+    | '/admins'
     | '/audit-logs'
     | '/categories'
     | '/regions'
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/change-password'
+    | '/admins'
     | '/audit-logs'
     | '/categories'
     | '/regions'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/_shell'
     | '/_authed/change-password'
+    | '/_authed/_shell/admins'
     | '/_authed/_shell/audit-logs'
     | '/_authed/_shell/categories'
     | '/_authed/_shell/regions'
@@ -403,6 +415,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthedShellIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/admins': {
+      id: '/_authed/_shell/admins'
+      path: '/admins'
+      fullPath: '/admins'
+      preLoaderRoute: typeof AuthedShellAdminsRouteImport
       parentRoute: typeof AuthedShellRoute
     }
     '/_authed/_shell/audit-logs': {
@@ -570,6 +589,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedShellRouteChildren {
+  AuthedShellAdminsRoute: typeof AuthedShellAdminsRoute
   AuthedShellAuditLogsRoute: typeof AuthedShellAuditLogsRoute
   AuthedShellCategoriesRoute: typeof AuthedShellCategoriesRoute
   AuthedShellRegionsRoute: typeof AuthedShellRegionsRoute
@@ -597,6 +617,7 @@ interface AuthedShellRouteChildren {
 }
 
 const AuthedShellRouteChildren: AuthedShellRouteChildren = {
+  AuthedShellAdminsRoute: AuthedShellAdminsRoute,
   AuthedShellAuditLogsRoute: AuthedShellAuditLogsRoute,
   AuthedShellCategoriesRoute: AuthedShellCategoriesRoute,
   AuthedShellRegionsRoute: AuthedShellRegionsRoute,

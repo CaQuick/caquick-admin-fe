@@ -15,6 +15,8 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  query AdminAdmins($input: CursorInput) {\n    adminAdmins(input: $input) {\n      items {\n        accountId\n        username\n        email\n        name\n        status\n        mustChangePassword\n        lastLoginAt\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminAdminsDocument,
+    "\n  mutation AdminCreateAdmin($input: AdminCreateAdminInput!) {\n    adminCreateAdmin(input: $input) {\n      accountId\n      username\n    }\n  }\n": typeof types.AdminCreateAdminDocument,
     "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n": typeof types.AdminMeDocument,
     "\n  query AdminUsers($input: AdminUserListInput) {\n    adminUsers(input: $input) {\n      items {\n        accountId\n        email\n        name\n        status\n        nickname\n        phoneNumber\n        onboardingCompleted\n        identityProviders\n        orderCount\n        reviewCount\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminUsersDocument,
     "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": typeof types.AdminUserDocument,
@@ -65,6 +67,8 @@ type Documents = {
     "\n  mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {\n    adminCreateUploadUrl(input: $input) {\n      uploadUrl\n      publicUrl\n      key\n      expiresInSeconds\n    }\n  }\n": typeof types.AdminCreateUploadUrlDocument,
 };
 const documents: Documents = {
+    "\n  query AdminAdmins($input: CursorInput) {\n    adminAdmins(input: $input) {\n      items {\n        accountId\n        username\n        email\n        name\n        status\n        mustChangePassword\n        lastLoginAt\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminAdminsDocument,
+    "\n  mutation AdminCreateAdmin($input: AdminCreateAdminInput!) {\n    adminCreateAdmin(input: $input) {\n      accountId\n      username\n    }\n  }\n": types.AdminCreateAdminDocument,
     "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n": types.AdminMeDocument,
     "\n  query AdminUsers($input: AdminUserListInput) {\n    adminUsers(input: $input) {\n      items {\n        accountId\n        email\n        name\n        status\n        nickname\n        phoneNumber\n        onboardingCompleted\n        identityProviders\n        orderCount\n        reviewCount\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminUsersDocument,
     "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": types.AdminUserDocument,
@@ -115,6 +119,14 @@ const documents: Documents = {
     "\n  mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {\n    adminCreateUploadUrl(input: $input) {\n      uploadUrl\n      publicUrl\n      key\n      expiresInSeconds\n    }\n  }\n": types.AdminCreateUploadUrlDocument,
 };
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminAdmins($input: CursorInput) {\n    adminAdmins(input: $input) {\n      items {\n        accountId\n        username\n        email\n        name\n        status\n        mustChangePassword\n        lastLoginAt\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n"): typeof import('./graphql').AdminAdminsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateAdmin($input: AdminCreateAdminInput!) {\n    adminCreateAdmin(input: $input) {\n      accountId\n      username\n    }\n  }\n"): typeof import('./graphql').AdminCreateAdminDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
