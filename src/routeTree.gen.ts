@@ -15,6 +15,7 @@ import { Route as AuthedShellRouteImport } from './routes/_authed/_shell'
 import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/change-password'
 import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
 import { Route as AuthedShellCategoriesRouteImport } from './routes/_authed/_shell/categories'
+import { Route as AuthedShellRegionsRouteImport } from './routes/_authed/_shell/regions'
 import { Route as AuthedShellReviewCommentsRouteImport } from './routes/_authed/_shell/review-comments'
 import { Route as AuthedShellReviewsRouteImport } from './routes/_authed/_shell/reviews'
 import { Route as AuthedShellTagsRouteImport } from './routes/_authed/_shell/tags'
@@ -62,6 +63,11 @@ const AuthedShellIndexRoute = AuthedShellIndexRouteImport.update({
 const AuthedShellCategoriesRoute = AuthedShellCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellRegionsRoute = AuthedShellRegionsRouteImport.update({
+  id: '/regions',
+  path: '/regions',
   getParentRoute: () => AuthedShellRoute,
 } as any)
 const AuthedShellReviewCommentsRoute =
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
   '/categories': typeof AuthedShellCategoriesRoute
+  '/regions': typeof AuthedShellRegionsRoute
   '/review-comments': typeof AuthedShellReviewCommentsRoute
   '/reviews': typeof AuthedShellReviewsRoute
   '/tags': typeof AuthedShellTagsRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
   '/categories': typeof AuthedShellCategoriesRoute
+  '/regions': typeof AuthedShellRegionsRoute
   '/review-comments': typeof AuthedShellReviewCommentsRoute
   '/reviews': typeof AuthedShellReviewsRoute
   '/tags': typeof AuthedShellTagsRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/_authed/_shell': typeof AuthedShellRouteWithChildren
   '/_authed/change-password': typeof AuthedChangePasswordRoute
   '/_authed/_shell/categories': typeof AuthedShellCategoriesRoute
+  '/_authed/_shell/regions': typeof AuthedShellRegionsRoute
   '/_authed/_shell/review-comments': typeof AuthedShellReviewCommentsRoute
   '/_authed/_shell/reviews': typeof AuthedShellReviewsRoute
   '/_authed/_shell/tags': typeof AuthedShellTagsRoute
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/change-password'
     | '/categories'
+    | '/regions'
     | '/review-comments'
     | '/reviews'
     | '/tags'
@@ -289,6 +299,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/change-password'
     | '/categories'
+    | '/regions'
     | '/review-comments'
     | '/reviews'
     | '/tags'
@@ -316,6 +327,7 @@ export interface FileRouteTypes {
     | '/_authed/_shell'
     | '/_authed/change-password'
     | '/_authed/_shell/categories'
+    | '/_authed/_shell/regions'
     | '/_authed/_shell/review-comments'
     | '/_authed/_shell/reviews'
     | '/_authed/_shell/tags'
@@ -386,6 +398,13 @@ declare module '@tanstack/react-router' {
       path: '/categories'
       fullPath: '/categories'
       preLoaderRoute: typeof AuthedShellCategoriesRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/regions': {
+      id: '/_authed/_shell/regions'
+      path: '/regions'
+      fullPath: '/regions'
+      preLoaderRoute: typeof AuthedShellRegionsRouteImport
       parentRoute: typeof AuthedShellRoute
     }
     '/_authed/_shell/review-comments': {
@@ -533,6 +552,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthedShellRouteChildren {
   AuthedShellCategoriesRoute: typeof AuthedShellCategoriesRoute
+  AuthedShellRegionsRoute: typeof AuthedShellRegionsRoute
   AuthedShellReviewCommentsRoute: typeof AuthedShellReviewCommentsRoute
   AuthedShellReviewsRoute: typeof AuthedShellReviewsRoute
   AuthedShellTagsRoute: typeof AuthedShellTagsRoute
@@ -558,6 +578,7 @@ interface AuthedShellRouteChildren {
 
 const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellCategoriesRoute: AuthedShellCategoriesRoute,
+  AuthedShellRegionsRoute: AuthedShellRegionsRoute,
   AuthedShellReviewCommentsRoute: AuthedShellReviewCommentsRoute,
   AuthedShellReviewsRoute: AuthedShellReviewsRoute,
   AuthedShellTagsRoute: AuthedShellTagsRoute,

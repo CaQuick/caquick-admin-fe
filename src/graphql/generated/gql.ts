@@ -34,6 +34,10 @@ type Documents = {
     "\n  query AdminProducts($input: AdminProductListInput) {\n    adminProducts(input: $input) {\n      items {\n        id\n        storeId\n        storeName\n        name\n        regularPrice\n        salePrice\n        currency\n        baseDesignImageUrl\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminProductsDocument,
     "\n  query AdminProduct($productId: ID!) {\n    adminProduct(productId: $productId) {\n      product {\n        id\n        storeId\n        storeName\n        name\n        regularPrice\n        salePrice\n        currency\n        baseDesignImageUrl\n        isActive\n        createdAt\n        updatedAt\n      }\n      storeIsActive\n      description\n      purchaseNotice\n      preparationTimeMinutes\n      imageUrls\n      reviewCount\n      orderItemCount\n    }\n  }\n": typeof types.AdminProductDocument,
     "\n  mutation AdminSetProductActive($input: AdminSetProductActiveInput!) {\n    adminSetProductActive(input: $input) {\n      id\n      isActive\n    }\n  }\n": typeof types.AdminSetProductActiveDocument,
+    "\n  query AdminRegions($input: AdminRegionListInput) {\n    adminRegions(input: $input) {\n      id\n      parentId\n      level\n      name\n      slug\n      sortOrder\n      isActive\n      centerLat\n      centerLng\n      storeCount\n      childCount\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.AdminRegionsDocument,
+    "\n  mutation AdminCreateRegion($input: AdminCreateRegionInput!) {\n    adminCreateRegion(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminCreateRegionDocument,
+    "\n  mutation AdminUpdateRegion($input: AdminUpdateRegionInput!) {\n    adminUpdateRegion(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminUpdateRegionDocument,
+    "\n  mutation AdminDeleteRegion($regionId: ID!) {\n    adminDeleteRegion(regionId: $regionId)\n  }\n": typeof types.AdminDeleteRegionDocument,
     "\n  query AdminReviews($input: AdminReviewListInput) {\n    adminReviews(input: $input) {\n      items {\n        id\n        storeId\n        storeName\n        productId\n        authorAccountId\n        authorNickname\n        rating\n        content\n        commentCount\n        likeCount\n        deleted\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminReviewsDocument,
     "\n  query AdminReviewComments($input: AdminReviewCommentListInput) {\n    adminReviewComments(input: $input) {\n      items {\n        id\n        reviewId\n        authorAccountId\n        authorNickname\n        content\n        deleted\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminReviewCommentsDocument,
     "\n  query AdminReviewReports($input: AdminReviewReportListInput) {\n    adminReviewReports(input: $input) {\n      items {\n        id\n        targetType\n        targetId\n        reporterAccountId\n        reason\n        detail\n        contentSnapshot\n        status\n        resolvedByAccountId\n        resolvedAt\n        resolutionNote\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminReviewReportsDocument,
@@ -79,6 +83,10 @@ const documents: Documents = {
     "\n  query AdminProducts($input: AdminProductListInput) {\n    adminProducts(input: $input) {\n      items {\n        id\n        storeId\n        storeName\n        name\n        regularPrice\n        salePrice\n        currency\n        baseDesignImageUrl\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminProductsDocument,
     "\n  query AdminProduct($productId: ID!) {\n    adminProduct(productId: $productId) {\n      product {\n        id\n        storeId\n        storeName\n        name\n        regularPrice\n        salePrice\n        currency\n        baseDesignImageUrl\n        isActive\n        createdAt\n        updatedAt\n      }\n      storeIsActive\n      description\n      purchaseNotice\n      preparationTimeMinutes\n      imageUrls\n      reviewCount\n      orderItemCount\n    }\n  }\n": types.AdminProductDocument,
     "\n  mutation AdminSetProductActive($input: AdminSetProductActiveInput!) {\n    adminSetProductActive(input: $input) {\n      id\n      isActive\n    }\n  }\n": types.AdminSetProductActiveDocument,
+    "\n  query AdminRegions($input: AdminRegionListInput) {\n    adminRegions(input: $input) {\n      id\n      parentId\n      level\n      name\n      slug\n      sortOrder\n      isActive\n      centerLat\n      centerLng\n      storeCount\n      childCount\n      createdAt\n      updatedAt\n    }\n  }\n": types.AdminRegionsDocument,
+    "\n  mutation AdminCreateRegion($input: AdminCreateRegionInput!) {\n    adminCreateRegion(input: $input) {\n      id\n    }\n  }\n": types.AdminCreateRegionDocument,
+    "\n  mutation AdminUpdateRegion($input: AdminUpdateRegionInput!) {\n    adminUpdateRegion(input: $input) {\n      id\n    }\n  }\n": types.AdminUpdateRegionDocument,
+    "\n  mutation AdminDeleteRegion($regionId: ID!) {\n    adminDeleteRegion(regionId: $regionId)\n  }\n": types.AdminDeleteRegionDocument,
     "\n  query AdminReviews($input: AdminReviewListInput) {\n    adminReviews(input: $input) {\n      items {\n        id\n        storeId\n        storeName\n        productId\n        authorAccountId\n        authorNickname\n        rating\n        content\n        commentCount\n        likeCount\n        deleted\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminReviewsDocument,
     "\n  query AdminReviewComments($input: AdminReviewCommentListInput) {\n    adminReviewComments(input: $input) {\n      items {\n        id\n        reviewId\n        authorAccountId\n        authorNickname\n        content\n        deleted\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminReviewCommentsDocument,
     "\n  query AdminReviewReports($input: AdminReviewReportListInput) {\n    adminReviewReports(input: $input) {\n      items {\n        id\n        targetType\n        targetId\n        reporterAccountId\n        reason\n        detail\n        contentSnapshot\n        status\n        resolvedByAccountId\n        resolvedAt\n        resolutionNote\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminReviewReportsDocument,
@@ -181,6 +189,22 @@ export function graphql(source: "\n  query AdminProduct($productId: ID!) {\n    
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminSetProductActive($input: AdminSetProductActiveInput!) {\n    adminSetProductActive(input: $input) {\n      id\n      isActive\n    }\n  }\n"): typeof import('./graphql').AdminSetProductActiveDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminRegions($input: AdminRegionListInput) {\n    adminRegions(input: $input) {\n      id\n      parentId\n      level\n      name\n      slug\n      sortOrder\n      isActive\n      centerLat\n      centerLng\n      storeCount\n      childCount\n      createdAt\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AdminRegionsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateRegion($input: AdminCreateRegionInput!) {\n    adminCreateRegion(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminCreateRegionDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminUpdateRegion($input: AdminUpdateRegionInput!) {\n    adminUpdateRegion(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminUpdateRegionDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminDeleteRegion($regionId: ID!) {\n    adminDeleteRegion(regionId: $regionId)\n  }\n"): typeof import('./graphql').AdminDeleteRegionDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
