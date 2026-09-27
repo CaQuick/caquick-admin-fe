@@ -16,6 +16,8 @@ import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/chang
 import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
 import { Route as AuthedShellOrdersIndexRouteImport } from './routes/_authed/_shell/orders/index'
 import { Route as AuthedShellOrdersOrderIdRouteImport } from './routes/_authed/_shell/orders/$orderId'
+import { Route as AuthedShellProductsIndexRouteImport } from './routes/_authed/_shell/products/index'
+import { Route as AuthedShellProductsProductIdRouteImport } from './routes/_authed/_shell/products/$productId'
 import { Route as AuthedShellSellersIndexRouteImport } from './routes/_authed/_shell/sellers/index'
 import { Route as AuthedShellSellersAccountIdRouteImport } from './routes/_authed/_shell/sellers/$accountId'
 import { Route as AuthedShellSellersNewRouteImport } from './routes/_authed/_shell/sellers/new'
@@ -56,6 +58,18 @@ const AuthedShellOrdersOrderIdRoute =
   AuthedShellOrdersOrderIdRouteImport.update({
     id: '/orders/$orderId',
     path: '/orders/$orderId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellProductsIndexRoute =
+  AuthedShellProductsIndexRouteImport.update({
+    id: '/products/',
+    path: '/products/',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellProductsProductIdRoute =
+  AuthedShellProductsProductIdRouteImport.update({
+    id: '/products/$productId',
+    path: '/products/$productId',
     getParentRoute: () => AuthedShellRoute,
   } as any)
 const AuthedShellSellersIndexRoute = AuthedShellSellersIndexRouteImport.update({
@@ -102,11 +116,13 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
   '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/orders/': typeof AuthedShellOrdersIndexRoute
+  '/products/': typeof AuthedShellProductsIndexRoute
   '/sellers/': typeof AuthedShellSellersIndexRoute
   '/stores/': typeof AuthedShellStoresIndexRoute
   '/users/': typeof AuthedShellUsersIndexRoute
@@ -116,11 +132,13 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
   '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/orders': typeof AuthedShellOrdersIndexRoute
+  '/products': typeof AuthedShellProductsIndexRoute
   '/sellers': typeof AuthedShellSellersIndexRoute
   '/stores': typeof AuthedShellStoresIndexRoute
   '/users': typeof AuthedShellUsersIndexRoute
@@ -133,11 +151,13 @@ export interface FileRoutesById {
   '/_authed/change-password': typeof AuthedChangePasswordRoute
   '/_authed/_shell/': typeof AuthedShellIndexRoute
   '/_authed/_shell/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/_authed/_shell/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/_authed/_shell/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/_authed/_shell/sellers/new': typeof AuthedShellSellersNewRoute
   '/_authed/_shell/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/_authed/_shell/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/_authed/_shell/orders/': typeof AuthedShellOrdersIndexRoute
+  '/_authed/_shell/products/': typeof AuthedShellProductsIndexRoute
   '/_authed/_shell/sellers/': typeof AuthedShellSellersIndexRoute
   '/_authed/_shell/stores/': typeof AuthedShellStoresIndexRoute
   '/_authed/_shell/users/': typeof AuthedShellUsersIndexRoute
@@ -149,11 +169,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/change-password'
     | '/orders/$orderId'
+    | '/products/$productId'
     | '/sellers/$accountId'
     | '/sellers/new'
     | '/stores/$storeId'
     | '/users/$accountId'
     | '/orders/'
+    | '/products/'
     | '/sellers/'
     | '/stores/'
     | '/users/'
@@ -163,11 +185,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/change-password'
     | '/orders/$orderId'
+    | '/products/$productId'
     | '/sellers/$accountId'
     | '/sellers/new'
     | '/stores/$storeId'
     | '/users/$accountId'
     | '/orders'
+    | '/products'
     | '/sellers'
     | '/stores'
     | '/users'
@@ -179,11 +203,13 @@ export interface FileRouteTypes {
     | '/_authed/change-password'
     | '/_authed/_shell/'
     | '/_authed/_shell/orders/$orderId'
+    | '/_authed/_shell/products/$productId'
     | '/_authed/_shell/sellers/$accountId'
     | '/_authed/_shell/sellers/new'
     | '/_authed/_shell/stores/$storeId'
     | '/_authed/_shell/users/$accountId'
     | '/_authed/_shell/orders/'
+    | '/_authed/_shell/products/'
     | '/_authed/_shell/sellers/'
     | '/_authed/_shell/stores/'
     | '/_authed/_shell/users/'
@@ -245,6 +271,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShellOrdersOrderIdRouteImport
       parentRoute: typeof AuthedShellRoute
     }
+    '/_authed/_shell/products/': {
+      id: '/_authed/_shell/products/'
+      path: '/products'
+      fullPath: '/products/'
+      preLoaderRoute: typeof AuthedShellProductsIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/products/$productId': {
+      id: '/_authed/_shell/products/$productId'
+      path: '/products/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof AuthedShellProductsProductIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
     '/_authed/_shell/sellers/': {
       id: '/_authed/_shell/sellers/'
       path: '/sellers'
@@ -300,11 +340,13 @@ declare module '@tanstack/react-router' {
 interface AuthedShellRouteChildren {
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
   AuthedShellOrdersOrderIdRoute: typeof AuthedShellOrdersOrderIdRoute
+  AuthedShellProductsProductIdRoute: typeof AuthedShellProductsProductIdRoute
   AuthedShellSellersAccountIdRoute: typeof AuthedShellSellersAccountIdRoute
   AuthedShellSellersNewRoute: typeof AuthedShellSellersNewRoute
   AuthedShellStoresStoreIdRoute: typeof AuthedShellStoresStoreIdRoute
   AuthedShellUsersAccountIdRoute: typeof AuthedShellUsersAccountIdRoute
   AuthedShellOrdersIndexRoute: typeof AuthedShellOrdersIndexRoute
+  AuthedShellProductsIndexRoute: typeof AuthedShellProductsIndexRoute
   AuthedShellSellersIndexRoute: typeof AuthedShellSellersIndexRoute
   AuthedShellStoresIndexRoute: typeof AuthedShellStoresIndexRoute
   AuthedShellUsersIndexRoute: typeof AuthedShellUsersIndexRoute
@@ -313,11 +355,13 @@ interface AuthedShellRouteChildren {
 const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellIndexRoute: AuthedShellIndexRoute,
   AuthedShellOrdersOrderIdRoute: AuthedShellOrdersOrderIdRoute,
+  AuthedShellProductsProductIdRoute: AuthedShellProductsProductIdRoute,
   AuthedShellSellersAccountIdRoute: AuthedShellSellersAccountIdRoute,
   AuthedShellSellersNewRoute: AuthedShellSellersNewRoute,
   AuthedShellStoresStoreIdRoute: AuthedShellStoresStoreIdRoute,
   AuthedShellUsersAccountIdRoute: AuthedShellUsersAccountIdRoute,
   AuthedShellOrdersIndexRoute: AuthedShellOrdersIndexRoute,
+  AuthedShellProductsIndexRoute: AuthedShellProductsIndexRoute,
   AuthedShellSellersIndexRoute: AuthedShellSellersIndexRoute,
   AuthedShellStoresIndexRoute: AuthedShellStoresIndexRoute,
   AuthedShellUsersIndexRoute: AuthedShellUsersIndexRoute,
