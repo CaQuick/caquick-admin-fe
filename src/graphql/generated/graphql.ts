@@ -13,10 +13,40 @@ export type AccountStatus =
   /** 운영자가 정지한 상태. 모든 API 접근이 FORBIDDEN이고 refresh 세션도 폐기된다. */
   | 'SUSPENDED';
 
+/** 집계 기간 입력. */
+export type AdminDashboardSummaryInput = {
+  /** 집계 시작(이상). */
+  from: string;
+  /** 집계 종료(이하). */
+  to: string;
+};
+
+/** 인기 검색어 스냅샷 조회 입력. */
+export type AdminSearchKeywordSnapshotInput = {
+  /** 가져올 순위 수. 기본 20, 1~100. */
+  limit?: number | null | undefined;
+  /** 스냅샷 시각(정각). 미지정 시 최신. */
+  rankedAt?: string | null | undefined;
+};
+
 export type AdminMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminMeQuery = { adminMe: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus, mustChangePassword: boolean, lastLoginAt: string | null, createdAt: string } };
+
+export type AdminDashboardSummaryQueryVariables = Exact<{
+  input: AdminDashboardSummaryInput;
+}>;
+
+
+export type AdminDashboardSummaryQuery = { adminDashboardSummary: { from: string, to: string, newUserCount: number, newSellerCount: number, orderAmountSum: number, activeStoreCount: number, activeProductCount: number, pendingReportCount: number, orderCounts: { submitted: number, confirmed: number, made: number, pickedUp: number, canceled: number } } };
+
+export type AdminSearchKeywordSnapshotQueryVariables = Exact<{
+  input?: AdminSearchKeywordSnapshotInput | null | undefined;
+}>;
+
+
+export type AdminSearchKeywordSnapshotQuery = { adminSearchKeywordSnapshot: { rankedAt: string | null, items: Array<{ rank: number, keyword: string, searchCount: number }> } };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -51,3 +81,36 @@ export const AdminMeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminMeQuery, AdminMeQueryVariables>;
+export const AdminDashboardSummaryDocument = new TypedDocumentString(`
+    query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {
+  adminDashboardSummary(input: $input) {
+    from
+    to
+    newUserCount
+    newSellerCount
+    orderCounts {
+      submitted
+      confirmed
+      made
+      pickedUp
+      canceled
+    }
+    orderAmountSum
+    activeStoreCount
+    activeProductCount
+    pendingReportCount
+  }
+}
+    `) as unknown as TypedDocumentString<AdminDashboardSummaryQuery, AdminDashboardSummaryQueryVariables>;
+export const AdminSearchKeywordSnapshotDocument = new TypedDocumentString(`
+    query AdminSearchKeywordSnapshot($input: AdminSearchKeywordSnapshotInput) {
+  adminSearchKeywordSnapshot(input: $input) {
+    rankedAt
+    items {
+      rank
+      keyword
+      searchCount
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSearchKeywordSnapshotQuery, AdminSearchKeywordSnapshotQueryVariables>;
