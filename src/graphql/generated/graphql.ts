@@ -13,6 +13,15 @@ export type AccountStatus =
   /** 운영자가 정지한 상태. 모든 API 접근이 FORBIDDEN이고 refresh 세션도 폐기된다. */
   | 'SUSPENDED';
 
+/** 계정 종류. JWT 발급 시 결정되며 접근 가능한 API 영역을 가른다. */
+export type AccountType =
+  /** 운영자. admin* API를 쓴다. */
+  | 'ADMIN'
+  /** 판매자. 매장 1곳을 보유하며 seller* API를 쓴다. */
+  | 'SELLER'
+  /** 구매자. 주문·찜·리뷰 등 구매자 API를 쓴다. */
+  | 'USER';
+
 /** 주문 강제 취소 입력. */
 export type AdminCancelOrderInput = {
   /** 취소 사유. 필수. 최대 494자('[관리자] ' 접두를 붙여 500자 이내로 이력에 남는다). 감사 로그에도 기록된다. */
@@ -56,6 +65,33 @@ export type AdminSearchKeywordSnapshotInput = {
   rankedAt?: string | null | undefined;
 };
 
+/** 계정 정지 입력. */
+export type AdminSuspendAccountInput = {
+  /** 대상 계정 ID(USER 또는 SELLER). */
+  accountId: string | number;
+  /** 정지 사유. 감사 로그에 기록된다. 최대 500자. */
+  reason: string;
+};
+
+/** 구매자 목록 조회 조건. */
+export type AdminUserListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 닉네임·이메일·이름 부분일치 검색어. 최대 100자. 미지정 시 전체. */
+  keyword?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 계정 상태 필터. 미지정 시 전체. */
+  status?: AccountStatus | null | undefined;
+};
+
+/** 소셜 로그인 Provider 종류 */
+export type IdentityProvider =
+  /** 구글 OIDC. */
+  | 'GOOGLE'
+  /** 카카오 OIDC. */
+  | 'KAKAO';
+
 /**
  * 주문 상태. 구매자·판매자 API가 공용으로 쓴다.
  *
@@ -79,6 +115,34 @@ export type AdminMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type AdminMeQuery = { adminMe: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus, mustChangePassword: boolean, lastLoginAt: string | null, createdAt: string } };
+
+export type AdminUsersQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminUsersQuery = { adminUsers: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ accountId: string, email: string | null, name: string | null, status: AccountStatus, nickname: string | null, phoneNumber: string | null, onboardingCompleted: boolean, identityProviders: Array<IdentityProvider>, orderCount: number, reviewCount: number, createdAt: string }> } };
+
+export type AdminUserQueryVariables = Exact<{
+  accountId: string | number;
+}>;
+
+
+export type AdminUserQuery = { adminUser: { accountId: string, email: string | null, name: string | null, status: AccountStatus, nickname: string | null, phoneNumber: string | null, onboardingCompleted: boolean, identityProviders: Array<IdentityProvider>, orderCount: number, reviewCount: number, createdAt: string } };
+
+export type AdminSuspendAccountMutationVariables = Exact<{
+  input: AdminSuspendAccountInput;
+}>;
+
+
+export type AdminSuspendAccountMutation = { adminSuspendAccount: { accountId: string, accountType: AccountType, status: AccountStatus } };
+
+export type AdminReinstateAccountMutationVariables = Exact<{
+  accountId: string | number;
+}>;
+
+
+export type AdminReinstateAccountMutation = { adminReinstateAccount: { accountId: string, accountType: AccountType, status: AccountStatus } };
 
 export type AdminDashboardSummaryQueryVariables = Exact<{
   input: AdminDashboardSummaryInput;
@@ -148,6 +212,63 @@ export const AdminMeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminMeQuery, AdminMeQueryVariables>;
+export const AdminUsersDocument = new TypedDocumentString(`
+    query AdminUsers($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      email
+      name
+      status
+      nickname
+      phoneNumber
+      onboardingCompleted
+      identityProviders
+      orderCount
+      reviewCount
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUsersQuery, AdminUsersQueryVariables>;
+export const AdminUserDocument = new TypedDocumentString(`
+    query AdminUser($accountId: ID!) {
+  adminUser(accountId: $accountId) {
+    accountId
+    email
+    name
+    status
+    nickname
+    phoneNumber
+    onboardingCompleted
+    identityProviders
+    orderCount
+    reviewCount
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUserQuery, AdminUserQueryVariables>;
+export const AdminSuspendAccountDocument = new TypedDocumentString(`
+    mutation AdminSuspendAccount($input: AdminSuspendAccountInput!) {
+  adminSuspendAccount(input: $input) {
+    accountId
+    accountType
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSuspendAccountMutation, AdminSuspendAccountMutationVariables>;
+export const AdminReinstateAccountDocument = new TypedDocumentString(`
+    mutation AdminReinstateAccount($accountId: ID!) {
+  adminReinstateAccount(accountId: $accountId) {
+    accountId
+    accountType
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReinstateAccountMutation, AdminReinstateAccountMutationVariables>;
 export const AdminDashboardSummaryDocument = new TypedDocumentString(`
     query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {
   adminDashboardSummary(input: $input) {

@@ -16,6 +16,10 @@ import * as types from './graphql';
  */
 type Documents = {
     "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n": typeof types.AdminMeDocument,
+    "\n  query AdminUsers($input: AdminUserListInput) {\n    adminUsers(input: $input) {\n      items {\n        accountId\n        email\n        name\n        status\n        nickname\n        phoneNumber\n        onboardingCompleted\n        identityProviders\n        orderCount\n        reviewCount\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminUsersDocument,
+    "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": typeof types.AdminUserDocument,
+    "\n  mutation AdminSuspendAccount($input: AdminSuspendAccountInput!) {\n    adminSuspendAccount(input: $input) {\n      accountId\n      accountType\n      status\n    }\n  }\n": typeof types.AdminSuspendAccountDocument,
+    "\n  mutation AdminReinstateAccount($accountId: ID!) {\n    adminReinstateAccount(accountId: $accountId) {\n      accountId\n      accountType\n      status\n    }\n  }\n": typeof types.AdminReinstateAccountDocument,
     "\n  query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {\n    adminDashboardSummary(input: $input) {\n      from\n      to\n      newUserCount\n      newSellerCount\n      orderCounts {\n        submitted\n        confirmed\n        made\n        pickedUp\n        canceled\n      }\n      orderAmountSum\n      activeStoreCount\n      activeProductCount\n      pendingReportCount\n    }\n  }\n": typeof types.AdminDashboardSummaryDocument,
     "\n  query AdminSearchKeywordSnapshot($input: AdminSearchKeywordSnapshotInput) {\n    adminSearchKeywordSnapshot(input: $input) {\n      rankedAt\n      items {\n        rank\n        keyword\n        searchCount\n      }\n    }\n  }\n": typeof types.AdminSearchKeywordSnapshotDocument,
     "\n  query AdminOrders($input: AdminOrderListInput) {\n    adminOrders(input: $input) {\n      items {\n        id\n        orderNumber\n        accountId\n        storeId\n        status\n        pickupAt\n        buyerName\n        buyerPhone\n        totalPrice\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminOrdersDocument,
@@ -24,6 +28,10 @@ type Documents = {
 };
 const documents: Documents = {
     "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n": types.AdminMeDocument,
+    "\n  query AdminUsers($input: AdminUserListInput) {\n    adminUsers(input: $input) {\n      items {\n        accountId\n        email\n        name\n        status\n        nickname\n        phoneNumber\n        onboardingCompleted\n        identityProviders\n        orderCount\n        reviewCount\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminUsersDocument,
+    "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": types.AdminUserDocument,
+    "\n  mutation AdminSuspendAccount($input: AdminSuspendAccountInput!) {\n    adminSuspendAccount(input: $input) {\n      accountId\n      accountType\n      status\n    }\n  }\n": types.AdminSuspendAccountDocument,
+    "\n  mutation AdminReinstateAccount($accountId: ID!) {\n    adminReinstateAccount(accountId: $accountId) {\n      accountId\n      accountType\n      status\n    }\n  }\n": types.AdminReinstateAccountDocument,
     "\n  query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {\n    adminDashboardSummary(input: $input) {\n      from\n      to\n      newUserCount\n      newSellerCount\n      orderCounts {\n        submitted\n        confirmed\n        made\n        pickedUp\n        canceled\n      }\n      orderAmountSum\n      activeStoreCount\n      activeProductCount\n      pendingReportCount\n    }\n  }\n": types.AdminDashboardSummaryDocument,
     "\n  query AdminSearchKeywordSnapshot($input: AdminSearchKeywordSnapshotInput) {\n    adminSearchKeywordSnapshot(input: $input) {\n      rankedAt\n      items {\n        rank\n        keyword\n        searchCount\n      }\n    }\n  }\n": types.AdminSearchKeywordSnapshotDocument,
     "\n  query AdminOrders($input: AdminOrderListInput) {\n    adminOrders(input: $input) {\n      items {\n        id\n        orderNumber\n        accountId\n        storeId\n        status\n        pickupAt\n        buyerName\n        buyerPhone\n        totalPrice\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminOrdersDocument,
@@ -35,6 +43,22 @@ const documents: Documents = {
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n"): typeof import('./graphql').AdminMeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminUsers($input: AdminUserListInput) {\n    adminUsers(input: $input) {\n      items {\n        accountId\n        email\n        name\n        status\n        nickname\n        phoneNumber\n        onboardingCompleted\n        identityProviders\n        orderCount\n        reviewCount\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n"): typeof import('./graphql').AdminUsersDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n"): typeof import('./graphql').AdminUserDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminSuspendAccount($input: AdminSuspendAccountInput!) {\n    adminSuspendAccount(input: $input) {\n      accountId\n      accountType\n      status\n    }\n  }\n"): typeof import('./graphql').AdminSuspendAccountDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminReinstateAccount($accountId: ID!) {\n    adminReinstateAccount(accountId: $accountId) {\n      accountId\n      accountType\n      status\n    }\n  }\n"): typeof import('./graphql').AdminReinstateAccountDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
