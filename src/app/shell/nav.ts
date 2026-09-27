@@ -1,5 +1,6 @@
 import {
   type LucideIcon,
+  BriefcaseIcon,
   LayoutDashboardIcon,
   ShoppingBagIcon,
   StoreIcon,
@@ -8,7 +9,7 @@ import {
 
 /** 사이드바 메뉴. 각 영역 PR이 자기 항목을 붙인다 — Link의 to가 라우트 타입으로 검사되므로 있는 경로만 둔다. */
 interface NavItem {
-  to: '/' | '/orders' | '/users' | '/sellers';
+  to: '/' | '/orders' | '/users' | '/sellers' | '/stores';
   label: string;
   icon: LucideIcon;
 }
@@ -24,9 +25,10 @@ export const NAV_GROUPS: NavGroup[] = [
     label: '계정',
     items: [
       { to: '/users', label: '구매자', icon: UsersIcon },
-      { to: '/sellers', label: '판매자', icon: StoreIcon },
+      { to: '/sellers', label: '판매자', icon: BriefcaseIcon },
     ],
   },
+  { label: '카탈로그', items: [{ to: '/stores', label: '매장', icon: StoreIcon }] },
 ];
 
 export function titleFor(pathname: string): string {

@@ -73,6 +73,16 @@ export type AdminCreateSellerStoreInput = {
   storePhone: string;
 };
 
+/** 관리자 업로드 URL 발급 입력. */
+export type AdminCreateUploadUrlInput = {
+  /** 파일 크기(바이트). 1 이상 5MB 이하, 아니면 BAD_USER_INPUT. */
+  contentLength: number;
+  /** 파일 MIME 타입. image/jpeg·image/png·image/webp만 허용, 아니면 BAD_USER_INPUT. */
+  contentType: string;
+  /** 업로드 용도. */
+  purpose: UploadPurpose;
+};
+
 /** 집계 기간 입력. */
 export type AdminDashboardSummaryInput = {
   /** 집계 시작(이상). */
@@ -129,12 +139,68 @@ export type AdminSellerListInput = {
   status?: AccountStatus | null | undefined;
 };
 
+/** 매장 노출 여부 변경 입력. */
+export type AdminSetStoreActiveInput = {
+  /** 노출 여부. */
+  isActive: boolean;
+  /** 변경 사유. 감사 로그에 기록된다. 최대 500자. 선택. */
+  reason?: string | null | undefined;
+  storeId: string | number;
+};
+
+/** 매장 목록 조회 조건. */
+export type AdminStoreListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 노출 여부 필터. 미지정 시 전체. */
+  isActive?: boolean | null | undefined;
+  /** 매장명 부분일치 검색어. 최대 100자. 미지정 시 전체. */
+  keyword?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 2차 지역 ID 필터. 미지정 시 전체. */
+  regionId?: string | number | null | undefined;
+};
+
 /** 계정 정지 입력. */
 export type AdminSuspendAccountInput = {
   /** 대상 계정 ID(USER 또는 SELLER). */
   accountId: string | number;
   /** 정지 사유. 감사 로그에 기록된다. 최대 500자. */
   reason: string;
+};
+
+/** 매장 기본 정보 대리 수정 입력. 전달한 필드만 변경된다(부분 수정). */
+export type AdminUpdateStoreBasicInfoInput = {
+  /** 시·도 단위. null이면 제거. */
+  addressCity?: string | null | undefined;
+  /** 시·군·구 단위. null이면 제거. */
+  addressDistrict?: string | null | undefined;
+  /** 전체 주소 문자열. */
+  addressFull?: string | null | undefined;
+  /** 읍·면·동 단위. null이면 제거. */
+  addressNeighborhood?: string | null | undefined;
+  /** 영업시간 안내 문구. null이면 제거. */
+  businessHoursText?: string | null | undefined;
+  /** 문의 채팅 인사말 템플릿. null이면 기본 문구로 되돌린다. */
+  greetingMessage?: string | null | undefined;
+  /** 위도(문자열). null이면 제거. */
+  latitude?: string | null | undefined;
+  /** 경도(문자열). null이면 제거. */
+  longitude?: string | null | undefined;
+  /** 지도 진입에 쓸 provider. */
+  mapProvider?: StoreMapProvider | null | undefined;
+  /** 매장 프로필(로고) 이미지 URL. null이면 제거. adminCreateUploadUrl(STORE_IMAGE)로 이 계정에 발급된 publicUrl만 허용, 아니면 BAD_USER_INPUT. */
+  profileImageUrl?: string | null | undefined;
+  /** 지역 필터용 2차 지역 ID. 활성 2차 지역만 허용, null이면 연결 해제. */
+  regionId?: string | number | null | undefined;
+  storeId: string | number;
+  /** 매장명. */
+  storeName?: string | null | undefined;
+  /** 매장 대표 연락처. */
+  storePhone?: string | null | undefined;
+  /** 매장 홈페이지·SNS URL. null이면 제거. */
+  websiteUrl?: string | null | undefined;
 };
 
 /** 구매자 목록 조회 조건. */
@@ -183,6 +249,18 @@ export type StoreMapProvider =
   | 'NAVER'
   /** 지도 연결 없음. 지도 진입 동선을 노출하지 않는다. */
   | 'NONE';
+
+/**
+ * 업로드 용도. 용도마다 저장 경로가 다르고, 저장 입력은 같은 용도로 발급된 URL만 받는다.
+ * 역할별 허용 범위: 판매자 PRODUCT_IMAGE·STORE_IMAGE, 관리자 BANNER_IMAGE·STORE_IMAGE(밖이면 BAD_USER_INPUT).
+ */
+export type UploadPurpose =
+  /** 플랫폼 배너 이미지(관리자). */
+  | 'BANNER_IMAGE'
+  /** 상품 이미지·커스텀 도안 바탕·옵션 선택지 이미지·커스텀 템플릿 바탕(판매자). */
+  | 'PRODUCT_IMAGE'
+  /** 매장 프로필(로고) 이미지(판매자·관리자). */
+  | 'STORE_IMAGE';
 
 export type AdminMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -279,6 +357,41 @@ export type AdminResetSellerPasswordMutationVariables = Exact<{
 
 
 export type AdminResetSellerPasswordMutation = { adminResetSellerPassword: boolean };
+
+export type AdminStoresQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminStoresQuery = { adminStores: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, sellerAccountId: string, storeName: string, storePhone: string, addressFull: string, regionId: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
+
+export type AdminStoreQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminStoreQuery = { adminStore: { productCount: number, orderItemCount: number, store: { id: string, sellerAccountId: string, storeName: string, storePhone: string, addressFull: string, addressCity: string | null, addressDistrict: string | null, addressNeighborhood: string | null, regionId: string | null, latitude: string | null, longitude: string | null, mapProvider: StoreMapProvider, websiteUrl: string | null, businessHoursText: string | null, profileImageUrl: string | null, greetingMessage: string | null, pickupSlotIntervalMinutes: number, minLeadTimeMinutes: number, maxDaysAhead: number, isActive: boolean, createdAt: string, updatedAt: string }, seller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus } } };
+
+export type AdminSetStoreActiveMutationVariables = Exact<{
+  input: AdminSetStoreActiveInput;
+}>;
+
+
+export type AdminSetStoreActiveMutation = { adminSetStoreActive: { id: string, isActive: boolean } };
+
+export type AdminUpdateStoreBasicInfoMutationVariables = Exact<{
+  input: AdminUpdateStoreBasicInfoInput;
+}>;
+
+
+export type AdminUpdateStoreBasicInfoMutation = { adminUpdateStoreBasicInfo: { id: string, updatedAt: string } };
+
+export type AdminCreateUploadUrlMutationVariables = Exact<{
+  input: AdminCreateUploadUrlInput;
+}>;
+
+
+export type AdminCreateUploadUrlMutation = { adminCreateUploadUrl: { uploadUrl: string, publicUrl: string, key: string, expiresInSeconds: number } };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -571,3 +684,88 @@ export const AdminResetSellerPasswordDocument = new TypedDocumentString(`
   adminResetSellerPassword(input: $input)
 }
     `) as unknown as TypedDocumentString<AdminResetSellerPasswordMutation, AdminResetSellerPasswordMutationVariables>;
+export const AdminStoresDocument = new TypedDocumentString(`
+    query AdminStores($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      sellerAccountId
+      storeName
+      storePhone
+      addressFull
+      regionId
+      isActive
+      createdAt
+      updatedAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminStoresQuery, AdminStoresQueryVariables>;
+export const AdminStoreDocument = new TypedDocumentString(`
+    query AdminStore($storeId: ID!) {
+  adminStore(storeId: $storeId) {
+    store {
+      id
+      sellerAccountId
+      storeName
+      storePhone
+      addressFull
+      addressCity
+      addressDistrict
+      addressNeighborhood
+      regionId
+      latitude
+      longitude
+      mapProvider
+      websiteUrl
+      businessHoursText
+      profileImageUrl
+      greetingMessage
+      pickupSlotIntervalMinutes
+      minLeadTimeMinutes
+      maxDaysAhead
+      isActive
+      createdAt
+      updatedAt
+    }
+    seller {
+      accountId
+      username
+      email
+      name
+      status
+    }
+    productCount
+    orderItemCount
+  }
+}
+    `) as unknown as TypedDocumentString<AdminStoreQuery, AdminStoreQueryVariables>;
+export const AdminSetStoreActiveDocument = new TypedDocumentString(`
+    mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {
+  adminSetStoreActive(input: $input) {
+    id
+    isActive
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSetStoreActiveMutation, AdminSetStoreActiveMutationVariables>;
+export const AdminUpdateStoreBasicInfoDocument = new TypedDocumentString(`
+    mutation AdminUpdateStoreBasicInfo($input: AdminUpdateStoreBasicInfoInput!) {
+  adminUpdateStoreBasicInfo(input: $input) {
+    id
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdateStoreBasicInfoMutation, AdminUpdateStoreBasicInfoMutationVariables>;
+export const AdminCreateUploadUrlDocument = new TypedDocumentString(`
+    mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {
+  adminCreateUploadUrl(input: $input) {
+    uploadUrl
+    publicUrl
+    key
+    expiresInSeconds
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateUploadUrlMutation, AdminCreateUploadUrlMutationVariables>;
