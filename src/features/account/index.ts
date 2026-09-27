@@ -1,1 +1,1 @@
-export { AdminMeDocument } from './api/queries';
+export { AdminMeDocument, adminMeQueryOptions } from './api/queries';

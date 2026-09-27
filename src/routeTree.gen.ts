@@ -11,8 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedShellRouteImport } from './routes/_authed/_shell'
 import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/change-password'
+import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -23,9 +24,8 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedIndexRoute = AuthedIndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthedShellRoute = AuthedShellRouteImport.update({
+  id: '/_shell',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedChangePasswordRoute = AuthedChangePasswordRouteImport.update({
@@ -33,35 +33,42 @@ const AuthedChangePasswordRoute = AuthedChangePasswordRouteImport.update({
   path: '/change-password',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedShellIndexRoute = AuthedShellIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthedIndexRoute
+  '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
-  '/': typeof AuthedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authed/_shell': typeof AuthedShellRouteWithChildren
   '/_authed/change-password': typeof AuthedChangePasswordRoute
-  '/_authed/': typeof AuthedIndexRoute
+  '/_authed/_shell/': typeof AuthedShellIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/login' | '/change-password'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/change-password' | '/'
+  to: '/' | '/login' | '/change-password'
   id:
     | '__root__'
     | '/_authed'
     | '/login'
+    | '/_authed/_shell'
     | '/_authed/change-password'
-    | '/_authed/'
+    | '/_authed/_shell/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -85,11 +92,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/': {
-      id: '/_authed/'
-      path: '/'
+    '/_authed/_shell': {
+      id: '/_authed/_shell'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AuthedIndexRouteImport
+      preLoaderRoute: typeof AuthedShellRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/change-password': {
@@ -99,17 +106,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedChangePasswordRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/_shell/': {
+      id: '/_authed/_shell/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedShellIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
   }
 }
 
+interface AuthedShellRouteChildren {
+  AuthedShellIndexRoute: typeof AuthedShellIndexRoute
+}
+
+const AuthedShellRouteChildren: AuthedShellRouteChildren = {
+  AuthedShellIndexRoute: AuthedShellIndexRoute,
+}
+
+const AuthedShellRouteWithChildren = AuthedShellRoute._addFileChildren(
+  AuthedShellRouteChildren,
+)
+
 interface AuthedRouteChildren {
+  AuthedShellRoute: typeof AuthedShellRouteWithChildren
   AuthedChangePasswordRoute: typeof AuthedChangePasswordRoute
-  AuthedIndexRoute: typeof AuthedIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedShellRoute: AuthedShellRouteWithChildren,
   AuthedChangePasswordRoute: AuthedChangePasswordRoute,
-  AuthedIndexRoute: AuthedIndexRoute,
 }
 
 const AuthedRouteWithChildren =

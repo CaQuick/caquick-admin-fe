@@ -38,6 +38,8 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs['recommended-latest'].rules,
+      // React Compiler를 쓰지 않는다 — 컴파일러 호환성 경고는 의미가 없다
+      'react-hooks/incompatible-library': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
       '@typescript-eslint/no-misused-promises': [
