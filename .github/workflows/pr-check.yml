@@ -47,7 +47,11 @@ jobs:
       - name: Test with coverage
         run: pnpm test:cov
 
+      # CODECOV_TOKEN이 레포 시크릿에 있을 때만 올린다 — 등록 전에는 건너뛰고, 등록 뒤 실패는 CI 실패로 드러낸다
       - name: Upload coverage to Codecov
+        if: env.CODECOV_TOKEN != ''
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
