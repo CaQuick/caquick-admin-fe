@@ -159,6 +159,20 @@ export type AdminDashboardSummaryInput = {
   to: string;
 };
 
+/** 리뷰 댓글 강제 삭제 입력. */
+export type AdminDeleteReviewCommentInput = {
+  commentId: string | number;
+  /** 삭제 사유. 감사 로그와 닫히는 신고의 메모에 기록된다. 최대 500자. */
+  reason: string;
+};
+
+/** 리뷰 강제 삭제 입력. */
+export type AdminDeleteReviewInput = {
+  /** 삭제 사유. 감사 로그와 닫히는 신고의 메모에 기록된다. 최대 500자. */
+  reason: string;
+  reviewId: string | number;
+};
+
 /** 주문 목록 조회 조건. 모든 필터는 AND로 결합된다. */
 export type AdminOrderListInput = {
   /** 구매자 계정 ID 필터. 미지정 시 전체. */
@@ -200,6 +214,71 @@ export type AdminResetSellerPasswordInput = {
   /** 새 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함. */
   newPassword: string;
 };
+
+/** 신고 처리 입력. */
+export type AdminResolveReviewReportInput = {
+  /** 처리 방식. */
+  action: AdminReviewReportAction;
+  /** 처리 메모. 최대 500자. 선택. */
+  note?: string | null | undefined;
+  reportId: string | number;
+};
+
+/** 리뷰 댓글 목록 조회 조건. */
+export type AdminReviewCommentListInput = {
+  /** 작성자 계정 ID 필터. 미지정 시 전체. */
+  accountId?: string | number | null | undefined;
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 삭제된 댓글 포함 여부. 기본 false. */
+  includeDeleted?: boolean | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 소속 리뷰 ID 필터. 미지정 시 전체. */
+  reviewId?: string | number | null | undefined;
+};
+
+/** 리뷰 목록 조회 조건. */
+export type AdminReviewListInput = {
+  /** 작성자 계정 ID 필터. 미지정 시 전체. */
+  accountId?: string | number | null | undefined;
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 삭제된 리뷰 포함 여부. 기본 false. */
+  includeDeleted?: boolean | null | undefined;
+  /** 본문 부분일치 검색어. 최대 100자. 미지정 시 전체. */
+  keyword?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 매장 ID 필터. 미지정 시 전체. */
+  storeId?: string | number | null | undefined;
+};
+
+/** 신고 처리 방식. */
+export type AdminReviewReportAction =
+  /** 대상을 삭제하고 같은 대상의 미처리 신고를 모두 RESOLVED로 닫는다. */
+  | 'DELETE_TARGET'
+  /** 이 신고만 REJECTED로 닫고 대상은 유지한다. */
+  | 'REJECT';
+
+/** 신고 목록 조회 조건. */
+export type AdminReviewReportListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 처리 상태 필터. 기본 PENDING. 전체를 보려면 null을 명시한다. */
+  status?: ReviewReportStatus | null | undefined;
+  /** 대상 종류 필터. 미지정 시 전체. */
+  targetType?: AdminReviewReportTargetType | null | undefined;
+};
+
+/** 신고 대상 종류. */
+export type AdminReviewReportTargetType =
+  /** 리뷰. */
+  | 'REVIEW'
+  /** 리뷰 댓글. */
+  | 'REVIEW_COMMENT';
 
 /** 인기 검색어 스냅샷 조회 입력. */
 export type AdminSearchKeywordSnapshotInput = {
@@ -444,6 +523,26 @@ export type OrderStatusType =
   /** 구매자가 주문을 넣은 직후의 초기 상태. 판매자 확인 대기. */
   | 'SUBMITTED';
 
+/** 신고 사유. */
+export type ReviewReportReason =
+  /** 욕설·비방. */
+  | 'ABUSE'
+  /** 부적절한 내용(음란·혐오 등). */
+  | 'INAPPROPRIATE'
+  /** 기타. detail에 사유를 적는다. */
+  | 'OTHER'
+  /** 광고·도배. */
+  | 'SPAM';
+
+/** 신고 처리 상태. */
+export type ReviewReportStatus =
+  /** 접수됨. 운영자 확인 대기. */
+  | 'PENDING'
+  /** 기각됨(대상 유지). */
+  | 'REJECTED'
+  /** 처리됨(대상 삭제). */
+  | 'RESOLVED';
+
 /** 매장 지도 연동 provider. 구매자·판매자 API가 공용으로 쓴다. */
 export type StoreMapProvider =
   /** 카카오맵 딥링크를 쓴다. */
@@ -588,6 +687,55 @@ export type AdminSetProductActiveMutationVariables = Exact<{
 
 
 export type AdminSetProductActiveMutation = { adminSetProductActive: { id: string, isActive: boolean } };
+
+export type AdminReviewsQueryVariables = Exact<{
+  input?: AdminReviewListInput | null | undefined;
+}>;
+
+
+export type AdminReviewsQuery = { adminReviews: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, productId: string, authorAccountId: string, authorNickname: string | null, rating: number, content: string | null, commentCount: number, likeCount: number, deleted: boolean, createdAt: string }> } };
+
+export type AdminReviewCommentsQueryVariables = Exact<{
+  input?: AdminReviewCommentListInput | null | undefined;
+}>;
+
+
+export type AdminReviewCommentsQuery = { adminReviewComments: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, reviewId: string, authorAccountId: string, authorNickname: string | null, content: string, deleted: boolean, createdAt: string }> } };
+
+export type AdminReviewReportsQueryVariables = Exact<{
+  input?: AdminReviewReportListInput | null | undefined;
+}>;
+
+
+export type AdminReviewReportsQuery = { adminReviewReports: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }> } };
+
+export type AdminReviewReportQueryVariables = Exact<{
+  reportId: string | number;
+}>;
+
+
+export type AdminReviewReportQuery = { adminReviewReport: { report: { id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }, target: { id: string, reviewId: string | null, authorAccountId: string, authorNickname: string | null, content: string | null, storeId: string, deleted: boolean } } };
+
+export type AdminDeleteReviewMutationVariables = Exact<{
+  input: AdminDeleteReviewInput;
+}>;
+
+
+export type AdminDeleteReviewMutation = { adminDeleteReview: boolean };
+
+export type AdminDeleteReviewCommentMutationVariables = Exact<{
+  input: AdminDeleteReviewCommentInput;
+}>;
+
+
+export type AdminDeleteReviewCommentMutation = { adminDeleteReviewComment: boolean };
+
+export type AdminResolveReviewReportMutationVariables = Exact<{
+  input: AdminResolveReviewReportInput;
+}>;
+
+
+export type AdminResolveReviewReportMutation = { adminResolveReviewReport: { id: string, status: ReviewReportStatus } };
 
 export type AdminSellersQueryVariables = Exact<{
   input?: AdminSellerListInput | null | undefined;
@@ -1052,6 +1200,117 @@ export const AdminSetProductActiveDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminSetProductActiveMutation, AdminSetProductActiveMutationVariables>;
+export const AdminReviewsDocument = new TypedDocumentString(`
+    query AdminReviews($input: AdminReviewListInput) {
+  adminReviews(input: $input) {
+    items {
+      id
+      storeId
+      storeName
+      productId
+      authorAccountId
+      authorNickname
+      rating
+      content
+      commentCount
+      likeCount
+      deleted
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewsQuery, AdminReviewsQueryVariables>;
+export const AdminReviewCommentsDocument = new TypedDocumentString(`
+    query AdminReviewComments($input: AdminReviewCommentListInput) {
+  adminReviewComments(input: $input) {
+    items {
+      id
+      reviewId
+      authorAccountId
+      authorNickname
+      content
+      deleted
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewCommentsQuery, AdminReviewCommentsQueryVariables>;
+export const AdminReviewReportsDocument = new TypedDocumentString(`
+    query AdminReviewReports($input: AdminReviewReportListInput) {
+  adminReviewReports(input: $input) {
+    items {
+      id
+      targetType
+      targetId
+      reporterAccountId
+      reason
+      detail
+      contentSnapshot
+      status
+      resolvedByAccountId
+      resolvedAt
+      resolutionNote
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewReportsQuery, AdminReviewReportsQueryVariables>;
+export const AdminReviewReportDocument = new TypedDocumentString(`
+    query AdminReviewReport($reportId: ID!) {
+  adminReviewReport(reportId: $reportId) {
+    report {
+      id
+      targetType
+      targetId
+      reporterAccountId
+      reason
+      detail
+      contentSnapshot
+      status
+      resolvedByAccountId
+      resolvedAt
+      resolutionNote
+      createdAt
+    }
+    target {
+      id
+      reviewId
+      authorAccountId
+      authorNickname
+      content
+      storeId
+      deleted
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewReportQuery, AdminReviewReportQueryVariables>;
+export const AdminDeleteReviewDocument = new TypedDocumentString(`
+    mutation AdminDeleteReview($input: AdminDeleteReviewInput!) {
+  adminDeleteReview(input: $input)
+}
+    `) as unknown as TypedDocumentString<AdminDeleteReviewMutation, AdminDeleteReviewMutationVariables>;
+export const AdminDeleteReviewCommentDocument = new TypedDocumentString(`
+    mutation AdminDeleteReviewComment($input: AdminDeleteReviewCommentInput!) {
+  adminDeleteReviewComment(input: $input)
+}
+    `) as unknown as TypedDocumentString<AdminDeleteReviewCommentMutation, AdminDeleteReviewCommentMutationVariables>;
+export const AdminResolveReviewReportDocument = new TypedDocumentString(`
+    mutation AdminResolveReviewReport($input: AdminResolveReviewReportInput!) {
+  adminResolveReviewReport(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminResolveReviewReportMutation, AdminResolveReviewReportMutationVariables>;
 export const AdminSellersDocument = new TypedDocumentString(`
     query AdminSellers($input: AdminSellerListInput) {
   adminSellers(input: $input) {

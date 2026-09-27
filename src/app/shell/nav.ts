@@ -6,6 +6,9 @@ import {
   TagsIcon,
   LayersIcon,
   ImageIcon,
+  FlagIcon,
+  MessageSquareIcon,
+  MessagesSquareIcon,
   ShoppingBagIcon,
   StoreIcon,
   UsersIcon,
@@ -22,7 +25,10 @@ interface NavItem {
     | '/products'
     | '/categories'
     | '/tags'
-    | '/banners';
+    | '/banners'
+    | '/reports'
+    | '/reviews'
+    | '/review-comments';
   label: string;
   icon: LucideIcon;
 }
@@ -33,7 +39,15 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   { label: null, items: [{ to: '/', label: '대시보드', icon: LayoutDashboardIcon }] },
-  { label: '운영', items: [{ to: '/orders', label: '주문', icon: ShoppingBagIcon }] },
+  {
+    label: '운영',
+    items: [
+      { to: '/orders', label: '주문', icon: ShoppingBagIcon },
+      { to: '/reports', label: '신고', icon: FlagIcon },
+      { to: '/reviews', label: '리뷰', icon: MessageSquareIcon },
+      { to: '/review-comments', label: '리뷰 댓글', icon: MessagesSquareIcon },
+    ],
+  },
   {
     label: '계정',
     items: [
