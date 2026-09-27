@@ -21,6 +21,7 @@ import { Route as AuthedShellTagsRouteImport } from './routes/_authed/_shell/tag
 import { Route as AuthedShellBannersIndexRouteImport } from './routes/_authed/_shell/banners/index'
 import { Route as AuthedShellBannersBannerIdRouteImport } from './routes/_authed/_shell/banners/$bannerId'
 import { Route as AuthedShellBannersNewRouteImport } from './routes/_authed/_shell/banners/new'
+import { Route as AuthedShellNotificationsSendRouteImport } from './routes/_authed/_shell/notifications/send'
 import { Route as AuthedShellOrdersIndexRouteImport } from './routes/_authed/_shell/orders/index'
 import { Route as AuthedShellOrdersOrderIdRouteImport } from './routes/_authed/_shell/orders/$orderId'
 import { Route as AuthedShellProductsIndexRouteImport } from './routes/_authed/_shell/products/index'
@@ -95,6 +96,12 @@ const AuthedShellBannersNewRoute = AuthedShellBannersNewRouteImport.update({
   path: '/banners/new',
   getParentRoute: () => AuthedShellRoute,
 } as any)
+const AuthedShellNotificationsSendRoute =
+  AuthedShellNotificationsSendRouteImport.update({
+    id: '/notifications/send',
+    path: '/notifications/send',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
 const AuthedShellOrdersIndexRoute = AuthedShellOrdersIndexRouteImport.update({
   id: '/orders/',
   path: '/orders/',
@@ -178,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/tags': typeof AuthedShellTagsRoute
   '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
   '/banners/new': typeof AuthedShellBannersNewRoute
+  '/notifications/send': typeof AuthedShellNotificationsSendRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/reports/$reportId': typeof AuthedShellReportsReportIdRoute
@@ -203,6 +211,7 @@ export interface FileRoutesByTo {
   '/tags': typeof AuthedShellTagsRoute
   '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
   '/banners/new': typeof AuthedShellBannersNewRoute
+  '/notifications/send': typeof AuthedShellNotificationsSendRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/reports/$reportId': typeof AuthedShellReportsReportIdRoute
@@ -231,6 +240,7 @@ export interface FileRoutesById {
   '/_authed/_shell/': typeof AuthedShellIndexRoute
   '/_authed/_shell/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
   '/_authed/_shell/banners/new': typeof AuthedShellBannersNewRoute
+  '/_authed/_shell/notifications/send': typeof AuthedShellNotificationsSendRoute
   '/_authed/_shell/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/_authed/_shell/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/_authed/_shell/reports/$reportId': typeof AuthedShellReportsReportIdRoute
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/banners/$bannerId'
     | '/banners/new'
+    | '/notifications/send'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/reports/$reportId'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/banners/$bannerId'
     | '/banners/new'
+    | '/notifications/send'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/reports/$reportId'
@@ -310,6 +322,7 @@ export interface FileRouteTypes {
     | '/_authed/_shell/'
     | '/_authed/_shell/banners/$bannerId'
     | '/_authed/_shell/banners/new'
+    | '/_authed/_shell/notifications/send'
     | '/_authed/_shell/orders/$orderId'
     | '/_authed/_shell/products/$productId'
     | '/_authed/_shell/reports/$reportId'
@@ -417,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShellBannersNewRouteImport
       parentRoute: typeof AuthedShellRoute
     }
+    '/_authed/_shell/notifications/send': {
+      id: '/_authed/_shell/notifications/send'
+      path: '/notifications/send'
+      fullPath: '/notifications/send'
+      preLoaderRoute: typeof AuthedShellNotificationsSendRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
     '/_authed/_shell/orders/': {
       id: '/_authed/_shell/orders/'
       path: '/orders'
@@ -519,6 +539,7 @@ interface AuthedShellRouteChildren {
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
   AuthedShellBannersBannerIdRoute: typeof AuthedShellBannersBannerIdRoute
   AuthedShellBannersNewRoute: typeof AuthedShellBannersNewRoute
+  AuthedShellNotificationsSendRoute: typeof AuthedShellNotificationsSendRoute
   AuthedShellOrdersOrderIdRoute: typeof AuthedShellOrdersOrderIdRoute
   AuthedShellProductsProductIdRoute: typeof AuthedShellProductsProductIdRoute
   AuthedShellReportsReportIdRoute: typeof AuthedShellReportsReportIdRoute
@@ -543,6 +564,7 @@ const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellIndexRoute: AuthedShellIndexRoute,
   AuthedShellBannersBannerIdRoute: AuthedShellBannersBannerIdRoute,
   AuthedShellBannersNewRoute: AuthedShellBannersNewRoute,
+  AuthedShellNotificationsSendRoute: AuthedShellNotificationsSendRoute,
   AuthedShellOrdersOrderIdRoute: AuthedShellOrdersOrderIdRoute,
   AuthedShellProductsProductIdRoute: AuthedShellProductsProductIdRoute,
   AuthedShellReportsReportIdRoute: AuthedShellReportsReportIdRoute,

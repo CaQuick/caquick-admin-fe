@@ -173,6 +173,20 @@ export type AdminDeleteReviewInput = {
   reviewId: string | number;
 };
 
+/** 발송 대상 지정 방식. */
+export type AdminNotificationTargetKind =
+  /** accountIds로 지정한 계정. */
+  | 'ACCOUNT_IDS'
+  /** 활성(ACTIVE·미탈퇴) USER 전체. */
+  | 'ALL_USERS';
+
+/** 관리자가 보낼 수 있는 알림 분류. 주문·리뷰 이벤트 알림은 시스템이 만든다. */
+export type AdminNotificationType =
+  /** 마케팅. */
+  | 'MARKETING'
+  /** 운영 공지. */
+  | 'SYSTEM';
+
 /** 주문 목록 조회 조건. 모든 필터는 AND로 결합된다. */
 export type AdminOrderListInput = {
   /** 구매자 계정 ID 필터. 미지정 시 전체. */
@@ -298,6 +312,22 @@ export type AdminSellerListInput = {
   limit?: number | null | undefined;
   /** 계정 상태 필터. 미지정 시 전체. */
   status?: AccountStatus | null | undefined;
+};
+
+/** 알림 발송 입력. */
+export type AdminSendNotificationInput = {
+  /** targetKind가 ACCOUNT_IDS일 때 대상 계정 ID. 1~500개, 중복은 한 번으로 센다. ALL_USERS면 무시된다. */
+  accountIds?: Array<string | number> | null | undefined;
+  /** 본문. 1~2000자. */
+  body: string;
+  /** 발송 요청 멱등 키. 8~64자, 공백 불가. 같은 관리자·같은 키의 재요청은 처음 결과를 재생한다(중복 발송 없음). */
+  idempotencyKey: string;
+  /** 대상 지정 방식. */
+  targetKind: AdminNotificationTargetKind;
+  /** 제목. 1~200자. */
+  title: string;
+  /** 알림 분류. */
+  type: AdminNotificationType;
 };
 
 /** 상품 노출 여부 변경 입력. */
@@ -645,6 +675,13 @@ export type AdminSearchKeywordSnapshotQueryVariables = Exact<{
 
 
 export type AdminSearchKeywordSnapshotQuery = { adminSearchKeywordSnapshot: { rankedAt: string | null, items: Array<{ rank: number, keyword: string, searchCount: number }> } };
+
+export type AdminSendNotificationMutationVariables = Exact<{
+  input: AdminSendNotificationInput;
+}>;
+
+
+export type AdminSendNotificationMutation = { adminSendNotification: { sentCount: number, skippedAccountIds: Array<string> } };
 
 export type AdminOrdersQueryVariables = Exact<{
   input?: AdminOrderListInput | null | undefined;
@@ -1046,6 +1083,14 @@ export const AdminSearchKeywordSnapshotDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminSearchKeywordSnapshotQuery, AdminSearchKeywordSnapshotQueryVariables>;
+export const AdminSendNotificationDocument = new TypedDocumentString(`
+    mutation AdminSendNotification($input: AdminSendNotificationInput!) {
+  adminSendNotification(input: $input) {
+    sentCount
+    skippedAccountIds
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSendNotificationMutation, AdminSendNotificationMutationVariables>;
 export const AdminOrdersDocument = new TypedDocumentString(`
     query AdminOrders($input: AdminOrderListInput) {
   adminOrders(input: $input) {
