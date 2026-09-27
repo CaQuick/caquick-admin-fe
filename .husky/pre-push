@@ -1,0 +1,2 @@
+# push 전 로컬 검증 — CI check와 같은 순서. --no-verify 금지
+pnpm validate
