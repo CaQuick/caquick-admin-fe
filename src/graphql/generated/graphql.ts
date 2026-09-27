@@ -29,6 +29,28 @@ export type AdminCancelOrderInput = {
   orderId: string | number;
 };
 
+/** 카테고리 목록 조회 조건. */
+export type AdminCategoryListInput = {
+  /** 종류 필터. 미지정 시 전체. */
+  categoryType?: CategoryType | null | undefined;
+  /** 비활성 포함 여부. 기본 false. */
+  includeInactive?: boolean | null | undefined;
+};
+
+/** 카테고리 생성 입력. */
+export type AdminCreateCategoryInput = {
+  /** 종류. */
+  categoryType: CategoryType;
+  /** 설명. 최대 255자. 선택. */
+  description?: string | null | undefined;
+  /** 노출 여부. 기본 true. */
+  isActive?: boolean | null | undefined;
+  /** 이름. 1~100자, 같은 종류 안에서 유일. */
+  name: string;
+  /** 노출 순서. 미지정 시 0. */
+  sortOrder?: number | null | undefined;
+};
+
 /** 판매자 온보딩 입력. 계정·자격증명·사업자 프로필·매장을 한 번에 만든다. */
 export type AdminCreateSellerInput = {
   /** 상호. */
@@ -71,6 +93,12 @@ export type AdminCreateSellerStoreInput = {
   storeName: string;
   /** 매장 대표 연락처. */
   storePhone: string;
+};
+
+/** 태그 생성 입력. */
+export type AdminCreateTagInput = {
+  /** 이름. 1~80자, 전역 유일. */
+  name: string;
 };
 
 /** 관리자 업로드 URL 발급 입력. */
@@ -193,6 +221,29 @@ export type AdminSuspendAccountInput = {
   reason: string;
 };
 
+/** 태그 목록 조회 조건. */
+export type AdminTagListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 이름 부분일치 검색어. 최대 100자. 미지정 시 전체. */
+  keyword?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+};
+
+/** 카테고리 수정 입력. 전달한 필드만 변경된다. */
+export type AdminUpdateCategoryInput = {
+  categoryId: string | number;
+  /** 설명. null이면 제거. */
+  description?: string | null | undefined;
+  /** 노출 여부. */
+  isActive?: boolean | null | undefined;
+  /** 이름. 1~100자. */
+  name?: string | null | undefined;
+  /** 노출 순서. */
+  sortOrder?: number | null | undefined;
+};
+
 /** 매장 기본 정보 대리 수정 입력. 전달한 필드만 변경된다(부분 수정). */
 export type AdminUpdateStoreBasicInfoInput = {
   /** 시·도 단위. null이면 제거. */
@@ -226,6 +277,13 @@ export type AdminUpdateStoreBasicInfoInput = {
   websiteUrl?: string | null | undefined;
 };
 
+/** 태그 수정 입력. */
+export type AdminUpdateTagInput = {
+  /** 이름. 1~80자, 전역 유일. */
+  name: string;
+  tagId: string | number;
+};
+
 /** 구매자 목록 조회 조건. */
 export type AdminUserListInput = {
   /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
@@ -237,6 +295,15 @@ export type AdminUserListInput = {
   /** 계정 상태 필터. 미지정 시 전체. */
   status?: AccountStatus | null | undefined;
 };
+
+/** 상품 카테고리 분류. */
+export type CategoryType =
+  /** 상황·이벤트 기준 분류(생일, 기념일 등). 홈 화면 칩에는 이 분류만 노출된다. */
+  | 'EVENT'
+  /** 위 둘로 분류되지 않는 그 밖의 분류. 조회 필터로도 쓸 수 있다. */
+  | 'OTHER'
+  /** 디자인·스타일 기준 분류. */
+  | 'STYLE';
 
 /** 소셜 로그인 Provider 종류 */
 export type IdentityProvider =
@@ -429,6 +496,62 @@ export type AdminUpdateStoreBasicInfoMutationVariables = Exact<{
 
 
 export type AdminUpdateStoreBasicInfoMutation = { adminUpdateStoreBasicInfo: { id: string, updatedAt: string } };
+
+export type AdminCategoriesQueryVariables = Exact<{
+  input?: AdminCategoryListInput | null | undefined;
+}>;
+
+
+export type AdminCategoriesQuery = { adminCategories: Array<{ id: string, categoryType: CategoryType, name: string, description: string | null, sortOrder: number, isActive: boolean, productCount: number, createdAt: string, updatedAt: string }> };
+
+export type AdminCreateCategoryMutationVariables = Exact<{
+  input: AdminCreateCategoryInput;
+}>;
+
+
+export type AdminCreateCategoryMutation = { adminCreateCategory: { id: string } };
+
+export type AdminUpdateCategoryMutationVariables = Exact<{
+  input: AdminUpdateCategoryInput;
+}>;
+
+
+export type AdminUpdateCategoryMutation = { adminUpdateCategory: { id: string } };
+
+export type AdminDeleteCategoryMutationVariables = Exact<{
+  categoryId: string | number;
+}>;
+
+
+export type AdminDeleteCategoryMutation = { adminDeleteCategory: boolean };
+
+export type AdminTagsQueryVariables = Exact<{
+  input?: AdminTagListInput | null | undefined;
+}>;
+
+
+export type AdminTagsQuery = { adminTags: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, name: string, productCount: number, createdAt: string, updatedAt: string }> } };
+
+export type AdminCreateTagMutationVariables = Exact<{
+  input: AdminCreateTagInput;
+}>;
+
+
+export type AdminCreateTagMutation = { adminCreateTag: { id: string } };
+
+export type AdminUpdateTagMutationVariables = Exact<{
+  input: AdminUpdateTagInput;
+}>;
+
+
+export type AdminUpdateTagMutation = { adminUpdateTag: { id: string } };
+
+export type AdminDeleteTagMutationVariables = Exact<{
+  tagId: string | number;
+}>;
+
+
+export type AdminDeleteTagMutation = { adminDeleteTag: boolean };
 
 export type AdminCreateUploadUrlMutationVariables = Exact<{
   input: AdminCreateUploadUrlInput;
@@ -859,6 +982,75 @@ export const AdminUpdateStoreBasicInfoDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminUpdateStoreBasicInfoMutation, AdminUpdateStoreBasicInfoMutationVariables>;
+export const AdminCategoriesDocument = new TypedDocumentString(`
+    query AdminCategories($input: AdminCategoryListInput) {
+  adminCategories(input: $input) {
+    id
+    categoryType
+    name
+    description
+    sortOrder
+    isActive
+    productCount
+    createdAt
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCategoriesQuery, AdminCategoriesQueryVariables>;
+export const AdminCreateCategoryDocument = new TypedDocumentString(`
+    mutation AdminCreateCategory($input: AdminCreateCategoryInput!) {
+  adminCreateCategory(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateCategoryMutation, AdminCreateCategoryMutationVariables>;
+export const AdminUpdateCategoryDocument = new TypedDocumentString(`
+    mutation AdminUpdateCategory($input: AdminUpdateCategoryInput!) {
+  adminUpdateCategory(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdateCategoryMutation, AdminUpdateCategoryMutationVariables>;
+export const AdminDeleteCategoryDocument = new TypedDocumentString(`
+    mutation AdminDeleteCategory($categoryId: ID!) {
+  adminDeleteCategory(categoryId: $categoryId)
+}
+    `) as unknown as TypedDocumentString<AdminDeleteCategoryMutation, AdminDeleteCategoryMutationVariables>;
+export const AdminTagsDocument = new TypedDocumentString(`
+    query AdminTags($input: AdminTagListInput) {
+  adminTags(input: $input) {
+    items {
+      id
+      name
+      productCount
+      createdAt
+      updatedAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTagsQuery, AdminTagsQueryVariables>;
+export const AdminCreateTagDocument = new TypedDocumentString(`
+    mutation AdminCreateTag($input: AdminCreateTagInput!) {
+  adminCreateTag(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateTagMutation, AdminCreateTagMutationVariables>;
+export const AdminUpdateTagDocument = new TypedDocumentString(`
+    mutation AdminUpdateTag($input: AdminUpdateTagInput!) {
+  adminUpdateTag(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdateTagMutation, AdminUpdateTagMutationVariables>;
+export const AdminDeleteTagDocument = new TypedDocumentString(`
+    mutation AdminDeleteTag($tagId: ID!) {
+  adminDeleteTag(tagId: $tagId)
+}
+    `) as unknown as TypedDocumentString<AdminDeleteTagMutation, AdminDeleteTagMutationVariables>;
 export const AdminCreateUploadUrlDocument = new TypedDocumentString(`
     mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {
   adminCreateUploadUrl(input: $input) {

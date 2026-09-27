@@ -14,6 +14,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedShellRouteImport } from './routes/_authed/_shell'
 import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/change-password'
 import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
+import { Route as AuthedShellCategoriesRouteImport } from './routes/_authed/_shell/categories'
+import { Route as AuthedShellTagsRouteImport } from './routes/_authed/_shell/tags'
 import { Route as AuthedShellOrdersIndexRouteImport } from './routes/_authed/_shell/orders/index'
 import { Route as AuthedShellOrdersOrderIdRouteImport } from './routes/_authed/_shell/orders/$orderId'
 import { Route as AuthedShellProductsIndexRouteImport } from './routes/_authed/_shell/products/index'
@@ -47,6 +49,16 @@ const AuthedChangePasswordRoute = AuthedChangePasswordRouteImport.update({
 const AuthedShellIndexRoute = AuthedShellIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellCategoriesRoute = AuthedShellCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellTagsRoute = AuthedShellTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
   getParentRoute: () => AuthedShellRoute,
 } as any)
 const AuthedShellOrdersIndexRoute = AuthedShellOrdersIndexRouteImport.update({
@@ -115,6 +127,8 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/categories': typeof AuthedShellCategoriesRoute
+  '/tags': typeof AuthedShellTagsRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
@@ -131,6 +145,8 @@ export interface FileRoutesByTo {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/categories': typeof AuthedShellCategoriesRoute
+  '/tags': typeof AuthedShellTagsRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
@@ -149,6 +165,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/_shell': typeof AuthedShellRouteWithChildren
   '/_authed/change-password': typeof AuthedChangePasswordRoute
+  '/_authed/_shell/categories': typeof AuthedShellCategoriesRoute
+  '/_authed/_shell/tags': typeof AuthedShellTagsRoute
   '/_authed/_shell/': typeof AuthedShellIndexRoute
   '/_authed/_shell/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/_authed/_shell/products/$productId': typeof AuthedShellProductsProductIdRoute
@@ -168,6 +186,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/change-password'
+    | '/categories'
+    | '/tags'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/sellers/$accountId'
@@ -184,6 +204,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/change-password'
+    | '/categories'
+    | '/tags'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/sellers/$accountId'
@@ -201,6 +223,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authed/_shell'
     | '/_authed/change-password'
+    | '/_authed/_shell/categories'
+    | '/_authed/_shell/tags'
     | '/_authed/_shell/'
     | '/_authed/_shell/orders/$orderId'
     | '/_authed/_shell/products/$productId'
@@ -255,6 +279,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthedShellIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/categories': {
+      id: '/_authed/_shell/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof AuthedShellCategoriesRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/tags': {
+      id: '/_authed/_shell/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof AuthedShellTagsRouteImport
       parentRoute: typeof AuthedShellRoute
     }
     '/_authed/_shell/orders/': {
@@ -338,6 +376,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedShellRouteChildren {
+  AuthedShellCategoriesRoute: typeof AuthedShellCategoriesRoute
+  AuthedShellTagsRoute: typeof AuthedShellTagsRoute
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
   AuthedShellOrdersOrderIdRoute: typeof AuthedShellOrdersOrderIdRoute
   AuthedShellProductsProductIdRoute: typeof AuthedShellProductsProductIdRoute
@@ -353,6 +393,8 @@ interface AuthedShellRouteChildren {
 }
 
 const AuthedShellRouteChildren: AuthedShellRouteChildren = {
+  AuthedShellCategoriesRoute: AuthedShellCategoriesRoute,
+  AuthedShellTagsRoute: AuthedShellTagsRoute,
   AuthedShellIndexRoute: AuthedShellIndexRoute,
   AuthedShellOrdersOrderIdRoute: AuthedShellOrdersOrderIdRoute,
   AuthedShellProductsProductIdRoute: AuthedShellProductsProductIdRoute,
