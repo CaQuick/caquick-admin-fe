@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { HistoryIcon } from 'lucide-react';
 
 import { messageFor } from '@/shared/api';
 import { formatCount, formatKrw } from '@/shared/lib/format';
@@ -52,7 +53,16 @@ export function ProductDetailPage({ productId }: { productId: string }) {
           </span>
         }
         description={`상품 ID ${p.id} · 생성 ${formatKst(p.createdAt, true)} · 수정 ${formatKst(p.updatedAt, true)}`}
-        actions={<ProductActiveToggle productId={p.id} name={p.name} isActive={p.isActive} />}
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link to="/audit-logs" search={{ targetType: 'PRODUCT', targetId: p.id }}>
+                <HistoryIcon className="size-4" /> 감사 이력
+              </Link>
+            </Button>
+            <ProductActiveToggle productId={p.id} name={p.name} isActive={p.isActive} />
+          </>
+        }
       />
       <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-3">

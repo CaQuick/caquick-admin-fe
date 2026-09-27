@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { HistoryIcon } from 'lucide-react';
 
 import { AccountStatusPill } from '@/features/accounts';
 import { messageFor } from '@/shared/api';
@@ -44,11 +45,18 @@ export function StoreDetailPage({ storeId }: { storeId: string }) {
         }
         description={`매장 ID ${store.id} · 생성 ${formatKst(store.createdAt, true)} · 수정 ${formatKst(store.updatedAt, true)}`}
         actions={
-          <StoreActiveToggle
-            storeId={store.id}
-            storeName={store.storeName}
-            isActive={store.isActive}
-          />
+          <>
+            <Button asChild variant="outline">
+              <Link to="/audit-logs" search={{ storeId: store.id }}>
+                <HistoryIcon className="size-4" /> 감사 이력
+              </Link>
+            </Button>
+            <StoreActiveToggle
+              storeId={store.id}
+              storeName={store.storeName}
+              isActive={store.isActive}
+            />
+          </>
         }
       />
       <Tabs defaultValue="overview">
