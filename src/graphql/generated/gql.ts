@@ -36,6 +36,14 @@ type Documents = {
     "\n  query AdminStore($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        addressCity\n        addressDistrict\n        addressNeighborhood\n        regionId\n        latitude\n        longitude\n        mapProvider\n        websiteUrl\n        businessHoursText\n        profileImageUrl\n        greetingMessage\n        pickupSlotIntervalMinutes\n        minLeadTimeMinutes\n        maxDaysAhead\n        isActive\n        createdAt\n        updatedAt\n      }\n      seller {\n        accountId\n        username\n        email\n        name\n        status\n      }\n      productCount\n      orderItemCount\n    }\n  }\n": typeof types.AdminStoreDocument,
     "\n  mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {\n    adminSetStoreActive(input: $input) {\n      id\n      isActive\n    }\n  }\n": typeof types.AdminSetStoreActiveDocument,
     "\n  mutation AdminUpdateStoreBasicInfo($input: AdminUpdateStoreBasicInfoInput!) {\n    adminUpdateStoreBasicInfo(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": typeof types.AdminUpdateStoreBasicInfoDocument,
+    "\n  query AdminCategories($input: AdminCategoryListInput) {\n    adminCategories(input: $input) {\n      id\n      categoryType\n      name\n      description\n      sortOrder\n      isActive\n      productCount\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.AdminCategoriesDocument,
+    "\n  mutation AdminCreateCategory($input: AdminCreateCategoryInput!) {\n    adminCreateCategory(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminCreateCategoryDocument,
+    "\n  mutation AdminUpdateCategory($input: AdminUpdateCategoryInput!) {\n    adminUpdateCategory(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminUpdateCategoryDocument,
+    "\n  mutation AdminDeleteCategory($categoryId: ID!) {\n    adminDeleteCategory(categoryId: $categoryId)\n  }\n": typeof types.AdminDeleteCategoryDocument,
+    "\n  query AdminTags($input: AdminTagListInput) {\n    adminTags(input: $input) {\n      items {\n        id\n        name\n        productCount\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminTagsDocument,
+    "\n  mutation AdminCreateTag($input: AdminCreateTagInput!) {\n    adminCreateTag(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminCreateTagDocument,
+    "\n  mutation AdminUpdateTag($input: AdminUpdateTagInput!) {\n    adminUpdateTag(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminUpdateTagDocument,
+    "\n  mutation AdminDeleteTag($tagId: ID!) {\n    adminDeleteTag(tagId: $tagId)\n  }\n": typeof types.AdminDeleteTagDocument,
     "\n  mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {\n    adminCreateUploadUrl(input: $input) {\n      uploadUrl\n      publicUrl\n      key\n      expiresInSeconds\n    }\n  }\n": typeof types.AdminCreateUploadUrlDocument,
 };
 const documents: Documents = {
@@ -60,6 +68,14 @@ const documents: Documents = {
     "\n  query AdminStore($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        addressCity\n        addressDistrict\n        addressNeighborhood\n        regionId\n        latitude\n        longitude\n        mapProvider\n        websiteUrl\n        businessHoursText\n        profileImageUrl\n        greetingMessage\n        pickupSlotIntervalMinutes\n        minLeadTimeMinutes\n        maxDaysAhead\n        isActive\n        createdAt\n        updatedAt\n      }\n      seller {\n        accountId\n        username\n        email\n        name\n        status\n      }\n      productCount\n      orderItemCount\n    }\n  }\n": types.AdminStoreDocument,
     "\n  mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {\n    adminSetStoreActive(input: $input) {\n      id\n      isActive\n    }\n  }\n": types.AdminSetStoreActiveDocument,
     "\n  mutation AdminUpdateStoreBasicInfo($input: AdminUpdateStoreBasicInfoInput!) {\n    adminUpdateStoreBasicInfo(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": types.AdminUpdateStoreBasicInfoDocument,
+    "\n  query AdminCategories($input: AdminCategoryListInput) {\n    adminCategories(input: $input) {\n      id\n      categoryType\n      name\n      description\n      sortOrder\n      isActive\n      productCount\n      createdAt\n      updatedAt\n    }\n  }\n": types.AdminCategoriesDocument,
+    "\n  mutation AdminCreateCategory($input: AdminCreateCategoryInput!) {\n    adminCreateCategory(input: $input) {\n      id\n    }\n  }\n": types.AdminCreateCategoryDocument,
+    "\n  mutation AdminUpdateCategory($input: AdminUpdateCategoryInput!) {\n    adminUpdateCategory(input: $input) {\n      id\n    }\n  }\n": types.AdminUpdateCategoryDocument,
+    "\n  mutation AdminDeleteCategory($categoryId: ID!) {\n    adminDeleteCategory(categoryId: $categoryId)\n  }\n": types.AdminDeleteCategoryDocument,
+    "\n  query AdminTags($input: AdminTagListInput) {\n    adminTags(input: $input) {\n      items {\n        id\n        name\n        productCount\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminTagsDocument,
+    "\n  mutation AdminCreateTag($input: AdminCreateTagInput!) {\n    adminCreateTag(input: $input) {\n      id\n    }\n  }\n": types.AdminCreateTagDocument,
+    "\n  mutation AdminUpdateTag($input: AdminUpdateTagInput!) {\n    adminUpdateTag(input: $input) {\n      id\n    }\n  }\n": types.AdminUpdateTagDocument,
+    "\n  mutation AdminDeleteTag($tagId: ID!) {\n    adminDeleteTag(tagId: $tagId)\n  }\n": types.AdminDeleteTagDocument,
     "\n  mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {\n    adminCreateUploadUrl(input: $input) {\n      uploadUrl\n      publicUrl\n      key\n      expiresInSeconds\n    }\n  }\n": types.AdminCreateUploadUrlDocument,
 };
 
@@ -147,6 +163,38 @@ export function graphql(source: "\n  mutation AdminSetStoreActive($input: AdminS
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminUpdateStoreBasicInfo($input: AdminUpdateStoreBasicInfoInput!) {\n    adminUpdateStoreBasicInfo(input: $input) {\n      id\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AdminUpdateStoreBasicInfoDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminCategories($input: AdminCategoryListInput) {\n    adminCategories(input: $input) {\n      id\n      categoryType\n      name\n      description\n      sortOrder\n      isActive\n      productCount\n      createdAt\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AdminCategoriesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateCategory($input: AdminCreateCategoryInput!) {\n    adminCreateCategory(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminCreateCategoryDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminUpdateCategory($input: AdminUpdateCategoryInput!) {\n    adminUpdateCategory(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminUpdateCategoryDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminDeleteCategory($categoryId: ID!) {\n    adminDeleteCategory(categoryId: $categoryId)\n  }\n"): typeof import('./graphql').AdminDeleteCategoryDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminTags($input: AdminTagListInput) {\n    adminTags(input: $input) {\n      items {\n        id\n        name\n        productCount\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n"): typeof import('./graphql').AdminTagsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateTag($input: AdminCreateTagInput!) {\n    adminCreateTag(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminCreateTagDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminUpdateTag($input: AdminUpdateTagInput!) {\n    adminUpdateTag(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminUpdateTagDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminDeleteTag($tagId: ID!) {\n    adminDeleteTag(tagId: $tagId)\n  }\n"): typeof import('./graphql').AdminDeleteTagDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
