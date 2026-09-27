@@ -22,6 +22,28 @@ export type AccountType =
   /** 구매자. 주문·찜·리뷰 등 구매자 API를 쓴다. */
   | 'USER';
 
+/** 감사 로그 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminAuditLogListInput = {
+  /** 행위 종류 필터. */
+  action?: AuditActionType | null | undefined;
+  /** 조작한 계정 ID 필터. */
+  actorAccountId?: string | number | null | undefined;
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 기록 시각 하한(이상). */
+  fromCreatedAt?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 관련 매장 ID 필터. */
+  storeId?: string | number | null | undefined;
+  /** 대상 ID 필터(targetType과 함께 쓰면 특정 리소스의 이력). */
+  targetId?: string | number | null | undefined;
+  /** 대상 종류 필터. */
+  targetType?: AuditTargetType | null | undefined;
+  /** 기록 시각 상한(이하). */
+  toCreatedAt?: string | null | undefined;
+};
+
 /** 배너 목록 조회 조건. */
 export type AdminBannerListInput = {
   /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
@@ -517,6 +539,48 @@ export type AdminUserListInput = {
   status?: AccountStatus | null | undefined;
 };
 
+/** 감사 로그에 기록된 행위 종류. */
+export type AuditActionType =
+  /** 생성. */
+  | 'CREATE'
+  /** 삭제(soft-delete 포함). */
+  | 'DELETE'
+  /** 상태 전이. */
+  | 'STATUS_CHANGE'
+  /** 수정. */
+  | 'UPDATE';
+
+/** 감사 로그가 가리키는 대상 종류. 판매자 화면(sellerAuditLogs)은 STORE·PRODUCT·ORDER·CONVERSATION·CHANGE_PASSWORD만 노출하고 필터 입력도 그 범위만 받는다. */
+export type AuditTargetType =
+  /** 계정(관리자·판매자 생성, 정지/복구, 비밀번호 초기화). */
+  | 'ACCOUNT'
+  /** 플랫폼 배너. */
+  | 'BANNER'
+  /** 카테고리 마스터. */
+  | 'CATEGORY'
+  /** 비밀번호 변경. targetId는 바꾼 계정 ID. */
+  | 'CHANGE_PASSWORD'
+  /** 구매자 문의 대화. */
+  | 'CONVERSATION'
+  /** 관리자 알림 발송. */
+  | 'NOTIFICATION'
+  /** 주문 상태 변경. */
+  | 'ORDER'
+  /** 상품과 그 하위. */
+  | 'PRODUCT'
+  /** 지역 마스터. */
+  | 'REGION'
+  /** 리뷰 강제 삭제. */
+  | 'REVIEW'
+  /** 리뷰 댓글 강제 삭제. */
+  | 'REVIEW_COMMENT'
+  /** 신고 처리. */
+  | 'REVIEW_REPORT'
+  /** 매장 설정·콘텐츠. */
+  | 'STORE'
+  /** 태그 마스터. */
+  | 'TAG';
+
 /**
  * 배너 클릭 시 이동할 대상 타입. 구매자 노출·판매자 관리 API가 공용으로 쓴다.
  *
@@ -669,6 +733,13 @@ export type AdminReinstateAccountMutationVariables = Exact<{
 
 
 export type AdminReinstateAccountMutation = { adminReinstateAccount: { accountId: string, accountType: AccountType, status: AccountStatus } };
+
+export type AdminAuditLogsQueryVariables = Exact<{
+  input?: AdminAuditLogListInput | null | undefined;
+}>;
+
+
+export type AdminAuditLogsQuery = { adminAuditLogs: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, actorAccountId: string, actorAccountType: AccountType | null, storeId: string | null, targetType: AuditTargetType, targetId: string, action: AuditActionType, beforeJson: string | null, afterJson: string | null, ipAddress: string | null, userAgent: string | null, createdAt: string }> } };
 
 export type AdminBannersQueryVariables = Exact<{
   input?: AdminBannerListInput | null | undefined;
@@ -1054,6 +1125,29 @@ export const AdminReinstateAccountDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminReinstateAccountMutation, AdminReinstateAccountMutationVariables>;
+export const AdminAuditLogsDocument = new TypedDocumentString(`
+    query AdminAuditLogs($input: AdminAuditLogListInput) {
+  adminAuditLogs(input: $input) {
+    items {
+      id
+      actorAccountId
+      actorAccountType
+      storeId
+      targetType
+      targetId
+      action
+      beforeJson
+      afterJson
+      ipAddress
+      userAgent
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminAuditLogsQuery, AdminAuditLogsQueryVariables>;
 export const AdminBannersDocument = new TypedDocumentString(`
     query AdminBanners($input: AdminBannerListInput) {
   adminBanners(input: $input) {

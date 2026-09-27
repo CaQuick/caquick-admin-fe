@@ -9,6 +9,7 @@ import {
   FlagIcon,
   BellIcon,
   MapPinIcon,
+  ScrollTextIcon,
   MessageSquareIcon,
   MessagesSquareIcon,
   ShoppingBagIcon,
@@ -32,7 +33,8 @@ interface NavItem {
     | '/reviews'
     | '/review-comments'
     | '/notifications/send'
-    | '/regions';
+    | '/regions'
+    | '/audit-logs';
   label: string;
   icon: LucideIcon;
 }
@@ -71,6 +73,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/regions', label: '지역', icon: MapPinIcon },
     ],
   },
+  { label: '기록', items: [{ to: '/audit-logs', label: '감사 로그', icon: ScrollTextIcon }] },
 ];
 
 export function titleFor(pathname: string): string {

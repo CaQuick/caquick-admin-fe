@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { HistoryIcon } from 'lucide-react';
 
 import { messageFor } from '@/shared/api';
 import { Button } from '@/shared/ui/button';
@@ -48,9 +49,16 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
         title={<span className="font-mono">{order.orderNumber}</span>}
         meta={<OrderStatusPill status={order.status} />}
         actions={
-          isCancelable(order.status) ? (
-            <CancelOrderDialog orderId={order.id} orderNumber={order.orderNumber} />
-          ) : undefined
+          <>
+            <Button asChild variant="outline">
+              <Link to="/audit-logs" search={{ targetType: 'ORDER', targetId: order.id }}>
+                <HistoryIcon className="size-4" /> 감사 이력
+              </Link>
+            </Button>
+            {isCancelable(order.status) && (
+              <CancelOrderDialog orderId={order.id} orderNumber={order.orderNumber} />
+            )}
+          </>
         }
       />
       <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
