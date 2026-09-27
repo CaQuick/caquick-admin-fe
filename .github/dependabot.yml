@@ -3,6 +3,8 @@ version: 2
 updates:
   - package-ecosystem: 'npm'
     directory: '/'
+    # 작업 브랜치 → develop → 릴리즈 PR → main. 의존성 PR도 develop으로
+    target-branch: develop
     schedule:
       interval: 'weekly'
       day: 'monday'
@@ -44,6 +46,7 @@ updates:
 
   - package-ecosystem: 'github-actions'
     directory: '/'
+    target-branch: develop
     schedule:
       interval: 'weekly'
       day: 'monday'
