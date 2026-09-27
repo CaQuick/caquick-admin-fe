@@ -111,6 +111,20 @@ export type AdminOrderListInput = {
   toCreatedAt?: string | null | undefined;
 };
 
+/** 상품 목록 조회 조건. */
+export type AdminProductListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 노출 여부 필터. 미지정 시 전체. */
+  isActive?: boolean | null | undefined;
+  /** 상품명 부분일치 검색어. 최대 100자. 미지정 시 전체. */
+  keyword?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 소속 매장 ID 필터. 미지정 시 전체. */
+  storeId?: string | number | null | undefined;
+};
+
 /** 판매자 비밀번호 초기화 입력. */
 export type AdminResetSellerPasswordInput = {
   /** 대상 판매자 계정 ID. */
@@ -137,6 +151,15 @@ export type AdminSellerListInput = {
   limit?: number | null | undefined;
   /** 계정 상태 필터. 미지정 시 전체. */
   status?: AccountStatus | null | undefined;
+};
+
+/** 상품 노출 여부 변경 입력. */
+export type AdminSetProductActiveInput = {
+  /** 노출 여부. */
+  isActive: boolean;
+  productId: string | number;
+  /** 변경 사유. 감사 로그에 기록된다. 최대 500자. 선택. */
+  reason?: string | null | undefined;
 };
 
 /** 매장 노출 여부 변경 입력. */
@@ -329,6 +352,27 @@ export type AdminCancelOrderMutationVariables = Exact<{
 
 
 export type AdminCancelOrderMutation = { adminCancelOrder: { id: string, status: OrderStatusType } };
+
+export type AdminProductsQueryVariables = Exact<{
+  input?: AdminProductListInput | null | undefined;
+}>;
+
+
+export type AdminProductsQuery = { adminProducts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
+
+export type AdminProductQueryVariables = Exact<{
+  productId: string | number;
+}>;
+
+
+export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string } } };
+
+export type AdminSetProductActiveMutationVariables = Exact<{
+  input: AdminSetProductActiveInput;
+}>;
+
+
+export type AdminSetProductActiveMutation = { adminSetProductActive: { id: string, isActive: boolean } };
 
 export type AdminSellersQueryVariables = Exact<{
   input?: AdminSellerListInput | null | undefined;
@@ -614,6 +658,62 @@ export const AdminCancelOrderDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminCancelOrderMutation, AdminCancelOrderMutationVariables>;
+export const AdminProductsDocument = new TypedDocumentString(`
+    query AdminProducts($input: AdminProductListInput) {
+  adminProducts(input: $input) {
+    items {
+      id
+      storeId
+      storeName
+      name
+      regularPrice
+      salePrice
+      currency
+      baseDesignImageUrl
+      isActive
+      createdAt
+      updatedAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminProductsQuery, AdminProductsQueryVariables>;
+export const AdminProductDocument = new TypedDocumentString(`
+    query AdminProduct($productId: ID!) {
+  adminProduct(productId: $productId) {
+    product {
+      id
+      storeId
+      storeName
+      name
+      regularPrice
+      salePrice
+      currency
+      baseDesignImageUrl
+      isActive
+      createdAt
+      updatedAt
+    }
+    storeIsActive
+    description
+    purchaseNotice
+    preparationTimeMinutes
+    imageUrls
+    reviewCount
+    orderItemCount
+  }
+}
+    `) as unknown as TypedDocumentString<AdminProductQuery, AdminProductQueryVariables>;
+export const AdminSetProductActiveDocument = new TypedDocumentString(`
+    mutation AdminSetProductActive($input: AdminSetProductActiveInput!) {
+  adminSetProductActive(input: $input) {
+    id
+    isActive
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSetProductActiveMutation, AdminSetProductActiveMutationVariables>;
 export const AdminSellersDocument = new TypedDocumentString(`
     query AdminSellers($input: AdminSellerListInput) {
   adminSellers(input: $input) {
