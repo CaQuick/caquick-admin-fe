@@ -29,6 +29,50 @@ export type AdminCancelOrderInput = {
   orderId: string | number;
 };
 
+/** 판매자 온보딩 입력. 계정·자격증명·사업자 프로필·매장을 한 번에 만든다. */
+export type AdminCreateSellerInput = {
+  /** 상호. */
+  businessName: string;
+  /** 사업자 연락처. */
+  businessPhone: string;
+  /** 계정 이메일. 선택. */
+  email?: string | null | undefined;
+  /** 계정 이름(운영자명). 선택. */
+  name?: string | null | undefined;
+  /** 초기 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함. 최초 로그인 시 변경이 강제된다. */
+  password: string;
+  /** 매장 기본 정보. */
+  store: AdminCreateSellerStoreInput;
+  /** 로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT. */
+  username: string;
+  /** 홈페이지·SNS URL. 선택. */
+  websiteUrl?: string | null | undefined;
+};
+
+/** 온보딩 시 만들 매장 기본 정보. 영업시간·픽업 정책은 판매자가 이후 직접 설정한다. */
+export type AdminCreateSellerStoreInput = {
+  /** 시·도 단위. 선택. */
+  addressCity?: string | null | undefined;
+  /** 시·군·구 단위. 선택. */
+  addressDistrict?: string | null | undefined;
+  /** 전체 주소 문자열. */
+  addressFull: string;
+  /** 읍·면·동 단위. 선택. */
+  addressNeighborhood?: string | null | undefined;
+  /** 위도. 정밀도 손실을 피하려고 문자열로 받는다. 선택. */
+  latitude?: string | null | undefined;
+  /** 경도. 정밀도 손실을 피하려고 문자열로 받는다. 선택. */
+  longitude?: string | null | undefined;
+  /** 지도 진입에 쓸 provider. 기본 NONE. */
+  mapProvider?: StoreMapProvider | null | undefined;
+  /** 지역 필터용 2차 지역(시군구) ID. 활성 2차 지역이 아니면 BAD_USER_INPUT. 선택. */
+  regionId?: string | number | null | undefined;
+  /** 매장명. */
+  storeName: string;
+  /** 매장 대표 연락처. */
+  storePhone: string;
+};
+
 /** 집계 기간 입력. */
 export type AdminDashboardSummaryInput = {
   /** 집계 시작(이상). */
@@ -57,12 +101,32 @@ export type AdminOrderListInput = {
   toCreatedAt?: string | null | undefined;
 };
 
+/** 판매자 비밀번호 초기화 입력. */
+export type AdminResetSellerPasswordInput = {
+  /** 대상 판매자 계정 ID. */
+  accountId: string | number;
+  /** 새 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함. */
+  newPassword: string;
+};
+
 /** 인기 검색어 스냅샷 조회 입력. */
 export type AdminSearchKeywordSnapshotInput = {
   /** 가져올 순위 수. 기본 20, 1~100. */
   limit?: number | null | undefined;
   /** 스냅샷 시각(정각). 미지정 시 최신. */
   rankedAt?: string | null | undefined;
+};
+
+/** 판매자 목록 조회 조건. */
+export type AdminSellerListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** username·이메일·이름·매장명 부분일치 검색어. 최대 100자. 미지정 시 전체. */
+  keyword?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 계정 상태 필터. 미지정 시 전체. */
+  status?: AccountStatus | null | undefined;
 };
 
 /** 계정 정지 입력. */
@@ -110,6 +174,15 @@ export type OrderStatusType =
   | 'PICKED_UP'
   /** 구매자가 주문을 넣은 직후의 초기 상태. 판매자 확인 대기. */
   | 'SUBMITTED';
+
+/** 매장 지도 연동 provider. 구매자·판매자 API가 공용으로 쓴다. */
+export type StoreMapProvider =
+  /** 카카오맵 딥링크를 쓴다. */
+  | 'KAKAO'
+  /** 네이버 지도 딥링크를 쓴다. */
+  | 'NAVER'
+  /** 지도 연결 없음. 지도 진입 동선을 노출하지 않는다. */
+  | 'NONE';
 
 export type AdminMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -178,6 +251,34 @@ export type AdminCancelOrderMutationVariables = Exact<{
 
 
 export type AdminCancelOrderMutation = { adminCancelOrder: { id: string, status: OrderStatusType } };
+
+export type AdminSellersQueryVariables = Exact<{
+  input?: AdminSellerListInput | null | undefined;
+}>;
+
+
+export type AdminSellersQuery = { adminSellers: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus, mustChangePassword: boolean, lastLoginAt: string | null, createdAt: string, profile: { businessName: string, businessPhone: string, websiteUrl: string | null } | null, store: { id: string, storeName: string, storePhone: string, addressFull: string, isActive: boolean } | null }> } };
+
+export type AdminSellerQueryVariables = Exact<{
+  accountId: string | number;
+}>;
+
+
+export type AdminSellerQuery = { adminSeller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus, mustChangePassword: boolean, lastLoginAt: string | null, createdAt: string, profile: { businessName: string, businessPhone: string, websiteUrl: string | null } | null, store: { id: string, storeName: string, storePhone: string, addressFull: string, isActive: boolean } | null } };
+
+export type AdminCreateSellerMutationVariables = Exact<{
+  input: AdminCreateSellerInput;
+}>;
+
+
+export type AdminCreateSellerMutation = { adminCreateSeller: { accountId: string, username: string | null } };
+
+export type AdminResetSellerPasswordMutationVariables = Exact<{
+  input: AdminResetSellerPasswordInput;
+}>;
+
+
+export type AdminResetSellerPasswordMutation = { adminResetSellerPassword: boolean };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -400,3 +501,73 @@ export const AdminCancelOrderDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminCancelOrderMutation, AdminCancelOrderMutationVariables>;
+export const AdminSellersDocument = new TypedDocumentString(`
+    query AdminSellers($input: AdminSellerListInput) {
+  adminSellers(input: $input) {
+    items {
+      accountId
+      username
+      email
+      name
+      status
+      mustChangePassword
+      lastLoginAt
+      profile {
+        businessName
+        businessPhone
+        websiteUrl
+      }
+      store {
+        id
+        storeName
+        storePhone
+        addressFull
+        isActive
+      }
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSellersQuery, AdminSellersQueryVariables>;
+export const AdminSellerDocument = new TypedDocumentString(`
+    query AdminSeller($accountId: ID!) {
+  adminSeller(accountId: $accountId) {
+    accountId
+    username
+    email
+    name
+    status
+    mustChangePassword
+    lastLoginAt
+    profile {
+      businessName
+      businessPhone
+      websiteUrl
+    }
+    store {
+      id
+      storeName
+      storePhone
+      addressFull
+      isActive
+    }
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSellerQuery, AdminSellerQueryVariables>;
+export const AdminCreateSellerDocument = new TypedDocumentString(`
+    mutation AdminCreateSeller($input: AdminCreateSellerInput!) {
+  adminCreateSeller(input: $input) {
+    accountId
+    username
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateSellerMutation, AdminCreateSellerMutationVariables>;
+export const AdminResetSellerPasswordDocument = new TypedDocumentString(`
+    mutation AdminResetSellerPassword($input: AdminResetSellerPasswordInput!) {
+  adminResetSellerPassword(input: $input)
+}
+    `) as unknown as TypedDocumentString<AdminResetSellerPasswordMutation, AdminResetSellerPasswordMutationVariables>;
