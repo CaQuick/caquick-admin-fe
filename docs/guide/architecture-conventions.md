@@ -18,7 +18,7 @@ src/
   app/          엔트리·providers·라우터 생성. shared·routes만 본다
   routes/       TanStack Router 파일 라우트. features의 index.ts와 shared만 본다
   features/<area>/
-    api/        *.graphql 문서 + queryOptions 팩토리
+    api/        graphql() 문서 + 쿼리 키·queryOptions 팩토리(queries.ts)
     components/ 화면 조각
     pages/      라우트가 렌더하는 페이지
     index.ts    밖에 내놓는 것만
@@ -34,7 +34,8 @@ src/
 
 ## 3. 데이터 계층
 
-- **문서**는 feature 안 `api/*.graphql`. 이름은 `Admin<Area><동사>`(예 `AdminOrdersList`, `AdminCancelOrder`).
+- **문서**는 feature 안 `api/*.ts`에서 `graphql()`(codegen client-preset) 호출로 쓴다. 이름은 `Admin<Area><동사>`(예 `AdminOrdersList`, `AdminCancelOrder`). 스펙 파일의 문서는 codegen 대상이 아니다 — 스펙은 feature가 export한 문서를 쓴다.
+- **요청**은 `gqlRequest(Document, variables)`(`@/shared/api`) 하나로. 인증 헤더·쿠키·401 갱신·에러 정규화(`ApiError`)를 여기서 끝낸다. REST는 `authRequest`.
 - **쿼리 키**는 feature별 팩토리(`ordersKeys.list(filters)`, `ordersKeys.detail(id)`)로만 만든다. 문자열 리터럴 키 금지.
 - **mutation 뒤**에는 그 feature의 list·detail 키를 invalidate한다. 낙관적 업데이트는 쓰지 않는다 — 감사 대상 작업이라 서버 결과가 진실이다.
 - **목록**은 커서 방식(`items · totalCount · hasMore · nextCursor`). 필터·커서는 URL 검색 파라미터(zod)로 유지해 새로고침·공유가 된다.
@@ -69,10 +70,10 @@ src/
 ## 8. 명령어와 게이트
 
 ```bash
-pnpm validate     # lint → typecheck → (codegen:check) → knip → test:cov → build — pre-push와 동일, --no-verify 금지
+pnpm validate     # lint → typecheck → codegen:check → knip → test:cov → build — pre-push와 동일, --no-verify 금지
 pnpm dev          # http://localhost:5173 (/graphql·/auth는 localhost:4000으로 프록시, DEV_API_ORIGIN으로 변경)
-pnpm schema:pull  # BE SDL 스냅샷 갱신(03 PR부터)
-pnpm codegen      # 스냅샷 + 문서 → src/graphql/generated (03 PR부터)
+pnpm schema:pull [ref]   # BE SDL 스냅샷 갱신(기본 main). BE_DIR=../caquick-be 로 로컬 체크아웃 사용
+pnpm codegen             # 스냅샷 + 문서 → src/graphql/generated (커밋 대상, CI가 codegen:check로 신선도 검사)
 ```
 
 - 커밋은 Conventional Commits + 한국어 본문(commitlint). 브랜치는 `<type>/<대상>`.

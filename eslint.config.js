@@ -115,8 +115,10 @@ export default tseslint.config(
     rules: { 'react-refresh/only-export-components': 'off' },
   },
   {
+    // 스펙은 어느 계층이든 test 헬퍼·feature·shared를 가져온다 — 경계 규칙은 소스에만
     files: ['src/**/*.spec.{ts,tsx}', 'src/test/**'],
     rules: {
+      'boundaries/dependencies': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/unbound-method': 'off',
     },
