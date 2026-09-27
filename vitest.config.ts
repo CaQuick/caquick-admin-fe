@@ -10,6 +10,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['src/test/setup.ts'],
+    // Node fetch는 상대 URL을 못 받는다 — 스펙은 이 오리진으로 요청하고 MSW가 가로챈다
+    env: { VITE_API_BASE_URL: 'http://api.test' },
     include: ['src/**/*.spec.{ts,tsx}'],
     coverage: {
       provider: 'v8',
