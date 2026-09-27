@@ -91,6 +91,24 @@ export type AdminCreateCategoryInput = {
   sortOrder?: number | null | undefined;
 };
 
+/** 지역 생성 입력. */
+export type AdminCreateRegionInput = {
+  /** 중심 위도(문자열, -90~90). 선택. */
+  centerLat?: string | null | undefined;
+  /** 중심 경도(문자열, -180~180). 선택. */
+  centerLng?: string | null | undefined;
+  /** 노출 여부. 기본 true. */
+  isActive?: boolean | null | undefined;
+  /** 이름. 1~80자. */
+  name: string;
+  /** 상위 1차 지역 ID. 없으면 1차 지역을 만든다. */
+  parentId?: string | number | null | undefined;
+  /** 고유 키. 1~120자, 소문자·숫자·`-`만. */
+  slug: string;
+  /** 노출 순서. 미지정 시 0. */
+  sortOrder?: number | null | undefined;
+};
+
 /** 판매자 온보딩 입력. 계정·자격증명·사업자 프로필·매장을 한 번에 만든다. */
 export type AdminCreateSellerInput = {
   /** 상호. */
@@ -219,6 +237,14 @@ export type AdminProductListInput = {
   limit?: number | null | undefined;
   /** 소속 매장 ID 필터. 미지정 시 전체. */
   storeId?: string | number | null | undefined;
+};
+
+/** 지역 목록 조회 조건. */
+export type AdminRegionListInput = {
+  /** 비활성 포함 여부. 기본 false. */
+  includeInactive?: boolean | null | undefined;
+  /** 상위 지역 ID. 지정하면 그 아래 2차 지역만, 미지정 시 전체. */
+  parentId?: string | number | null | undefined;
 };
 
 /** 판매자 비밀번호 초기화 입력. */
@@ -418,6 +444,23 @@ export type AdminUpdateCategoryInput = {
   isActive?: boolean | null | undefined;
   /** 이름. 1~100자. */
   name?: string | null | undefined;
+  /** 노출 순서. */
+  sortOrder?: number | null | undefined;
+};
+
+/** 지역 수정 입력. 전달한 필드만 변경된다. */
+export type AdminUpdateRegionInput = {
+  /** 중심 위도. null이면 제거. */
+  centerLat?: string | null | undefined;
+  /** 중심 경도. null이면 제거. */
+  centerLng?: string | null | undefined;
+  /** 노출 여부. */
+  isActive?: boolean | null | undefined;
+  /** 이름. */
+  name?: string | null | undefined;
+  regionId: string | number;
+  /** 고유 키. */
+  slug?: string | null | undefined;
   /** 노출 순서. */
   sortOrder?: number | null | undefined;
 };
@@ -724,6 +767,34 @@ export type AdminSetProductActiveMutationVariables = Exact<{
 
 
 export type AdminSetProductActiveMutation = { adminSetProductActive: { id: string, isActive: boolean } };
+
+export type AdminRegionsQueryVariables = Exact<{
+  input?: AdminRegionListInput | null | undefined;
+}>;
+
+
+export type AdminRegionsQuery = { adminRegions: Array<{ id: string, parentId: string | null, level: number, name: string, slug: string, sortOrder: number, isActive: boolean, centerLat: string | null, centerLng: string | null, storeCount: number, childCount: number, createdAt: string, updatedAt: string }> };
+
+export type AdminCreateRegionMutationVariables = Exact<{
+  input: AdminCreateRegionInput;
+}>;
+
+
+export type AdminCreateRegionMutation = { adminCreateRegion: { id: string } };
+
+export type AdminUpdateRegionMutationVariables = Exact<{
+  input: AdminUpdateRegionInput;
+}>;
+
+
+export type AdminUpdateRegionMutation = { adminUpdateRegion: { id: string } };
+
+export type AdminDeleteRegionMutationVariables = Exact<{
+  regionId: string | number;
+}>;
+
+
+export type AdminDeleteRegionMutation = { adminDeleteRegion: boolean };
 
 export type AdminReviewsQueryVariables = Exact<{
   input?: AdminReviewListInput | null | undefined;
@@ -1245,6 +1316,44 @@ export const AdminSetProductActiveDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminSetProductActiveMutation, AdminSetProductActiveMutationVariables>;
+export const AdminRegionsDocument = new TypedDocumentString(`
+    query AdminRegions($input: AdminRegionListInput) {
+  adminRegions(input: $input) {
+    id
+    parentId
+    level
+    name
+    slug
+    sortOrder
+    isActive
+    centerLat
+    centerLng
+    storeCount
+    childCount
+    createdAt
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminRegionsQuery, AdminRegionsQueryVariables>;
+export const AdminCreateRegionDocument = new TypedDocumentString(`
+    mutation AdminCreateRegion($input: AdminCreateRegionInput!) {
+  adminCreateRegion(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateRegionMutation, AdminCreateRegionMutationVariables>;
+export const AdminUpdateRegionDocument = new TypedDocumentString(`
+    mutation AdminUpdateRegion($input: AdminUpdateRegionInput!) {
+  adminUpdateRegion(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdateRegionMutation, AdminUpdateRegionMutationVariables>;
+export const AdminDeleteRegionDocument = new TypedDocumentString(`
+    mutation AdminDeleteRegion($regionId: ID!) {
+  adminDeleteRegion(regionId: $regionId)
+}
+    `) as unknown as TypedDocumentString<AdminDeleteRegionMutation, AdminDeleteRegionMutationVariables>;
 export const AdminReviewsDocument = new TypedDocumentString(`
     query AdminReviews($input: AdminReviewListInput) {
   adminReviews(input: $input) {

@@ -8,6 +8,7 @@ import {
   ImageIcon,
   FlagIcon,
   BellIcon,
+  MapPinIcon,
   MessageSquareIcon,
   MessagesSquareIcon,
   ShoppingBagIcon,
@@ -30,7 +31,8 @@ interface NavItem {
     | '/reports'
     | '/reviews'
     | '/review-comments'
-    | '/notifications/send';
+    | '/notifications/send'
+    | '/regions';
   label: string;
   icon: LucideIcon;
 }
@@ -66,6 +68,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/categories', label: '카테고리', icon: LayersIcon },
       { to: '/tags', label: '태그', icon: TagsIcon },
       { to: '/banners', label: '배너', icon: ImageIcon },
+      { to: '/regions', label: '지역', icon: MapPinIcon },
     ],
   },
 ];
