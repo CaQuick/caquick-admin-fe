@@ -14,6 +14,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedShellRouteImport } from './routes/_authed/_shell'
 import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/change-password'
 import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
+import { Route as AuthedShellOrdersIndexRouteImport } from './routes/_authed/_shell/orders/index'
+import { Route as AuthedShellOrdersOrderIdRouteImport } from './routes/_authed/_shell/orders/$orderId'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -38,16 +40,31 @@ const AuthedShellIndexRoute = AuthedShellIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedShellRoute,
 } as any)
+const AuthedShellOrdersIndexRoute = AuthedShellOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellOrdersOrderIdRoute =
+  AuthedShellOrdersOrderIdRouteImport.update({
+    id: '/orders/$orderId',
+    path: '/orders/$orderId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/orders/': typeof AuthedShellOrdersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedShellIndexRoute
   '/login': typeof LoginRoute
   '/change-password': typeof AuthedChangePasswordRoute
+  '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/orders': typeof AuthedShellOrdersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -56,12 +73,15 @@ export interface FileRoutesById {
   '/_authed/_shell': typeof AuthedShellRouteWithChildren
   '/_authed/change-password': typeof AuthedChangePasswordRoute
   '/_authed/_shell/': typeof AuthedShellIndexRoute
+  '/_authed/_shell/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
+  '/_authed/_shell/orders/': typeof AuthedShellOrdersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/change-password'
+  fullPaths:
+    '/' | '/login' | '/change-password' | '/orders/$orderId' | '/orders/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/change-password'
+  to: '/' | '/login' | '/change-password' | '/orders/$orderId' | '/orders'
   id:
     | '__root__'
     | '/_authed'
@@ -69,6 +89,8 @@ export interface FileRouteTypes {
     | '/_authed/_shell'
     | '/_authed/change-password'
     | '/_authed/_shell/'
+    | '/_authed/_shell/orders/$orderId'
+    | '/_authed/_shell/orders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -113,15 +135,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShellIndexRouteImport
       parentRoute: typeof AuthedShellRoute
     }
+    '/_authed/_shell/orders/': {
+      id: '/_authed/_shell/orders/'
+      path: '/orders'
+      fullPath: '/orders/'
+      preLoaderRoute: typeof AuthedShellOrdersIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/orders/$orderId': {
+      id: '/_authed/_shell/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof AuthedShellOrdersOrderIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
   }
 }
 
 interface AuthedShellRouteChildren {
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
+  AuthedShellOrdersOrderIdRoute: typeof AuthedShellOrdersOrderIdRoute
+  AuthedShellOrdersIndexRoute: typeof AuthedShellOrdersIndexRoute
 }
 
 const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellIndexRoute: AuthedShellIndexRoute,
+  AuthedShellOrdersOrderIdRoute: AuthedShellOrdersOrderIdRoute,
+  AuthedShellOrdersIndexRoute: AuthedShellOrdersIndexRoute,
 }
 
 const AuthedShellRouteWithChildren = AuthedShellRoute._addFileChildren(
