@@ -122,7 +122,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['*.{js,mjs,ts}', 'scripts/**'],
+    files: ['*.{js,mjs,ts}', 'scripts/**', '.github/**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
   },
   prettier,

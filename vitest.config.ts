@@ -13,7 +13,7 @@ export default defineConfig({
     include: ['src/**/*.spec.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov', 'json-summary'],
+      reporter: ['text', 'lcov', 'json-summary', 'json'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.spec.{ts,tsx}',

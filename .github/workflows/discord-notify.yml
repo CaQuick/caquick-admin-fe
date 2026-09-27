@@ -1,0 +1,31 @@
+name: Discord Notify
+
+on:
+  pull_request:
+    types: [closed]
+  create:
+  push:
+  issues:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - name: Checkout scripts
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+
+      # 웹훅 시크릿이 없으면 조용히 건너뛴다 — 등록 전 모든 push가 빨간 X로 남지 않게
+      - name: Send Discord notification
+        if: env.DISCORD_WEBHOOK_URL != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node .github/scripts/discord-notify.mjs

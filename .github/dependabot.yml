@@ -1,0 +1,60 @@
+# Dependabot. 보안 패치는 별도 PR, 일반 업데이트는 minor/patch를 묶어 노이즈를 줄인다(BE와 동일).
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Seoul'
+    open-pull-requests-limit: 5
+    labels:
+      - '📦 Dependencies'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - 'minor'
+          - 'patch'
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+    ignore:
+      # 메이저는 수동 마이그레이션 PR로 — 플러그인·설정 변경이 따라온다
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'vite'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'eslint'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'react-dom'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'tailwindcss'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Seoul'
+    open-pull-requests-limit: 3
+    labels:
+      - '📦 Dependencies'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - 'minor'
+          - 'patch'
