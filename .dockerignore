@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.git
+.husky
+docs
+terraform
+.github
+*.md
+!README.md
+.env*

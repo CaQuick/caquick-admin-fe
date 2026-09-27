@@ -31,6 +31,10 @@ pnpm dev            # http://localhost:5173 — /graphql·/auth는 localhost:400
 | `pnpm lint` / `pnpm format`   | ESLint(경계 규칙 포함) / Prettier                                           |
 | `pnpm build` / `pnpm preview` | 운영 빌드 / 로컬 미리보기                                                   |
 
+## 배포
+
+`main`에 머지되면 CI → 이미지 빌드(GHCR `ghcr.io/caquick/caquick-admin-fe:<sha>`, arm64) → 맥미니 셀프호스트 러너가 compose로 교체합니다. 절차와 호스트 준비는 [infra/README.md](./infra/README.md)에 있습니다.
+
 ## 문서
 
 - [docs/guide/architecture-conventions.md](./docs/guide/architecture-conventions.md) — 구조·의존 방향·데이터·인증·테스트 규칙
