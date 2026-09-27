@@ -71,6 +71,18 @@ export type AdminCategoryListInput = {
   includeInactive?: boolean | null | undefined;
 };
 
+/** 관리자 계정 생성 입력. */
+export type AdminCreateAdminInput = {
+  /** 이메일. 선택. */
+  email?: string | null | undefined;
+  /** 이름. 선택. */
+  name?: string | null | undefined;
+  /** 초기 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함해야 한다. 최초 로그인 시 변경이 강제된다. */
+  password: string;
+  /** 로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT. */
+  username: string;
+};
+
 /** 배너 등록 입력. linkType에 맞는 링크 필드를 함께 보내야 한다. */
 export type AdminCreateBannerInput = {
   /** 노출 종료 일시. 생략 시 종료 제한 없음. */
@@ -634,6 +646,14 @@ export type CategoryType =
   /** 디자인·스타일 기준 분류. */
   | 'STYLE';
 
+/** 커서 페이지네이션 공통 입력. 필터가 필요한 목록은 같은 두 필드를 가진 전용 input을 쓴다. */
+export type CursorInput = {
+  /** 이전 페이지의 nextCursor. 불투명 토큰이라 정렬 기준이 바뀌면 무효. 형식이 어긋나면 BAD_USER_INPUT. */
+  cursor?: string | null | undefined;
+  /** 페이지 크기. 1~100, 기본 20. 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+};
+
 /** 소셜 로그인 Provider 종류 */
 export type IdentityProvider =
   /** 구글 OIDC. */
@@ -700,6 +720,20 @@ export type UploadPurpose =
   | 'PRODUCT_IMAGE'
   /** 매장 프로필(로고) 이미지(판매자·관리자). */
   | 'STORE_IMAGE';
+
+export type AdminAdminsQueryVariables = Exact<{
+  input?: CursorInput | null | undefined;
+}>;
+
+
+export type AdminAdminsQuery = { adminAdmins: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus, mustChangePassword: boolean, lastLoginAt: string | null, createdAt: string }> } };
+
+export type AdminCreateAdminMutationVariables = Exact<{
+  input: AdminCreateAdminInput;
+}>;
+
+
+export type AdminCreateAdminMutation = { adminCreateAdmin: { accountId: string, username: string | null } };
 
 export type AdminMeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1054,6 +1088,33 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const AdminAdminsDocument = new TypedDocumentString(`
+    query AdminAdmins($input: CursorInput) {
+  adminAdmins(input: $input) {
+    items {
+      accountId
+      username
+      email
+      name
+      status
+      mustChangePassword
+      lastLoginAt
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminAdminsQuery, AdminAdminsQueryVariables>;
+export const AdminCreateAdminDocument = new TypedDocumentString(`
+    mutation AdminCreateAdmin($input: AdminCreateAdminInput!) {
+  adminCreateAdmin(input: $input) {
+    accountId
+    username
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateAdminMutation, AdminCreateAdminMutationVariables>;
 export const AdminMeDocument = new TypedDocumentString(`
     query AdminMe {
   adminMe {

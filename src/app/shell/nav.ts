@@ -10,6 +10,7 @@ import {
   BellIcon,
   MapPinIcon,
   ScrollTextIcon,
+  ShieldIcon,
   MessageSquareIcon,
   MessagesSquareIcon,
   ShoppingBagIcon,
@@ -34,7 +35,8 @@ interface NavItem {
     | '/review-comments'
     | '/notifications/send'
     | '/regions'
-    | '/audit-logs';
+    | '/audit-logs'
+    | '/admins';
   label: string;
   icon: LucideIcon;
 }
@@ -60,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/users', label: '구매자', icon: UsersIcon },
       { to: '/sellers', label: '판매자', icon: BriefcaseIcon },
+      { to: '/admins', label: '관리자', icon: ShieldIcon },
     ],
   },
   {
