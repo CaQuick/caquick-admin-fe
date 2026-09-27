@@ -7,6 +7,7 @@ import {
   LayersIcon,
   ImageIcon,
   FlagIcon,
+  BellIcon,
   MessageSquareIcon,
   MessagesSquareIcon,
   ShoppingBagIcon,
@@ -28,7 +29,8 @@ interface NavItem {
     | '/banners'
     | '/reports'
     | '/reviews'
-    | '/review-comments';
+    | '/review-comments'
+    | '/notifications/send';
   label: string;
   icon: LucideIcon;
 }
@@ -46,6 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/reports', label: '신고', icon: FlagIcon },
       { to: '/reviews', label: '리뷰', icon: MessageSquareIcon },
       { to: '/review-comments', label: '리뷰 댓글', icon: MessagesSquareIcon },
+      { to: '/notifications/send', label: '알림 발송', icon: BellIcon },
     ],
   },
   {
