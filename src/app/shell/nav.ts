@@ -5,6 +5,7 @@ import {
   PackageIcon,
   TagsIcon,
   LayersIcon,
+  ImageIcon,
   ShoppingBagIcon,
   StoreIcon,
   UsersIcon,
@@ -12,7 +13,16 @@ import {
 
 /** 사이드바 메뉴. 각 영역 PR이 자기 항목을 붙인다 — Link의 to가 라우트 타입으로 검사되므로 있는 경로만 둔다. */
 interface NavItem {
-  to: '/' | '/orders' | '/users' | '/sellers' | '/stores' | '/products' | '/categories' | '/tags';
+  to:
+    | '/'
+    | '/orders'
+    | '/users'
+    | '/sellers'
+    | '/stores'
+    | '/products'
+    | '/categories'
+    | '/tags'
+    | '/banners';
   label: string;
   icon: LucideIcon;
 }
@@ -38,6 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/products', label: '상품', icon: PackageIcon },
       { to: '/categories', label: '카테고리', icon: LayersIcon },
       { to: '/tags', label: '태그', icon: TagsIcon },
+      { to: '/banners', label: '배너', icon: ImageIcon },
     ],
   },
 ];
