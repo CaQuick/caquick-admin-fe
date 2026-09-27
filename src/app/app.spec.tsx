@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { useAuthStore } from '@/features/auth';
-import { restError, restOk } from '@/test/msw/graphql';
+import { gqlOk, restError, restOk } from '@/test/msw/graphql';
 import { server } from '@/test/msw/server';
 
 import { App } from './app';
@@ -14,10 +14,22 @@ const session = (mustChangePassword = false) => ({
   mustChangePassword,
 });
 
+const me = {
+  accountId: '1',
+  username: 'ops.admin',
+  email: null,
+  name: null,
+  status: 'ACTIVE',
+  mustChangePassword: false,
+  lastLoginAt: null,
+  createdAt: '2026-09-27T00:00:00.000Z',
+};
+
 describe('App 라우팅 가드', () => {
-  beforeEach(() =>
-    useAuthStore.setState({ status: 'unknown', accessToken: null, mustChangePassword: false }),
-  );
+  beforeEach(() => {
+    useAuthStore.setState({ status: 'unknown', accessToken: null, mustChangePassword: false });
+    server.use(gqlOk('AdminMe', { adminMe: me }));
+  });
 
   it('세션이 없으면 보호 경로에서 로그인으로 보낸다', async () => {
     server.use(restError('/admin/refresh', 401, '없음', 'MISSING_REFRESH_TOKEN'));
@@ -31,7 +43,7 @@ describe('App 라우팅 가드', () => {
     server.use(restOk('/admin/refresh', session()));
     window.history.pushState({}, '', '/');
     render(<App />);
-    expect(await screen.findByRole('button', { name: '로그아웃' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: '대시보드' })).toBeInTheDocument();
   });
 
   it('비밀번호 변경이 강제된 계정은 변경 화면으로 보낸다', async () => {
@@ -48,7 +60,7 @@ describe('App 라우팅 가드', () => {
     server.use(restOk('/admin/refresh', session()));
     window.history.pushState({}, '', '/login');
     render(<App />);
-    expect(await screen.findByRole('button', { name: '로그아웃' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: '대시보드' })).toBeInTheDocument();
     expect(window.location.pathname).toBe('/');
   });
 
@@ -63,7 +75,8 @@ describe('App 라우팅 가드', () => {
     await userEvent.type(await screen.findByLabelText('아이디'), 'ops.admin');
     await userEvent.type(screen.getByLabelText('비밀번호'), 'Password1!');
     await userEvent.click(screen.getByRole('button', { name: '로그인' }));
-    await userEvent.click(await screen.findByRole('button', { name: '로그아웃' }));
+    await userEvent.click(await screen.findByRole('button', { name: '내 계정' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: '로그아웃' }));
     expect(await screen.findByText('관리자 로그인')).toBeInTheDocument();
   });
 

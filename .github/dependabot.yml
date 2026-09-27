@@ -38,6 +38,9 @@ updates:
         update-types: ['version-update:semver-major']
       - dependency-name: 'tailwindcss'
         update-types: ['version-update:semver-major']
+      # react-table v9는 API가 바뀐다(useTable·tableFeatures) — DataTable 재작성 PR로
+      - dependency-name: '@tanstack/react-table'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: 'github-actions'
     directory: '/'
