@@ -22,6 +22,18 @@ export type AccountType =
   /** 구매자. 주문·찜·리뷰 등 구매자 API를 쓴다. */
   | 'USER';
 
+/** 배너 목록 조회 조건. */
+export type AdminBannerListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 노출 여부 필터. 미지정 시 전체. */
+  isActive?: boolean | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 노출 슬롯 필터. 미지정 시 전체. */
+  placement?: BannerPlacement | null | undefined;
+};
+
 /** 주문 강제 취소 입력. */
 export type AdminCancelOrderInput = {
   /** 취소 사유. 필수. 최대 494자('[관리자] ' 접두를 붙여 500자 이내로 이력에 남는다). 감사 로그에도 기록된다. */
@@ -35,6 +47,34 @@ export type AdminCategoryListInput = {
   categoryType?: CategoryType | null | undefined;
   /** 비활성 포함 여부. 기본 false. */
   includeInactive?: boolean | null | undefined;
+};
+
+/** 배너 등록 입력. linkType에 맞는 링크 필드를 함께 보내야 한다. */
+export type AdminCreateBannerInput = {
+  /** 노출 종료 일시. 생략 시 종료 제한 없음. */
+  endsAt?: string | null | undefined;
+  /** 배너 이미지 URL. adminCreateUploadUrl(BANNER_IMAGE)로 이 계정에 발급된 publicUrl만 허용, 아니면 BAD_USER_INPUT. */
+  imageUrl: string;
+  /** 노출 여부. 기본 true. */
+  isActive?: boolean | null | undefined;
+  /** linkType이 CATEGORY일 때 쓸 카테고리 ID. */
+  linkCategoryId?: string | number | null | undefined;
+  /** linkType이 PRODUCT일 때 쓸 상품 ID. */
+  linkProductId?: string | number | null | undefined;
+  /** linkType이 STORE일 때 쓸 매장 ID. */
+  linkStoreId?: string | number | null | undefined;
+  /** 이동 대상 타입. 기본 NONE(이동 없음). */
+  linkType?: BannerLinkType | null | undefined;
+  /** linkType이 URL일 때 쓸 이동 URL. */
+  linkUrl?: string | null | undefined;
+  /** 노출 슬롯. */
+  placement: BannerPlacement;
+  /** 같은 슬롯 안에서의 노출 순서. 미지정 시 0. */
+  sortOrder?: number | null | undefined;
+  /** 노출 시작 일시. 생략 시 시작 제한 없음. */
+  startsAt?: string | null | undefined;
+  /** 배너 문구. */
+  title?: string | null | undefined;
 };
 
 /** 카테고리 생성 입력. */
@@ -231,6 +271,35 @@ export type AdminTagListInput = {
   limit?: number | null | undefined;
 };
 
+/** 배너 수정 입력. 전달한 필드만 변경된다(부분 수정). */
+export type AdminUpdateBannerInput = {
+  bannerId: string | number;
+  /** 노출 종료 일시. */
+  endsAt?: string | null | undefined;
+  /** 배너 이미지 URL. adminCreateUploadUrl(BANNER_IMAGE)로 이 계정에 발급된 publicUrl만 허용, 아니면 BAD_USER_INPUT. */
+  imageUrl?: string | null | undefined;
+  /** 노출 여부. */
+  isActive?: boolean | null | undefined;
+  /** linkType이 CATEGORY일 때 쓸 카테고리 ID. */
+  linkCategoryId?: string | number | null | undefined;
+  /** linkType이 PRODUCT일 때 쓸 상품 ID. */
+  linkProductId?: string | number | null | undefined;
+  /** linkType이 STORE일 때 쓸 매장 ID. */
+  linkStoreId?: string | number | null | undefined;
+  /** 이동 대상 타입. */
+  linkType?: BannerLinkType | null | undefined;
+  /** linkType이 URL일 때 쓸 이동 URL. */
+  linkUrl?: string | null | undefined;
+  /** 노출 슬롯. */
+  placement?: BannerPlacement | null | undefined;
+  /** 같은 슬롯 안에서의 노출 순서. */
+  sortOrder?: number | null | undefined;
+  /** 노출 시작 일시. */
+  startsAt?: string | null | undefined;
+  /** 배너 문구. */
+  title?: string | null | undefined;
+};
+
 /** 카테고리 수정 입력. 전달한 필드만 변경된다. */
 export type AdminUpdateCategoryInput = {
   categoryId: string | number;
@@ -295,6 +364,50 @@ export type AdminUserListInput = {
   /** 계정 상태 필터. 미지정 시 전체. */
   status?: AccountStatus | null | undefined;
 };
+
+/**
+ * 배너 클릭 시 이동할 대상 타입. 구매자 노출·판매자 관리 API가 공용으로 쓴다.
+ *
+ * 값에 따라 읽어야 할 링크 필드가 정해진다. 구매자 조회(HomeBanner)에서는 서버가
+ * 나머지 링크 필드를 null로 비워서 내려주지만, 판매자 조회(SellerBanner)는 저장된
+ * 값을 그대로 반환한다 — 판매자 화면에서는 linkType과 맞지 않는 필드에 값이 남아
+ * 있을 수 있으므로 linkType을 기준으로 판단해야 한다.
+ */
+export type BannerLinkType =
+  /** `linkCategoryId`만 채워진다. */
+  | 'CATEGORY'
+  /** 이동 없음. 구매자 조회에서는 링크 필드가 전부 null로 내려온다. */
+  | 'NONE'
+  /**
+   * 상품으로 이동. 구매자 배너(HomeBanner)는 `linkProductId`와 `linkProductStoreId`가
+   * 함께 채워진다(상품 상세 경로에 매장 ID가 필요). 판매자 배너는 `linkProductId`만 있고
+   * `linkProductStoreId` 필드 자체가 없다.
+   */
+  | 'PRODUCT'
+  /** `linkStoreId`만 채워진다. */
+  | 'STORE'
+  /** `linkUrl`만 채워진다. */
+  | 'URL';
+
+/**
+ * 배너가 노출될 자리. 구매자 API가 실제로 읽는 값은 HOME_MAIN·CATEGORY·SEARCH 셋이고,
+ * 나머지는 아직 소비처가 없는 예약값이다.
+ */
+export type BannerPlacement =
+  /**
+   * 홈 '상황별 인기 케이크' 배너 중 특정 카테고리 칩을 선택했을 때 노출되는 것.
+   * 해당 카테고리로 연결된 배너만 뽑히므로 linkCategoryId를 함께 지정해야 한다.
+   * 카테고리 진입 화면의 배너가 아니다.
+   */
+  | 'CATEGORY'
+  /** 홈 '상황별 인기 케이크' 배너. 카테고리 칩이 '전체'일 때 노출된다. */
+  | 'HOME_MAIN'
+  /** 예약값. 이 자리를 읽는 구매자 쿼리가 없어 등록해도 노출되지 않는다. */
+  | 'HOME_SUB'
+  /** 검색 진입 화면 배너 슬롯 */
+  | 'SEARCH'
+  /** 예약값. 이 자리를 읽는 구매자 쿼리가 없어 등록해도 노출되지 않는다. */
+  | 'STORE';
 
 /** 상품 카테고리 분류. */
 export type CategoryType =
@@ -384,6 +497,41 @@ export type AdminReinstateAccountMutationVariables = Exact<{
 
 
 export type AdminReinstateAccountMutation = { adminReinstateAccount: { accountId: string, accountType: AccountType, status: AccountStatus } };
+
+export type AdminBannersQueryVariables = Exact<{
+  input?: AdminBannerListInput | null | undefined;
+}>;
+
+
+export type AdminBannersQuery = { adminBanners: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, title: string | null, imageUrl: string, linkType: BannerLinkType, linkUrl: string | null, linkProductId: string | null, linkStoreId: string | null, linkCategoryId: string | null, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean, createdAt: string, updatedAt: string }> } };
+
+export type AdminBannerQueryVariables = Exact<{
+  bannerId: string | number;
+}>;
+
+
+export type AdminBannerQuery = { adminBanner: { id: string, placement: BannerPlacement, title: string | null, imageUrl: string, linkType: BannerLinkType, linkUrl: string | null, linkProductId: string | null, linkStoreId: string | null, linkCategoryId: string | null, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean, createdAt: string, updatedAt: string } };
+
+export type AdminCreateBannerMutationVariables = Exact<{
+  input: AdminCreateBannerInput;
+}>;
+
+
+export type AdminCreateBannerMutation = { adminCreateBanner: { id: string } };
+
+export type AdminUpdateBannerMutationVariables = Exact<{
+  input: AdminUpdateBannerInput;
+}>;
+
+
+export type AdminUpdateBannerMutation = { adminUpdateBanner: { id: string, updatedAt: string } };
+
+export type AdminDeleteBannerMutationVariables = Exact<{
+  bannerId: string | number;
+}>;
+
+
+export type AdminDeleteBannerMutation = { adminDeleteBanner: boolean };
 
 export type AdminDashboardSummaryQueryVariables = Exact<{
   input: AdminDashboardSummaryInput;
@@ -650,6 +798,73 @@ export const AdminReinstateAccountDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminReinstateAccountMutation, AdminReinstateAccountMutationVariables>;
+export const AdminBannersDocument = new TypedDocumentString(`
+    query AdminBanners($input: AdminBannerListInput) {
+  adminBanners(input: $input) {
+    items {
+      id
+      placement
+      title
+      imageUrl
+      linkType
+      linkUrl
+      linkProductId
+      linkStoreId
+      linkCategoryId
+      startsAt
+      endsAt
+      sortOrder
+      isActive
+      createdAt
+      updatedAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannersQuery, AdminBannersQueryVariables>;
+export const AdminBannerDocument = new TypedDocumentString(`
+    query AdminBanner($bannerId: ID!) {
+  adminBanner(bannerId: $bannerId) {
+    id
+    placement
+    title
+    imageUrl
+    linkType
+    linkUrl
+    linkProductId
+    linkStoreId
+    linkCategoryId
+    startsAt
+    endsAt
+    sortOrder
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerQuery, AdminBannerQueryVariables>;
+export const AdminCreateBannerDocument = new TypedDocumentString(`
+    mutation AdminCreateBanner($input: AdminCreateBannerInput!) {
+  adminCreateBanner(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateBannerMutation, AdminCreateBannerMutationVariables>;
+export const AdminUpdateBannerDocument = new TypedDocumentString(`
+    mutation AdminUpdateBanner($input: AdminUpdateBannerInput!) {
+  adminUpdateBanner(input: $input) {
+    id
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdateBannerMutation, AdminUpdateBannerMutationVariables>;
+export const AdminDeleteBannerDocument = new TypedDocumentString(`
+    mutation AdminDeleteBanner($bannerId: ID!) {
+  adminDeleteBanner(bannerId: $bannerId)
+}
+    `) as unknown as TypedDocumentString<AdminDeleteBannerMutation, AdminDeleteBannerMutationVariables>;
 export const AdminDashboardSummaryDocument = new TypedDocumentString(`
     query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {
   adminDashboardSummary(input: $input) {

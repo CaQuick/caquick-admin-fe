@@ -16,6 +16,9 @@ import { Route as AuthedChangePasswordRouteImport } from './routes/_authed/chang
 import { Route as AuthedShellIndexRouteImport } from './routes/_authed/_shell/index'
 import { Route as AuthedShellCategoriesRouteImport } from './routes/_authed/_shell/categories'
 import { Route as AuthedShellTagsRouteImport } from './routes/_authed/_shell/tags'
+import { Route as AuthedShellBannersIndexRouteImport } from './routes/_authed/_shell/banners/index'
+import { Route as AuthedShellBannersBannerIdRouteImport } from './routes/_authed/_shell/banners/$bannerId'
+import { Route as AuthedShellBannersNewRouteImport } from './routes/_authed/_shell/banners/new'
 import { Route as AuthedShellOrdersIndexRouteImport } from './routes/_authed/_shell/orders/index'
 import { Route as AuthedShellOrdersOrderIdRouteImport } from './routes/_authed/_shell/orders/$orderId'
 import { Route as AuthedShellProductsIndexRouteImport } from './routes/_authed/_shell/products/index'
@@ -59,6 +62,22 @@ const AuthedShellCategoriesRoute = AuthedShellCategoriesRouteImport.update({
 const AuthedShellTagsRoute = AuthedShellTagsRouteImport.update({
   id: '/tags',
   path: '/tags',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellBannersIndexRoute = AuthedShellBannersIndexRouteImport.update({
+  id: '/banners/',
+  path: '/banners/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellBannersBannerIdRoute =
+  AuthedShellBannersBannerIdRouteImport.update({
+    id: '/banners/$bannerId',
+    path: '/banners/$bannerId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellBannersNewRoute = AuthedShellBannersNewRouteImport.update({
+  id: '/banners/new',
+  path: '/banners/new',
   getParentRoute: () => AuthedShellRoute,
 } as any)
 const AuthedShellOrdersIndexRoute = AuthedShellOrdersIndexRouteImport.update({
@@ -129,12 +148,15 @@ export interface FileRoutesByFullPath {
   '/change-password': typeof AuthedChangePasswordRoute
   '/categories': typeof AuthedShellCategoriesRoute
   '/tags': typeof AuthedShellTagsRoute
+  '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
+  '/banners/new': typeof AuthedShellBannersNewRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
   '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
+  '/banners/': typeof AuthedShellBannersIndexRoute
   '/orders/': typeof AuthedShellOrdersIndexRoute
   '/products/': typeof AuthedShellProductsIndexRoute
   '/sellers/': typeof AuthedShellSellersIndexRoute
@@ -147,12 +169,15 @@ export interface FileRoutesByTo {
   '/change-password': typeof AuthedChangePasswordRoute
   '/categories': typeof AuthedShellCategoriesRoute
   '/tags': typeof AuthedShellTagsRoute
+  '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
+  '/banners/new': typeof AuthedShellBannersNewRoute
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
   '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
+  '/banners': typeof AuthedShellBannersIndexRoute
   '/orders': typeof AuthedShellOrdersIndexRoute
   '/products': typeof AuthedShellProductsIndexRoute
   '/sellers': typeof AuthedShellSellersIndexRoute
@@ -168,12 +193,15 @@ export interface FileRoutesById {
   '/_authed/_shell/categories': typeof AuthedShellCategoriesRoute
   '/_authed/_shell/tags': typeof AuthedShellTagsRoute
   '/_authed/_shell/': typeof AuthedShellIndexRoute
+  '/_authed/_shell/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
+  '/_authed/_shell/banners/new': typeof AuthedShellBannersNewRoute
   '/_authed/_shell/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/_authed/_shell/products/$productId': typeof AuthedShellProductsProductIdRoute
   '/_authed/_shell/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/_authed/_shell/sellers/new': typeof AuthedShellSellersNewRoute
   '/_authed/_shell/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/_authed/_shell/users/$accountId': typeof AuthedShellUsersAccountIdRoute
+  '/_authed/_shell/banners/': typeof AuthedShellBannersIndexRoute
   '/_authed/_shell/orders/': typeof AuthedShellOrdersIndexRoute
   '/_authed/_shell/products/': typeof AuthedShellProductsIndexRoute
   '/_authed/_shell/sellers/': typeof AuthedShellSellersIndexRoute
@@ -188,12 +216,15 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/categories'
     | '/tags'
+    | '/banners/$bannerId'
+    | '/banners/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/sellers/$accountId'
     | '/sellers/new'
     | '/stores/$storeId'
     | '/users/$accountId'
+    | '/banners/'
     | '/orders/'
     | '/products/'
     | '/sellers/'
@@ -206,12 +237,15 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/categories'
     | '/tags'
+    | '/banners/$bannerId'
+    | '/banners/new'
     | '/orders/$orderId'
     | '/products/$productId'
     | '/sellers/$accountId'
     | '/sellers/new'
     | '/stores/$storeId'
     | '/users/$accountId'
+    | '/banners'
     | '/orders'
     | '/products'
     | '/sellers'
@@ -226,12 +260,15 @@ export interface FileRouteTypes {
     | '/_authed/_shell/categories'
     | '/_authed/_shell/tags'
     | '/_authed/_shell/'
+    | '/_authed/_shell/banners/$bannerId'
+    | '/_authed/_shell/banners/new'
     | '/_authed/_shell/orders/$orderId'
     | '/_authed/_shell/products/$productId'
     | '/_authed/_shell/sellers/$accountId'
     | '/_authed/_shell/sellers/new'
     | '/_authed/_shell/stores/$storeId'
     | '/_authed/_shell/users/$accountId'
+    | '/_authed/_shell/banners/'
     | '/_authed/_shell/orders/'
     | '/_authed/_shell/products/'
     | '/_authed/_shell/sellers/'
@@ -293,6 +330,27 @@ declare module '@tanstack/react-router' {
       path: '/tags'
       fullPath: '/tags'
       preLoaderRoute: typeof AuthedShellTagsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/banners/': {
+      id: '/_authed/_shell/banners/'
+      path: '/banners'
+      fullPath: '/banners/'
+      preLoaderRoute: typeof AuthedShellBannersIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/banners/$bannerId': {
+      id: '/_authed/_shell/banners/$bannerId'
+      path: '/banners/$bannerId'
+      fullPath: '/banners/$bannerId'
+      preLoaderRoute: typeof AuthedShellBannersBannerIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/banners/new': {
+      id: '/_authed/_shell/banners/new'
+      path: '/banners/new'
+      fullPath: '/banners/new'
+      preLoaderRoute: typeof AuthedShellBannersNewRouteImport
       parentRoute: typeof AuthedShellRoute
     }
     '/_authed/_shell/orders/': {
@@ -379,12 +437,15 @@ interface AuthedShellRouteChildren {
   AuthedShellCategoriesRoute: typeof AuthedShellCategoriesRoute
   AuthedShellTagsRoute: typeof AuthedShellTagsRoute
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
+  AuthedShellBannersBannerIdRoute: typeof AuthedShellBannersBannerIdRoute
+  AuthedShellBannersNewRoute: typeof AuthedShellBannersNewRoute
   AuthedShellOrdersOrderIdRoute: typeof AuthedShellOrdersOrderIdRoute
   AuthedShellProductsProductIdRoute: typeof AuthedShellProductsProductIdRoute
   AuthedShellSellersAccountIdRoute: typeof AuthedShellSellersAccountIdRoute
   AuthedShellSellersNewRoute: typeof AuthedShellSellersNewRoute
   AuthedShellStoresStoreIdRoute: typeof AuthedShellStoresStoreIdRoute
   AuthedShellUsersAccountIdRoute: typeof AuthedShellUsersAccountIdRoute
+  AuthedShellBannersIndexRoute: typeof AuthedShellBannersIndexRoute
   AuthedShellOrdersIndexRoute: typeof AuthedShellOrdersIndexRoute
   AuthedShellProductsIndexRoute: typeof AuthedShellProductsIndexRoute
   AuthedShellSellersIndexRoute: typeof AuthedShellSellersIndexRoute
@@ -396,12 +457,15 @@ const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellCategoriesRoute: AuthedShellCategoriesRoute,
   AuthedShellTagsRoute: AuthedShellTagsRoute,
   AuthedShellIndexRoute: AuthedShellIndexRoute,
+  AuthedShellBannersBannerIdRoute: AuthedShellBannersBannerIdRoute,
+  AuthedShellBannersNewRoute: AuthedShellBannersNewRoute,
   AuthedShellOrdersOrderIdRoute: AuthedShellOrdersOrderIdRoute,
   AuthedShellProductsProductIdRoute: AuthedShellProductsProductIdRoute,
   AuthedShellSellersAccountIdRoute: AuthedShellSellersAccountIdRoute,
   AuthedShellSellersNewRoute: AuthedShellSellersNewRoute,
   AuthedShellStoresStoreIdRoute: AuthedShellStoresStoreIdRoute,
   AuthedShellUsersAccountIdRoute: AuthedShellUsersAccountIdRoute,
+  AuthedShellBannersIndexRoute: AuthedShellBannersIndexRoute,
   AuthedShellOrdersIndexRoute: AuthedShellOrdersIndexRoute,
   AuthedShellProductsIndexRoute: AuthedShellProductsIndexRoute,
   AuthedShellSellersIndexRoute: AuthedShellSellersIndexRoute,

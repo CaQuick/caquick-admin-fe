@@ -20,6 +20,11 @@ type Documents = {
     "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": typeof types.AdminUserDocument,
     "\n  mutation AdminSuspendAccount($input: AdminSuspendAccountInput!) {\n    adminSuspendAccount(input: $input) {\n      accountId\n      accountType\n      status\n    }\n  }\n": typeof types.AdminSuspendAccountDocument,
     "\n  mutation AdminReinstateAccount($accountId: ID!) {\n    adminReinstateAccount(accountId: $accountId) {\n      accountId\n      accountType\n      status\n    }\n  }\n": typeof types.AdminReinstateAccountDocument,
+    "\n  query AdminBanners($input: AdminBannerListInput) {\n    adminBanners(input: $input) {\n      items {\n        id\n        placement\n        title\n        imageUrl\n        linkType\n        linkUrl\n        linkProductId\n        linkStoreId\n        linkCategoryId\n        startsAt\n        endsAt\n        sortOrder\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminBannersDocument,
+    "\n  query AdminBanner($bannerId: ID!) {\n    adminBanner(bannerId: $bannerId) {\n      id\n      placement\n      title\n      imageUrl\n      linkType\n      linkUrl\n      linkProductId\n      linkStoreId\n      linkCategoryId\n      startsAt\n      endsAt\n      sortOrder\n      isActive\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.AdminBannerDocument,
+    "\n  mutation AdminCreateBanner($input: AdminCreateBannerInput!) {\n    adminCreateBanner(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminCreateBannerDocument,
+    "\n  mutation AdminUpdateBanner($input: AdminUpdateBannerInput!) {\n    adminUpdateBanner(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": typeof types.AdminUpdateBannerDocument,
+    "\n  mutation AdminDeleteBanner($bannerId: ID!) {\n    adminDeleteBanner(bannerId: $bannerId)\n  }\n": typeof types.AdminDeleteBannerDocument,
     "\n  query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {\n    adminDashboardSummary(input: $input) {\n      from\n      to\n      newUserCount\n      newSellerCount\n      orderCounts {\n        submitted\n        confirmed\n        made\n        pickedUp\n        canceled\n      }\n      orderAmountSum\n      activeStoreCount\n      activeProductCount\n      pendingReportCount\n    }\n  }\n": typeof types.AdminDashboardSummaryDocument,
     "\n  query AdminSearchKeywordSnapshot($input: AdminSearchKeywordSnapshotInput) {\n    adminSearchKeywordSnapshot(input: $input) {\n      rankedAt\n      items {\n        rank\n        keyword\n        searchCount\n      }\n    }\n  }\n": typeof types.AdminSearchKeywordSnapshotDocument,
     "\n  query AdminOrders($input: AdminOrderListInput) {\n    adminOrders(input: $input) {\n      items {\n        id\n        orderNumber\n        accountId\n        storeId\n        status\n        pickupAt\n        buyerName\n        buyerPhone\n        totalPrice\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminOrdersDocument,
@@ -52,6 +57,11 @@ const documents: Documents = {
     "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": types.AdminUserDocument,
     "\n  mutation AdminSuspendAccount($input: AdminSuspendAccountInput!) {\n    adminSuspendAccount(input: $input) {\n      accountId\n      accountType\n      status\n    }\n  }\n": types.AdminSuspendAccountDocument,
     "\n  mutation AdminReinstateAccount($accountId: ID!) {\n    adminReinstateAccount(accountId: $accountId) {\n      accountId\n      accountType\n      status\n    }\n  }\n": types.AdminReinstateAccountDocument,
+    "\n  query AdminBanners($input: AdminBannerListInput) {\n    adminBanners(input: $input) {\n      items {\n        id\n        placement\n        title\n        imageUrl\n        linkType\n        linkUrl\n        linkProductId\n        linkStoreId\n        linkCategoryId\n        startsAt\n        endsAt\n        sortOrder\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminBannersDocument,
+    "\n  query AdminBanner($bannerId: ID!) {\n    adminBanner(bannerId: $bannerId) {\n      id\n      placement\n      title\n      imageUrl\n      linkType\n      linkUrl\n      linkProductId\n      linkStoreId\n      linkCategoryId\n      startsAt\n      endsAt\n      sortOrder\n      isActive\n      createdAt\n      updatedAt\n    }\n  }\n": types.AdminBannerDocument,
+    "\n  mutation AdminCreateBanner($input: AdminCreateBannerInput!) {\n    adminCreateBanner(input: $input) {\n      id\n    }\n  }\n": types.AdminCreateBannerDocument,
+    "\n  mutation AdminUpdateBanner($input: AdminUpdateBannerInput!) {\n    adminUpdateBanner(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": types.AdminUpdateBannerDocument,
+    "\n  mutation AdminDeleteBanner($bannerId: ID!) {\n    adminDeleteBanner(bannerId: $bannerId)\n  }\n": types.AdminDeleteBannerDocument,
     "\n  query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {\n    adminDashboardSummary(input: $input) {\n      from\n      to\n      newUserCount\n      newSellerCount\n      orderCounts {\n        submitted\n        confirmed\n        made\n        pickedUp\n        canceled\n      }\n      orderAmountSum\n      activeStoreCount\n      activeProductCount\n      pendingReportCount\n    }\n  }\n": types.AdminDashboardSummaryDocument,
     "\n  query AdminSearchKeywordSnapshot($input: AdminSearchKeywordSnapshotInput) {\n    adminSearchKeywordSnapshot(input: $input) {\n      rankedAt\n      items {\n        rank\n        keyword\n        searchCount\n      }\n    }\n  }\n": types.AdminSearchKeywordSnapshotDocument,
     "\n  query AdminOrders($input: AdminOrderListInput) {\n    adminOrders(input: $input) {\n      items {\n        id\n        orderNumber\n        accountId\n        storeId\n        status\n        pickupAt\n        buyerName\n        buyerPhone\n        totalPrice\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminOrdersDocument,
@@ -99,6 +109,26 @@ export function graphql(source: "\n  mutation AdminSuspendAccount($input: AdminS
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminReinstateAccount($accountId: ID!) {\n    adminReinstateAccount(accountId: $accountId) {\n      accountId\n      accountType\n      status\n    }\n  }\n"): typeof import('./graphql').AdminReinstateAccountDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBanners($input: AdminBannerListInput) {\n    adminBanners(input: $input) {\n      items {\n        id\n        placement\n        title\n        imageUrl\n        linkType\n        linkUrl\n        linkProductId\n        linkStoreId\n        linkCategoryId\n        startsAt\n        endsAt\n        sortOrder\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n"): typeof import('./graphql').AdminBannersDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBanner($bannerId: ID!) {\n    adminBanner(bannerId: $bannerId) {\n      id\n      placement\n      title\n      imageUrl\n      linkType\n      linkUrl\n      linkProductId\n      linkStoreId\n      linkCategoryId\n      startsAt\n      endsAt\n      sortOrder\n      isActive\n      createdAt\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AdminBannerDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateBanner($input: AdminCreateBannerInput!) {\n    adminCreateBanner(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminCreateBannerDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminUpdateBanner($input: AdminUpdateBannerInput!) {\n    adminUpdateBanner(input: $input) {\n      id\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AdminUpdateBannerDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminDeleteBanner($bannerId: ID!) {\n    adminDeleteBanner(bannerId: $bannerId)\n  }\n"): typeof import('./graphql').AdminDeleteBannerDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
