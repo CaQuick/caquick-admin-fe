@@ -19,6 +19,8 @@ import { Route as AuthedShellOrdersOrderIdRouteImport } from './routes/_authed/_
 import { Route as AuthedShellSellersIndexRouteImport } from './routes/_authed/_shell/sellers/index'
 import { Route as AuthedShellSellersAccountIdRouteImport } from './routes/_authed/_shell/sellers/$accountId'
 import { Route as AuthedShellSellersNewRouteImport } from './routes/_authed/_shell/sellers/new'
+import { Route as AuthedShellStoresIndexRouteImport } from './routes/_authed/_shell/stores/index'
+import { Route as AuthedShellStoresStoreIdRouteImport } from './routes/_authed/_shell/stores/$storeId'
 import { Route as AuthedShellUsersIndexRouteImport } from './routes/_authed/_shell/users/index'
 import { Route as AuthedShellUsersAccountIdRouteImport } from './routes/_authed/_shell/users/$accountId'
 
@@ -72,6 +74,17 @@ const AuthedShellSellersNewRoute = AuthedShellSellersNewRouteImport.update({
   path: '/sellers/new',
   getParentRoute: () => AuthedShellRoute,
 } as any)
+const AuthedShellStoresIndexRoute = AuthedShellStoresIndexRouteImport.update({
+  id: '/stores/',
+  path: '/stores/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellStoresStoreIdRoute =
+  AuthedShellStoresStoreIdRouteImport.update({
+    id: '/stores/$storeId',
+    path: '/stores/$storeId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
 const AuthedShellUsersIndexRoute = AuthedShellUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -91,9 +104,11 @@ export interface FileRoutesByFullPath {
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
+  '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/orders/': typeof AuthedShellOrdersIndexRoute
   '/sellers/': typeof AuthedShellSellersIndexRoute
+  '/stores/': typeof AuthedShellStoresIndexRoute
   '/users/': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -103,9 +118,11 @@ export interface FileRoutesByTo {
   '/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
+  '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/orders': typeof AuthedShellOrdersIndexRoute
   '/sellers': typeof AuthedShellSellersIndexRoute
+  '/stores': typeof AuthedShellStoresIndexRoute
   '/users': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -118,9 +135,11 @@ export interface FileRoutesById {
   '/_authed/_shell/orders/$orderId': typeof AuthedShellOrdersOrderIdRoute
   '/_authed/_shell/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/_authed/_shell/sellers/new': typeof AuthedShellSellersNewRoute
+  '/_authed/_shell/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
   '/_authed/_shell/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/_authed/_shell/orders/': typeof AuthedShellOrdersIndexRoute
   '/_authed/_shell/sellers/': typeof AuthedShellSellersIndexRoute
+  '/_authed/_shell/stores/': typeof AuthedShellStoresIndexRoute
   '/_authed/_shell/users/': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -132,9 +151,11 @@ export interface FileRouteTypes {
     | '/orders/$orderId'
     | '/sellers/$accountId'
     | '/sellers/new'
+    | '/stores/$storeId'
     | '/users/$accountId'
     | '/orders/'
     | '/sellers/'
+    | '/stores/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -144,9 +165,11 @@ export interface FileRouteTypes {
     | '/orders/$orderId'
     | '/sellers/$accountId'
     | '/sellers/new'
+    | '/stores/$storeId'
     | '/users/$accountId'
     | '/orders'
     | '/sellers'
+    | '/stores'
     | '/users'
   id:
     | '__root__'
@@ -158,9 +181,11 @@ export interface FileRouteTypes {
     | '/_authed/_shell/orders/$orderId'
     | '/_authed/_shell/sellers/$accountId'
     | '/_authed/_shell/sellers/new'
+    | '/_authed/_shell/stores/$storeId'
     | '/_authed/_shell/users/$accountId'
     | '/_authed/_shell/orders/'
     | '/_authed/_shell/sellers/'
+    | '/_authed/_shell/stores/'
     | '/_authed/_shell/users/'
   fileRoutesById: FileRoutesById
 }
@@ -241,6 +266,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShellSellersNewRouteImport
       parentRoute: typeof AuthedShellRoute
     }
+    '/_authed/_shell/stores/': {
+      id: '/_authed/_shell/stores/'
+      path: '/stores'
+      fullPath: '/stores/'
+      preLoaderRoute: typeof AuthedShellStoresIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/stores/$storeId': {
+      id: '/_authed/_shell/stores/$storeId'
+      path: '/stores/$storeId'
+      fullPath: '/stores/$storeId'
+      preLoaderRoute: typeof AuthedShellStoresStoreIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
     '/_authed/_shell/users/': {
       id: '/_authed/_shell/users/'
       path: '/users'
@@ -263,9 +302,11 @@ interface AuthedShellRouteChildren {
   AuthedShellOrdersOrderIdRoute: typeof AuthedShellOrdersOrderIdRoute
   AuthedShellSellersAccountIdRoute: typeof AuthedShellSellersAccountIdRoute
   AuthedShellSellersNewRoute: typeof AuthedShellSellersNewRoute
+  AuthedShellStoresStoreIdRoute: typeof AuthedShellStoresStoreIdRoute
   AuthedShellUsersAccountIdRoute: typeof AuthedShellUsersAccountIdRoute
   AuthedShellOrdersIndexRoute: typeof AuthedShellOrdersIndexRoute
   AuthedShellSellersIndexRoute: typeof AuthedShellSellersIndexRoute
+  AuthedShellStoresIndexRoute: typeof AuthedShellStoresIndexRoute
   AuthedShellUsersIndexRoute: typeof AuthedShellUsersIndexRoute
 }
 
@@ -274,9 +315,11 @@ const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellOrdersOrderIdRoute: AuthedShellOrdersOrderIdRoute,
   AuthedShellSellersAccountIdRoute: AuthedShellSellersAccountIdRoute,
   AuthedShellSellersNewRoute: AuthedShellSellersNewRoute,
+  AuthedShellStoresStoreIdRoute: AuthedShellStoresStoreIdRoute,
   AuthedShellUsersAccountIdRoute: AuthedShellUsersAccountIdRoute,
   AuthedShellOrdersIndexRoute: AuthedShellOrdersIndexRoute,
   AuthedShellSellersIndexRoute: AuthedShellSellersIndexRoute,
+  AuthedShellStoresIndexRoute: AuthedShellStoresIndexRoute,
   AuthedShellUsersIndexRoute: AuthedShellUsersIndexRoute,
 }
 

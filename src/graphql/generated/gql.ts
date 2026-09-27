@@ -29,6 +29,11 @@ type Documents = {
     "\n  query AdminSeller($accountId: ID!) {\n    adminSeller(accountId: $accountId) {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      profile {\n        businessName\n        businessPhone\n        websiteUrl\n      }\n      store {\n        id\n        storeName\n        storePhone\n        addressFull\n        isActive\n      }\n      createdAt\n    }\n  }\n": typeof types.AdminSellerDocument,
     "\n  mutation AdminCreateSeller($input: AdminCreateSellerInput!) {\n    adminCreateSeller(input: $input) {\n      accountId\n      username\n    }\n  }\n": typeof types.AdminCreateSellerDocument,
     "\n  mutation AdminResetSellerPassword($input: AdminResetSellerPasswordInput!) {\n    adminResetSellerPassword(input: $input)\n  }\n": typeof types.AdminResetSellerPasswordDocument,
+    "\n  query AdminStores($input: AdminStoreListInput) {\n    adminStores(input: $input) {\n      items {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        regionId\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminStoresDocument,
+    "\n  query AdminStore($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        addressCity\n        addressDistrict\n        addressNeighborhood\n        regionId\n        latitude\n        longitude\n        mapProvider\n        websiteUrl\n        businessHoursText\n        profileImageUrl\n        greetingMessage\n        pickupSlotIntervalMinutes\n        minLeadTimeMinutes\n        maxDaysAhead\n        isActive\n        createdAt\n        updatedAt\n      }\n      seller {\n        accountId\n        username\n        email\n        name\n        status\n      }\n      productCount\n      orderItemCount\n    }\n  }\n": typeof types.AdminStoreDocument,
+    "\n  mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {\n    adminSetStoreActive(input: $input) {\n      id\n      isActive\n    }\n  }\n": typeof types.AdminSetStoreActiveDocument,
+    "\n  mutation AdminUpdateStoreBasicInfo($input: AdminUpdateStoreBasicInfoInput!) {\n    adminUpdateStoreBasicInfo(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": typeof types.AdminUpdateStoreBasicInfoDocument,
+    "\n  mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {\n    adminCreateUploadUrl(input: $input) {\n      uploadUrl\n      publicUrl\n      key\n      expiresInSeconds\n    }\n  }\n": typeof types.AdminCreateUploadUrlDocument,
 };
 const documents: Documents = {
     "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n": types.AdminMeDocument,
@@ -45,6 +50,11 @@ const documents: Documents = {
     "\n  query AdminSeller($accountId: ID!) {\n    adminSeller(accountId: $accountId) {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      profile {\n        businessName\n        businessPhone\n        websiteUrl\n      }\n      store {\n        id\n        storeName\n        storePhone\n        addressFull\n        isActive\n      }\n      createdAt\n    }\n  }\n": types.AdminSellerDocument,
     "\n  mutation AdminCreateSeller($input: AdminCreateSellerInput!) {\n    adminCreateSeller(input: $input) {\n      accountId\n      username\n    }\n  }\n": types.AdminCreateSellerDocument,
     "\n  mutation AdminResetSellerPassword($input: AdminResetSellerPasswordInput!) {\n    adminResetSellerPassword(input: $input)\n  }\n": types.AdminResetSellerPasswordDocument,
+    "\n  query AdminStores($input: AdminStoreListInput) {\n    adminStores(input: $input) {\n      items {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        regionId\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminStoresDocument,
+    "\n  query AdminStore($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        addressCity\n        addressDistrict\n        addressNeighborhood\n        regionId\n        latitude\n        longitude\n        mapProvider\n        websiteUrl\n        businessHoursText\n        profileImageUrl\n        greetingMessage\n        pickupSlotIntervalMinutes\n        minLeadTimeMinutes\n        maxDaysAhead\n        isActive\n        createdAt\n        updatedAt\n      }\n      seller {\n        accountId\n        username\n        email\n        name\n        status\n      }\n      productCount\n      orderItemCount\n    }\n  }\n": types.AdminStoreDocument,
+    "\n  mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {\n    adminSetStoreActive(input: $input) {\n      id\n      isActive\n    }\n  }\n": types.AdminSetStoreActiveDocument,
+    "\n  mutation AdminUpdateStoreBasicInfo($input: AdminUpdateStoreBasicInfoInput!) {\n    adminUpdateStoreBasicInfo(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": types.AdminUpdateStoreBasicInfoDocument,
+    "\n  mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {\n    adminCreateUploadUrl(input: $input) {\n      uploadUrl\n      publicUrl\n      key\n      expiresInSeconds\n    }\n  }\n": types.AdminCreateUploadUrlDocument,
 };
 
 /**
@@ -103,6 +113,26 @@ export function graphql(source: "\n  mutation AdminCreateSeller($input: AdminCre
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminResetSellerPassword($input: AdminResetSellerPasswordInput!) {\n    adminResetSellerPassword(input: $input)\n  }\n"): typeof import('./graphql').AdminResetSellerPasswordDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminStores($input: AdminStoreListInput) {\n    adminStores(input: $input) {\n      items {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        regionId\n        isActive\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n"): typeof import('./graphql').AdminStoresDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminStore($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        sellerAccountId\n        storeName\n        storePhone\n        addressFull\n        addressCity\n        addressDistrict\n        addressNeighborhood\n        regionId\n        latitude\n        longitude\n        mapProvider\n        websiteUrl\n        businessHoursText\n        profileImageUrl\n        greetingMessage\n        pickupSlotIntervalMinutes\n        minLeadTimeMinutes\n        maxDaysAhead\n        isActive\n        createdAt\n        updatedAt\n      }\n      seller {\n        accountId\n        username\n        email\n        name\n        status\n      }\n      productCount\n      orderItemCount\n    }\n  }\n"): typeof import('./graphql').AdminStoreDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {\n    adminSetStoreActive(input: $input) {\n      id\n      isActive\n    }\n  }\n"): typeof import('./graphql').AdminSetStoreActiveDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminUpdateStoreBasicInfo($input: AdminUpdateStoreBasicInfoInput!) {\n    adminUpdateStoreBasicInfo(input: $input) {\n      id\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AdminUpdateStoreBasicInfoDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateUploadUrl($input: AdminCreateUploadUrlInput!) {\n    adminCreateUploadUrl(input: $input) {\n      uploadUrl\n      publicUrl\n      key\n      expiresInSeconds\n    }\n  }\n"): typeof import('./graphql').AdminCreateUploadUrlDocument;
 
 
 export function graphql(source: string) {
