@@ -95,13 +95,15 @@ jobs:
         if: env.SKIP_DEPLOY != '1'
         env:
           IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+          # 진단용 호스트 포트(127.0.0.1). 호스트의 다른 컨테이너와 겹치면 Environment 변수로 바꾼다
+          ADMIN_HOST_PORT: ${{ vars.ADMIN_HOST_PORT || '8090' }}
         run: |
           set -euo pipefail
           mkdir -p "$DEPLOY_DIR"
           rsync -a --delete --exclude '.env' infra/ "$DEPLOY_DIR/"
           umask 077
           tmp=$(mktemp "$DEPLOY_DIR/.env.XXXXXX")
-          printf 'IMAGE=%s\nIMAGE_TAG=%s\n' "$IMAGE" "$IMAGE_TAG" > "$tmp"
+          printf 'IMAGE=%s\nIMAGE_TAG=%s\nADMIN_HOST_PORT=%s\n' "$IMAGE" "$IMAGE_TAG" "$ADMIN_HOST_PORT" > "$tmp"
           chmod 600 "$tmp" && mv -f "$tmp" "$DEPLOY_DIR/.env"
 
       - name: Deploy

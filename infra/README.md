@@ -4,7 +4,7 @@
 
 | 파일                                | 역할                                                              |
 | ----------------------------------- | ----------------------------------------------------------------- |
-| `compose.yml`                       | 서비스 `admin`(컨테이너 `caquick-admin`), 진단용 `127.0.0.1:8080` |
+| `compose.yml`                       | 서비스 `admin`(컨테이너 `caquick-admin`), 진단용 `127.0.0.1:8090` |
 | `deploy.sh`                         | pull → up → healthy 대기 → prune. 배포 잡이 호출                  |
 | `nginx.conf`·`security-headers.inc` | SPA fallback, 자산 immutable 캐시, `/healthz`, CSP 등             |
 | `.env.example`                      | 배포 잡이 만드는 `.env`의 키                                      |
@@ -24,7 +24,7 @@
 ## 점검
 
 ```bash
-curl -s http://127.0.0.1:8080/healthz      # ok
-curl -sI http://127.0.0.1:8080/ | grep -i content-security-policy
+curl -s http://127.0.0.1:8090/healthz      # ok
+curl -sI http://127.0.0.1:8090/ | grep -i content-security-policy
 docker compose -f /opt/caquick-admin/compose.yml ps
 ```
