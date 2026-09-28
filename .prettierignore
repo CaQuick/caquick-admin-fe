@@ -6,3 +6,6 @@ src/graphql/generated
 src/routeTree.gen.ts
 schema/schema.graphql
 CHANGELOG.md
+# nginx 설정은 prettier가 만지면 안 된다(따옴표 안 줄바꿈 → 헤더 깨짐)
+infra/*.inc
+infra/nginx.conf
