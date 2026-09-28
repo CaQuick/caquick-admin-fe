@@ -3,8 +3,9 @@ import { changePasswordSchema, loginSchema, strongPasswordSchema } from './passw
 describe('password rules', () => {
   it.each([
     ['Abcdef1!', true],
-    ['abcdef1!', false], // 대문자 없음
-    ['ABCDEF1!', false], // 소문자 없음
+    ['abcdef1!', true], // 대문자 없어도 됨
+    ['ABCDEF1!', true], // 소문자 없어도 됨
+    ['12345678!', false], // 알파벳 없음
     ['Abcdefg!', false], // 숫자 없음
     ['Abcdefg1', false], // 특수문자 없음
     ['Ab1!', false], // 8자 미만

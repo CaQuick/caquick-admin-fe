@@ -83,7 +83,7 @@ export function ResetPasswordDialog({ accountId, label, onChanged }: Props) {
             label="새 비밀번호"
             required
             error={errors.newPassword?.message}
-            help="8~64자, 대문자·소문자·숫자·특수문자 각 1자 이상"
+            help="8~64자, 알파벳·숫자·특수문자 각 1자 이상"
           >
             <Input
               id="rp-new"
