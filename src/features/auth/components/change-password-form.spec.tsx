@@ -28,7 +28,7 @@ describe('ChangePasswordForm', () => {
   it('약한 비밀번호와 불일치를 필드별로 보여준다', async () => {
     render(<ChangePasswordForm onSuccess={vi.fn()} />);
     await fill('Current1!', 'weakweak', 'other');
-    expect(await screen.findByText('대문자를 1자 이상 넣어 주세요.')).toBeInTheDocument();
+    expect(await screen.findByText('숫자를 1자 이상 넣어 주세요.')).toBeInTheDocument();
     expect(screen.getByText('새 비밀번호가 서로 다릅니다.')).toBeInTheDocument();
   });
 

@@ -11,8 +11,8 @@ export const createAdminSchema = z.object({
     .min(8, '8자 이상')
     .max(64, '64자 이하')
     .refine(
-      (v) => /[A-Z]/.test(v) && /[a-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v),
-      '대문자·소문자·숫자·특수문자를 각각 1자 이상',
+      (v) => /[A-Za-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v),
+      '알파벳·숫자·특수문자를 각각 1자 이상',
     ),
   email: z.string().trim().email('이메일 형식이 아닙니다.').or(z.literal('')),
   name: z.string().trim().max(100),

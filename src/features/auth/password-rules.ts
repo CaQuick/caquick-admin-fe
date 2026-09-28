@@ -11,10 +11,9 @@ const passwordSchema = z
   .min(8, '비밀번호는 8자 이상입니다.')
   .max(64, '비밀번호는 64자 이하입니다.');
 
-/** BE IsStrongPassword: 8~64자, 대문자·소문자·숫자·특수문자 각 1개 이상. */
+/** BE IsStrongPassword: 8~64자, 알파벳·숫자·특수문자 각 1개 이상(대소문자 구분 없음). */
 export const strongPasswordSchema = passwordSchema
-  .refine((v) => /[A-Z]/.test(v), '대문자를 1자 이상 넣어 주세요.')
-  .refine((v) => /[a-z]/.test(v), '소문자를 1자 이상 넣어 주세요.')
+  .refine((v) => /[A-Za-z]/.test(v), '알파벳을 1자 이상 넣어 주세요.')
   .refine((v) => /\d/.test(v), '숫자를 1자 이상 넣어 주세요.')
   .refine((v) => /[^A-Za-z0-9]/.test(v), '특수문자를 1자 이상 넣어 주세요.');
 

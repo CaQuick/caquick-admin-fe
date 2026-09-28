@@ -6,8 +6,8 @@ const strongPassword = z
   .min(8, '8자 이상')
   .max(64, '64자 이하')
   .refine(
-    (v) => /[A-Z]/.test(v) && /[a-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v),
-    '대문자·소문자·숫자·특수문자를 각각 1자 이상',
+    (v) => /[A-Za-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v),
+    '알파벳·숫자·특수문자를 각각 1자 이상',
   );
 
 const optionalTrimmed = z.string().trim().max(500).optional();
