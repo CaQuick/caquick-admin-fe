@@ -8,6 +8,7 @@ import { Card } from '@/shared/ui/card';
 import { CursorPager } from '@/shared/ui/cursor-pager';
 import { DataTable } from '@/shared/ui/data-table';
 import { FilterBar } from '@/shared/ui/filter-bar';
+import { IdFilterInput } from '@/shared/ui/id-filter-input';
 import { Input } from '@/shared/ui/input';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
@@ -72,27 +73,6 @@ const columns: ColumnDef<AuditRow, unknown>[] = [
   },
 ];
 
-function IdInput({
-  label,
-  value,
-  onCommit,
-}: {
-  label: string;
-  value: string | undefined;
-  onCommit: (v: string | undefined) => void;
-}) {
-  return (
-    <Input
-      aria-label={label}
-      placeholder={label}
-      className="h-9 w-24"
-      key={value ?? ''}
-      defaultValue={value ?? ''}
-      onBlur={(e) => onCommit(e.target.value.trim() || undefined)}
-    />
-  );
-}
-
 export function AuditLogsPage({
   search,
   onSearchChange,
@@ -133,7 +113,7 @@ export function AuditLogsPage({
               ))}
             </SelectContent>
           </Select>
-          <IdInput
+          <IdFilterInput
             label="대상 ID"
             value={search.targetId}
             onCommit={(v) => patch({ targetId: v })}
@@ -156,12 +136,16 @@ export function AuditLogsPage({
               ))}
             </SelectContent>
           </Select>
-          <IdInput
+          <IdFilterInput
             label="행위자 ID"
             value={search.actorId}
             onCommit={(v) => patch({ actorId: v })}
           />
-          <IdInput label="매장 ID" value={search.storeId} onCommit={(v) => patch({ storeId: v })} />
+          <IdFilterInput
+            label="매장 ID"
+            value={search.storeId}
+            onCommit={(v) => patch({ storeId: v })}
+          />
           <Input
             type="date"
             aria-label="시작일"

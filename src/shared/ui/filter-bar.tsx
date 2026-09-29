@@ -1,6 +1,7 @@
 import { SearchIcon, XIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
 
+import { MAX_KEYWORD_LENGTH } from '@/shared/lib/list-search';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 
@@ -45,6 +46,7 @@ export function FilterBar({
             name="keyword"
             defaultValue={keyword}
             placeholder={keywordPlaceholder}
+            maxLength={MAX_KEYWORD_LENGTH}
             aria-label="검색어"
             className="h-9 pl-8"
           />

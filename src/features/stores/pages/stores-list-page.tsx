@@ -4,7 +4,7 @@ import { messageFor } from '@/shared/api';
 import { Card } from '@/shared/ui/card';
 import { CursorPager } from '@/shared/ui/cursor-pager';
 import { FilterBar } from '@/shared/ui/filter-bar';
-import { Input } from '@/shared/ui/input';
+import { IdFilterInput } from '@/shared/ui/id-filter-input';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
@@ -57,13 +57,10 @@ export function StoresListPage({ search, onSearchChange }: Props) {
               <SelectItem value="false">비활성</SelectItem>
             </SelectContent>
           </Select>
-          <Input
-            aria-label="지역 ID"
-            placeholder="지역 ID"
-            className="h-9 w-24"
-            key={`r-${search.regionId ?? ''}`}
-            defaultValue={search.regionId ?? ''}
-            onBlur={(e) => patch({ regionId: e.target.value.trim() || undefined })}
+          <IdFilterInput
+            label="지역 ID"
+            value={search.regionId}
+            onCommit={(v) => patch({ regionId: v })}
           />
         </FilterBar>
         {list.isError ? (

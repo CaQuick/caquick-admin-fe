@@ -7,9 +7,10 @@ import {
 } from '@/graphql/generated/graphql';
 import {
   DEFAULT_LIMIT,
+  keywordText,
   listSearchBase,
   optionalBoolText,
-  optionalText,
+  optionalIdText,
 } from '@/shared/lib/list-search';
 import { type PillTone } from '@/shared/ui/status-pill';
 
@@ -28,9 +29,9 @@ export const TARGET_TYPE: Record<string, string> = { REVIEW: '리뷰', REVIEW_CO
 
 export const reviewsSearchSchema = z.object({
   ...listSearchBase,
-  q: optionalText,
-  storeId: optionalText,
-  accountId: optionalText,
+  q: keywordText,
+  storeId: optionalIdText,
+  accountId: optionalIdText,
   deleted: optionalBoolText,
 });
 export type ReviewsSearch = z.infer<typeof reviewsSearchSchema>;
@@ -48,8 +49,8 @@ export function toReviewListInput(s: ReviewsSearch): AdminReviewListInput {
 
 export const commentsSearchSchema = z.object({
   ...listSearchBase,
-  reviewId: optionalText,
-  accountId: optionalText,
+  reviewId: optionalIdText,
+  accountId: optionalIdText,
   deleted: optionalBoolText,
 });
 export type CommentsSearch = z.infer<typeof commentsSearchSchema>;

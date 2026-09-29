@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { listSearchBase, optionalBoolText, optionalText } from '@/shared/lib/list-search';
+import { keywordText, listSearchBase, optionalBoolText } from '@/shared/lib/list-search';
 
 export const CATEGORY_TYPES = [
   { value: 'EVENT', label: '이벤트', help: '홈 칩·랭킹은 이 타입만 쓴다' },
@@ -15,7 +15,7 @@ export const categoriesSearchSchema = z.object({
 });
 export type CategoriesSearch = z.infer<typeof categoriesSearchSchema>;
 
-export const tagsSearchSchema = z.object({ ...listSearchBase, q: optionalText });
+export const tagsSearchSchema = z.object({ ...listSearchBase, q: keywordText });
 export type TagsSearch = z.infer<typeof tagsSearchSchema>;
 export type TagsSearchInput = z.input<typeof tagsSearchSchema>;
 
