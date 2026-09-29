@@ -2,16 +2,22 @@ import { z } from 'zod';
 
 import { type AdminOrderListInput } from '@/graphql/generated/graphql';
 import { kstDayEndIso, kstDayStartIso, parseYmd } from '@/shared/lib/kst';
-import { DEFAULT_LIMIT, listSearchBase, optionalText } from '@/shared/lib/list-search';
+import {
+  DEFAULT_LIMIT,
+  keywordText,
+  listSearchBase,
+  optionalIdText,
+  optionalText,
+} from '@/shared/lib/list-search';
 
 import { ORDER_STATUS_VALUES } from './status';
 
 export const ordersSearchSchema = z.object({
   ...listSearchBase,
-  q: optionalText,
+  q: keywordText,
   status: z.enum(ORDER_STATUS_VALUES).optional().catch(undefined),
-  storeId: optionalText,
-  accountId: optionalText,
+  storeId: optionalIdText,
+  accountId: optionalIdText,
   from: optionalText,
   to: optionalText,
 });

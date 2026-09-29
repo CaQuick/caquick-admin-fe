@@ -1,6 +1,7 @@
 import { SearchIcon, XIcon } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { Fragment, type FormEvent, type ReactNode, useState } from 'react';
 
+import { MAX_KEYWORD_LENGTH } from '@/shared/lib/list-search';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 
@@ -25,6 +26,8 @@ export function FilterBar({
   hasActiveFilters,
   onReset,
 }: Props) {
+  // 초기화는 URL 값이 그대로인 입력(미커밋 초안·검증 오류)까지 비워야 한다 — 입력들을 새로 마운트한다
+  const [resetCount, setResetCount] = useState(0);
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-divider px-4 py-3">
       {keyword !== undefined && onKeywordSubmit && (
@@ -41,21 +44,38 @@ export function FilterBar({
             aria-hidden
           />
           <Input
-            key={keyword}
+            key={`${resetCount}:${keyword}`}
             name="keyword"
             defaultValue={keyword}
             placeholder={keywordPlaceholder}
             aria-label="검색어"
             className="h-9 pl-8"
+            onInput={clampKeyword}
           />
         </form>
       )}
-      {children}
+      <Fragment key={resetCount}>{children}</Fragment>
       {hasActiveFilters && (
-        <Button type="button" variant="ghost" size="sm" className="h-9" onClick={onReset}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-9"
+          onClick={() => {
+            setResetCount((c) => c + 1);
+            onReset();
+          }}
+        >
           <XIcon className="size-3.5" /> 초기화
         </Button>
       )}
     </div>
   );
+}
+
+/** maxLength는 UTF-16 단위라 이모지를 2자로 센다 — BE·keywordText와 같은 코드 포인트 기준으로 자른다. */
+function clampKeyword(e: FormEvent<HTMLInputElement>) {
+  const input = e.currentTarget;
+  const chars = [...input.value];
+  if (chars.length > MAX_KEYWORD_LENGTH) input.value = chars.slice(0, MAX_KEYWORD_LENGTH).join('');
 }

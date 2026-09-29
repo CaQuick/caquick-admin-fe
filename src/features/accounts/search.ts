@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 import { type AdminUserListInput } from '@/graphql/generated/graphql';
-import { DEFAULT_LIMIT, listSearchBase, optionalText } from '@/shared/lib/list-search';
+import { DEFAULT_LIMIT, keywordText, listSearchBase } from '@/shared/lib/list-search';
 
 import { ACCOUNT_STATUS_VALUES } from './status';
 
 export const usersSearchSchema = z.object({
   ...listSearchBase,
-  q: optionalText,
+  q: keywordText,
   status: z.enum(ACCOUNT_STATUS_VALUES).optional().catch(undefined),
 });
 export type UsersSearch = z.infer<typeof usersSearchSchema>;

@@ -1,5 +1,6 @@
 import { Input } from '@/shared/ui/input';
 import { FilterBar } from '@/shared/ui/filter-bar';
+import { IdFilterInput } from '@/shared/ui/id-filter-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
 import { type OrdersSearch, hasOrderFilters } from '../search';
@@ -55,21 +56,15 @@ export function OrdersFilterBar({ search, onChange, onReset }: Props) {
         value={search.to ?? ''}
         onChange={(e) => onChange({ to: e.target.value || undefined })}
       />
-      <Input
-        aria-label="매장 ID"
-        placeholder="매장 ID"
-        className="h-9 w-24"
-        defaultValue={search.storeId ?? ''}
-        key={`s-${search.storeId ?? ''}`}
-        onBlur={(e) => onChange({ storeId: e.target.value.trim() || undefined })}
+      <IdFilterInput
+        label="매장 ID"
+        value={search.storeId}
+        onCommit={(v) => onChange({ storeId: v })}
       />
-      <Input
-        aria-label="계정 ID"
-        placeholder="계정 ID"
-        className="h-9 w-24"
-        defaultValue={search.accountId ?? ''}
-        key={`a-${search.accountId ?? ''}`}
-        onBlur={(e) => onChange({ accountId: e.target.value.trim() || undefined })}
+      <IdFilterInput
+        label="계정 ID"
+        value={search.accountId}
+        onCommit={(v) => onChange({ accountId: v })}
       />
     </FilterBar>
   );
