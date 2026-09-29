@@ -177,15 +177,10 @@ export function AuditLogsPage({
         )}
         {list.data && (
           <CursorPager
-            totalCount={list.data.totalCount}
-            shown={list.data.items.length}
-            hasMore={list.data.hasMore}
-            atStart={!search.cursor}
+            page={list.data}
+            search={search}
             isFetching={list.isFetching}
-            onNext={() =>
-              list.data?.nextCursor && onSearchChange({ ...search, cursor: list.data.nextCursor })
-            }
-            onReset={() => onSearchChange({ ...search, cursor: undefined })}
+            onCursorChange={(cursor) => onSearchChange({ ...search, cursor })}
           />
         )}
       </Card>
