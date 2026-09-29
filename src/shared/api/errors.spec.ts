@@ -22,6 +22,15 @@ describe('messageFor', () => {
     expect(e.isUnauthenticated).toBe(true);
   });
 
+  it.each(['INVALID_ACCESS_TOKEN', 'SESSION_ACCOUNT_MISSING'])(
+    '%s는 세션 만료 문구로 바꾼다',
+    (code) => {
+      expect(
+        messageFor(new ApiError('액세스 토큰이 유효하지 않습니다.', 'UNAUTHENTICATED', code, 401)),
+      ).toBe('세션이 만료되었습니다. 다시 로그인해 주세요.');
+    },
+  );
+
   it('표에 없는 코드는 BE 메시지를 그대로 쓴다', () => {
     expect(
       messageFor(new ApiError('매장을 찾을 수 없습니다.', 'NOT_FOUND', 'STORE_NOT_FOUND', 404)),

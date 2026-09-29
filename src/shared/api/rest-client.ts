@@ -1,6 +1,6 @@
 import { AUTH_URL } from './config';
 import { ApiError, classifyStatus } from './errors';
-import { getSessionHooks } from './session';
+import { getSessionHooks, refreshOnce } from './session';
 
 /** BE REST 에러 envelope(ApiResponseTemplate.ERROR). 로그인 성공 응답은 envelope 없이 본문 그대로다. */
 interface RestErrorBody {
@@ -15,8 +15,13 @@ export interface RestOptions {
   auth?: boolean;
 }
 
-/** `/auth/*` REST 호출. 쿠키(refresh)는 항상 포함. 401 재시도는 하지 않는다 — 인증 엔드포인트 자체라 auth feature가 결과를 해석한다. */
-export async function authRequest<T>(path: string, options: RestOptions = {}): Promise<T> {
+/** 액세스 토큰 만료·부재만 refresh 대상. CURRENT_PASSWORD_INVALID도 401이라 status만으로는 가를 수 없다. */
+const EXPIRED_TOKEN_CODES = new Set(['INVALID_ACCESS_TOKEN', 'AUTHENTICATION_REQUIRED']);
+
+async function send(
+  path: string,
+  options: RestOptions,
+): Promise<{ status: number; body: RestErrorBody | null }> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (options.auth) {
     const token = getSessionHooks().getAccessToken();
@@ -33,14 +38,31 @@ export async function authRequest<T>(path: string, options: RestOptions = {}): P
   } catch {
     throw new ApiError('네트워크 오류', 'NETWORK', null, 0);
   }
-  if (res.status === 204) return undefined as T;
-  const body = (await res.json().catch(() => null)) as (RestErrorBody & T) | null;
-  if (!res.ok) {
+  if (res.status === 204) return { status: 204, body: null };
+  return { status: res.status, body: (await res.json().catch(() => null)) as RestErrorBody | null };
+}
+
+/**
+ * `/auth/*` REST 호출. 쿠키(refresh)는 항상 포함.
+ * `auth: true` 요청이 토큰 만료로 401이면 refresh 1회 뒤 재시도한다. 로그인·refresh 자체는 결과를 auth feature가 해석한다.
+ */
+export async function authRequest<T>(path: string, options: RestOptions = {}): Promise<T> {
+  let { status, body } = await send(path, options);
+  if (
+    options.auth &&
+    status === 401 &&
+    EXPIRED_TOKEN_CODES.has(body?.errorCode ?? '') &&
+    (await refreshOnce())
+  ) {
+    ({ status, body } = await send(path, options));
+  }
+  if (status === 204) return undefined as T;
+  if (status < 200 || status >= 300) {
     throw new ApiError(
-      body?.message ?? `요청 실패 (${res.status})`,
-      classifyStatus(res.status),
+      body?.message ?? `요청 실패 (${status})`,
+      classifyStatus(status),
       body?.errorCode ?? null,
-      res.status,
+      status,
     );
   }
   return body as T;

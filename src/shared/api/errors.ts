@@ -47,6 +47,8 @@ const MESSAGES: Record<string, string> = {
   // INTERNAL_ERROR의 message는 서버 내부 원문(Prisma 등)일 수 있다.
   INTERNAL_ERROR: INTERNAL_MESSAGE,
   AUTHENTICATION_REQUIRED: '로그인이 필요합니다.',
+  INVALID_ACCESS_TOKEN: '세션이 만료되었습니다. 다시 로그인해 주세요.',
+  SESSION_ACCOUNT_MISSING: '세션이 만료되었습니다. 다시 로그인해 주세요.',
   INVALID_CREDENTIALS: '아이디 또는 비밀번호가 올바르지 않습니다.',
   MISSING_REFRESH_TOKEN: '세션이 만료되었습니다. 다시 로그인해 주세요.',
   INVALID_REFRESH_TOKEN: '세션이 만료되었습니다. 다시 로그인해 주세요.',
