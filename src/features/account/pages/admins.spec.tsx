@@ -105,6 +105,42 @@ describe('관리자 계정', () => {
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('아이디로 채우기: 8자 미만이면 비활성, 채우면 아이디와 같은 비밀번호로 추가', async () => {
+    let created: unknown;
+    server.use(
+      gqlOk('AdminAdmins', {
+        adminAdmins: { items: [], totalCount: 0, hasMore: false, nextCursor: null },
+      }),
+      graphql.mutation('AdminCreateAdmin', ({ variables }) => {
+        created = (variables as { input: unknown }).input;
+        return HttpResponse.json({
+          data: { adminCreateAdmin: { accountId: '3', username: 'testadmin' } },
+        });
+      }),
+    );
+    boot();
+    await userEvent.click(await screen.findByRole('button', { name: '관리자 추가' }));
+    const dialog = await screen.findByRole('dialog');
+    const fill = within(dialog).getByRole('button', { name: '아이디로 채우기' });
+    await userEvent.type(within(dialog).getByLabelText('아이디'), 'ops.one');
+    expect(fill).toBeDisabled();
+    expect(fill).toHaveAccessibleDescription('아이디가 8자 이상이어야 쓸 수 있습니다.');
+
+    await userEvent.clear(within(dialog).getByLabelText('아이디'));
+    await userEvent.type(within(dialog).getByLabelText('아이디'), 'testadmin');
+    await userEvent.click(fill);
+    expect(within(dialog).getByLabelText('초기 비밀번호')).toHaveValue('testadmin');
+    await userEvent.click(within(dialog).getByRole('button', { name: '추가' }));
+    await vi.waitFor(() =>
+      expect(created).toEqual({
+        username: 'testadmin',
+        password: 'testadmin',
+        email: null,
+        name: null,
+      }),
+    );
+  });
+
   it('조회 실패는 오류 문구', async () => {
     server.use(
       gqlError('AdminAdmins', {

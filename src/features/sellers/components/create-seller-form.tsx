@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { messageFor } from '@/shared/api';
+import { INITIAL_PASSWORD_HELP } from '@/shared/lib/initial-password';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { FillFromUsernameButton } from '@/shared/ui/fill-from-username-button';
 import { Input } from '@/shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
@@ -42,7 +44,7 @@ const TEXT: {
     required: true,
     type: 'password',
     autoComplete: 'new-password',
-    help: '첫 로그인 때 변경이 강제됩니다',
+    help: INITIAL_PASSWORD_HELP,
   },
   { name: 'email', label: '이메일', type: 'email' },
   { name: 'name', label: '이름' },
@@ -81,6 +83,7 @@ export function CreateSellerForm({ onCreated }: Props) {
     },
   });
   const { errors, isSubmitting } = form.formState;
+  const username = useWatch({ control: form.control, name: 'username' });
 
   const submit = form.handleSubmit(async (values) => {
     setError(null);
@@ -108,6 +111,12 @@ export function CreateSellerForm({ onCreated }: Props) {
         aria-invalid={!!errors[f.name]}
         {...form.register(f.name)}
       />
+      {f.name === 'password' && (
+        <FillFromUsernameButton
+          username={username}
+          onFill={(v) => form.setValue('password', v, { shouldValidate: true })}
+        />
+      )}
     </Field>
   );
 
