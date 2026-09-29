@@ -109,6 +109,29 @@ describe('gqlRequest', () => {
     });
   });
 
+  it.each([
+    [400, 'BAD_USER_INPUT', 400],
+    [200, 'INTERNAL_SERVER_ERROR', 500],
+    [500, 'INTERNAL_SERVER_ERROR', 500],
+  ] as const)(
+    'extensions 없는 errors[]는 HTTP %d에서 %s로 분류한다',
+    async (httpStatus, classification, status) => {
+      server.use(
+        http.post(GRAPHQL_URL, () =>
+          HttpResponse.json(
+            { errors: [{ message: 'Variable "$input" got invalid value' }] },
+            { status: httpStatus },
+          ),
+        ),
+      );
+      await expect(gqlRequest(PingDocument)).rejects.toMatchObject({
+        classification,
+        code: null,
+        status,
+      });
+    },
+  );
+
   it('data 없는 5xx는 INTERNAL_SERVER_ERROR', async () => {
     server.use(http.post(GRAPHQL_URL, () => HttpResponse.json({}, { status: 502 })));
     await expect(gqlRequest(PingDocument)).rejects.toMatchObject({

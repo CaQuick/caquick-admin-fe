@@ -52,6 +52,8 @@ src/
 ## 5. 에러 표시
 
 - GraphQL `errors[].extensions.code`(카탈로그 코드)를 한국어 문구 표로 매핑한다. 표에 없으면 백엔드 `message`를 그대로.
+- 예외: `INTERNAL_ERROR`와 코드 없는 5xx는 서버 원문일 수 있어 고정 문구로 가린다. 코드 있는 5xx(`S3_PRESIGN_FAILED` 등)는 사용자용 문구라 그대로 쓴다.
+- `extensions.classification`이 없는 오류(Apollo 자체 검증 등)는 HTTP status로 분류한다.
 - `BAD_USER_INPUT`은 폼 상단 알림, 그 외는 토스트. `NOT_FOUND`는 목록으로 돌려보낸다.
 
 ## 6. UI
