@@ -1,7 +1,7 @@
 import { type TypedDocumentString } from '@/graphql/generated/graphql';
 
 import { GRAPHQL_URL } from './config';
-import { ApiError, type ErrorClassification } from './errors';
+import { ApiError, classifyStatus, type ErrorClassification } from './errors';
 import { getSessionHooks, refreshOnce } from './session';
 
 interface GraphQLErrorShape {
@@ -14,14 +14,16 @@ interface GraphQLResponse<T> {
   errors?: GraphQLErrorShape[];
 }
 
-function toApiError(errors: GraphQLErrorShape[]): ApiError {
+/** BE 필터를 거치지 않은 오류(Apollo 변수·문서 검증 등)는 extensions가 비어 HTTP status로 분류한다. */
+function toApiError(errors: GraphQLErrorShape[], httpStatus: number): ApiError {
   const first = errors[0];
   const ext = first?.extensions ?? {};
+  const status = ext.statusCode ?? (httpStatus >= 400 ? httpStatus : 500);
   return new ApiError(
     first?.message ?? 'GraphQL 오류',
-    (ext.classification as ErrorClassification | undefined) ?? 'INTERNAL_SERVER_ERROR',
+    (ext.classification as ErrorClassification | undefined) ?? classifyStatus(status),
     ext.code ?? null,
-    ext.statusCode ?? 500,
+    status,
   );
 }
 
@@ -61,7 +63,7 @@ export async function gqlRequest<TResult, TVariables>(
   if (unauthenticated() && (await refreshOnce())) {
     ({ status, body } = await send(document, variables));
   }
-  if (body?.errors?.length) throw toApiError(body.errors);
+  if (body?.errors?.length) throw toApiError(body.errors, status);
   if (!body?.data) {
     throw new ApiError(
       `GraphQL 응답 오류 (${status})`,
