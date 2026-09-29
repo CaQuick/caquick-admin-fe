@@ -50,7 +50,8 @@ describe('createSellerSchema', () => {
   it.each([
     ['username', 'Lumi'], // 대문자
     ['username', 'ab'], // 짧음
-    ['password', 'weakweak'],
+    ['password', '1234567'], // 7자
+    ['password', 'a'.repeat(65)],
     ['email', 'not-mail'],
     ['websiteUrl', 'not a url'],
     ['latitude', 'abc'],
@@ -106,6 +107,18 @@ describe('createSellerSchema', () => {
     const r = createSellerSchema.safeParse({ ...base, email });
     expect(r.error?.issues).toContainEqual(
       expect.objectContaining({ path: ['email'], message: '320자 이하로 입력해 주세요.' }),
+    );
+  });
+
+  it.each([
+    ['12345678', true],
+    ['testadmin', true],
+    ['1234567', false],
+    ['a'.repeat(65), false],
+  ])('초기 비밀번호 %s → %s (조합 규칙 없이 8~64자)', (pw, ok) => {
+    expect(createSellerSchema.safeParse({ ...base, password: pw }).success).toBe(ok);
+    expect(resetPasswordSchema.safeParse({ newPassword: pw, confirmPassword: pw }).success).toBe(
+      ok,
     );
   });
 

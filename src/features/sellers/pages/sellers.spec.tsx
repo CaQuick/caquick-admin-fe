@@ -90,8 +90,12 @@ describe('판매자', () => {
     expect(await screen.findByText('사업자명은 필수입니다.')).toBeInTheDocument();
     expect(input).toBeUndefined();
 
-    await userEvent.type(screen.getByLabelText(/^아이디/), 'new.seller');
-    await userEvent.type(screen.getByLabelText(/^초기 비밀번호/), 'Passw0rd!');
+    const fill = screen.getByRole('button', { name: '아이디로 채우기' });
+    await userEvent.type(screen.getByLabelText(/^아이디/), 'seller7');
+    expect(fill).toBeDisabled();
+    await userEvent.type(screen.getByLabelText(/^아이디/), 's');
+    await userEvent.click(fill);
+    expect(screen.getByLabelText(/^초기 비밀번호/)).toHaveValue('seller7s');
     await userEvent.type(screen.getByLabelText(/^사업자명/), '새 가게');
     await userEvent.type(screen.getByLabelText(/^사업자 전화/), '02-1');
     await userEvent.type(screen.getByLabelText(/^매장명/), '새 가게 본점');
@@ -100,7 +104,8 @@ describe('판매자', () => {
     await userEvent.click(screen.getByRole('button', { name: '판매자 등록' }));
     await vi.waitFor(() =>
       expect(input).toMatchObject({
-        username: 'new.seller',
+        username: 'seller7s',
+        password: 'seller7s',
         store: { storeName: '새 가게 본점', mapProvider: 'NONE', regionId: null },
       }),
     );
@@ -142,15 +147,16 @@ describe('판매자', () => {
     expect(screen.getByRole('button', { name: '계정 정지' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '비밀번호 초기화' }));
     const dialog = await screen.findByRole('dialog');
-    await userEvent.type(within(dialog).getByLabelText(/^새 비밀번호 \*/), 'Passw0rd!');
+    expect(within(dialog).getByText('8~64자. 첫 로그인 때 변경이 강제됩니다.')).toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText(/^새 비밀번호 \*/), '12345678');
     await userEvent.type(within(dialog).getByLabelText(/^새 비밀번호 확인/), 'nope');
     await userEvent.click(within(dialog).getByRole('button', { name: '초기화' }));
     expect(await within(dialog).findByText('비밀번호가 서로 다릅니다.')).toBeInTheDocument();
     await userEvent.clear(within(dialog).getByLabelText(/^새 비밀번호 확인/));
-    await userEvent.type(within(dialog).getByLabelText(/^새 비밀번호 확인/), 'Passw0rd!');
+    await userEvent.type(within(dialog).getByLabelText(/^새 비밀번호 확인/), '12345678');
     await userEvent.click(within(dialog).getByRole('button', { name: '초기화' }));
     await vi.waitFor(() =>
-      expect(resetInput).toEqual({ accountId: '20', newPassword: 'Passw0rd!' }),
+      expect(resetInput).toEqual({ accountId: '20', newPassword: '12345678' }),
     );
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });

@@ -1,14 +1,8 @@
 import { z } from 'zod';
 
+import { initialPasswordSchema } from '@/shared/lib/initial-password';
+
 const USERNAME = /^[a-z0-9._-]{4,80}$/;
-const strongPassword = z
-  .string()
-  .min(8, '8자 이상')
-  .max(64, '64자 이하')
-  .refine(
-    (v) => /[A-Za-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v),
-    '알파벳·숫자·특수문자를 각각 1자 이상',
-  );
 
 /** BE 상한(auth-admin.constants·store-field-limits). BE는 trim 뒤 코드 포인트로 센다. */
 const SELLER_FIELD_MAX = {
@@ -42,7 +36,7 @@ const coord = z
 /** 빈 문자열은 null로 보낸다. */
 export const createSellerSchema = z.object({
   username: z.string().trim().regex(USERNAME, '4~80자, 소문자·숫자·. _ - 만'),
-  password: strongPassword,
+  password: initialPasswordSchema,
   email: maxChars(SELLER_FIELD_MAX.email)
     .email('이메일 형식이 아닙니다.')
     .optional()
@@ -68,7 +62,7 @@ export const createSellerSchema = z.object({
 export type CreateSellerValues = z.infer<typeof createSellerSchema>;
 
 export const resetPasswordSchema = z
-  .object({ newPassword: strongPassword, confirmPassword: z.string() })
+  .object({ newPassword: initialPasswordSchema, confirmPassword: z.string() })
   .refine((v) => v.newPassword === v.confirmPassword, {
     path: ['confirmPassword'],
     message: '비밀번호가 서로 다릅니다.',

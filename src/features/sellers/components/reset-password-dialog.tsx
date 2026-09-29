@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { messageFor } from '@/shared/api';
+import { INITIAL_PASSWORD_HELP } from '@/shared/lib/initial-password';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -83,7 +84,7 @@ export function ResetPasswordDialog({ accountId, label, onChanged }: Props) {
             label="새 비밀번호"
             required
             error={errors.newPassword?.message}
-            help="8~64자, 알파벳·숫자·특수문자 각 1자 이상"
+            help={INITIAL_PASSWORD_HELP}
           >
             <Input
               id="rp-new"
