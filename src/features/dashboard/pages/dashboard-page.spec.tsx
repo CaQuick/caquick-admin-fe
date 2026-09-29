@@ -68,7 +68,7 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('4,812,000원')).toBeInTheDocument();
     expect(screen.getByText('주문 163건')).toBeInTheDocument();
     expect(screen.getByText('7건')).toBeInTheDocument();
-    expect(screen.getByText('처리 필요')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '처리 필요' })).toHaveAttribute('href', '/reports');
     const table = screen.getByRole('table', { name: '주문 상태별 건수' });
     expect(within(table).getByText('78건')).toBeInTheDocument();
     expect(screen.getByText('생일 케이크')).toBeInTheDocument();
