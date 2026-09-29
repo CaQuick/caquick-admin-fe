@@ -10,15 +10,22 @@ describe('FillFromUsernameButton', () => {
     ['  seven77  ', false], // 공백은 길이에 넣지 않는다
     ['eight888', true],
     ['testadmin', true],
+    ['a'.repeat(64), true], // 비밀번호 상한 경계
+    ['a'.repeat(65), false], // 아이디는 80자까지 허용되지만 비밀번호는 64자까지
+    ['a'.repeat(80), false],
   ])('아이디 "%s" → 사용 가능 %s', (username, enabled) => {
     render(<FillFromUsernameButton username={username} onFill={vi.fn()} />);
     const button = screen.getByRole('button', { name: '아이디로 채우기' });
     if (enabled) {
       expect(button).toBeEnabled();
-      expect(screen.queryByText(/8자 이상이어야/)).not.toBeInTheDocument();
+      expect(button).not.toHaveAccessibleDescription();
     } else {
       expect(button).toBeDisabled();
-      expect(button).toHaveAccessibleDescription('아이디가 8자 이상이어야 쓸 수 있습니다.');
+      expect(button).toHaveAccessibleDescription(
+        username.trim().length > 64
+          ? '아이디가 64자를 넘어 비밀번호로 쓸 수 없습니다.'
+          : '아이디가 8자 이상이어야 쓸 수 있습니다.',
+      );
     }
   });
 
