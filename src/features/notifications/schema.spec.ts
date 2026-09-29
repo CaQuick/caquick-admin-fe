@@ -32,12 +32,19 @@ describe('notification schema', () => {
     ).toBe(true);
   });
 
-  it('멱등 키는 8~64자·공백 없음, 입력 변환은 대상별 accountIds', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    { env: '보안 컨텍스트', stub: false },
+    { env: 'http LAN, randomUUID 없음', stub: true },
+  ])('멱등 키는 8~64자·공백 없음·매번 다르다 ($env)', ({ stub }) => {
+    if (stub) vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) });
     const k = newIdempotencyKey();
-    expect(k.length).toBeGreaterThanOrEqual(8);
-    expect(k.length).toBeLessThanOrEqual(64);
-    expect(k).not.toMatch(/\s/);
+    expect(k).toMatch(/^\S{8,64}$/);
     expect(newIdempotencyKey()).not.toBe(k);
+  });
+
+  it('입력 변환은 대상별 accountIds', () => {
     expect(
       toSendInput(
         { type: 'MARKETING', title: 't', body: 'b', targetKind: 'ALL_USERS', accountIdsRaw: '1' },
