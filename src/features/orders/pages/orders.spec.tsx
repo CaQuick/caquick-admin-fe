@@ -194,7 +194,8 @@ describe('주문 목록', () => {
     boot(`/orders?storeId=abc&accountId=17&q=${'a'.repeat(101)}`);
     await screen.findByText('CQ-2609-1');
     expect(inputs[0]).toMatchObject({ storeId: null, accountId: '17', keyword: 'a'.repeat(100) });
-    expect(screen.getByRole('textbox', { name: '검색어' })).toHaveAttribute('maxLength', '100');
+    // 입력칸 상한은 FilterBar가 코드 포인트로 자른다(filter-bar.spec) — URL 값은 잘린 채 보인다
+    expect(screen.getByRole('textbox', { name: '검색어' })).toHaveValue('a'.repeat(100));
   });
 
   it('숫자가 아닌 ID 입력은 커밋하지 않고 알린다', async () => {
