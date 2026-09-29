@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, graphql, http } from 'msw';
@@ -170,14 +171,17 @@ describe('App 세션 상실', () => {
     expect(useAuthStore.getState().status).toBe('authenticated');
   });
 
-  it('비밀번호 변경 화면에서는 세션이 비어도 앱이 끼어들지 않는다', async () => {
+  it('비밀번호 변경 화면에서는 세션이 비어도 이동은 화면에 맡기고 캐시는 비운다', async () => {
     refreshOnlyAtBoot(true);
     window.history.pushState({}, '', '/change-password');
     render(<App />);
     expect(await screen.findByLabelText('현재 비밀번호')).toBeInTheDocument();
+    const clear = vi.spyOn(QueryClient.prototype, 'clear');
     act(() => useAuthStore.getState().clear());
     await new Promise((r) => setTimeout(r, 50));
     expect(window.location.pathname).toBe('/change-password');
+    expect(clear).toHaveBeenCalledTimes(1);
+    clear.mockRestore();
   });
 
   it('비밀번호 변경 성공은 redirect 없이 로그인으로 보낸다', async () => {
