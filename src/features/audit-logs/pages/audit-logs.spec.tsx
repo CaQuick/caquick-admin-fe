@@ -120,7 +120,7 @@ describe('감사 로그', () => {
     boot('/orders/99');
     const link = await screen.findByRole('link', { name: '감사 이력' });
     expect(decodeURIComponent(link.getAttribute('href') ?? '')).toBe(
-      '/audit-logs?targetType=ORDER&targetId="99"',
+      '/audit-logs?targetType=ORDER&targetId=99',
     );
   });
 });
