@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { messageFor } from '@/shared/api';
 import { formatCount } from '@/shared/lib/format';
@@ -87,7 +88,10 @@ export function SendNotificationPage() {
       setKey(newIdempotencyKey());
     } catch (e) {
       // 같은 키로 재시도 — BE가 첫 응답을 재생하므로 중복 발송이 없다
-      setError(messageFor(e));
+      const message = messageFor(e);
+      setError(message);
+      // 다이얼로그가 열린 동안 폼 상단 문구는 가려진다
+      toast.error(message);
       throw e;
     }
   };

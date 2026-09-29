@@ -81,8 +81,13 @@ describe('알림 발송', () => {
     const dialog = await screen.findByRole('alertdialog');
     expect(dialog).toHaveTextContent('계정 3개에 갑니다');
     await userEvent.click(within(dialog).getByRole('button', { name: '발송' }));
-    // 다이얼로그가 열린 동안 바깥은 aria-hidden — 텍스트로 확인
-    expect(await screen.findByText('잠시 뒤 다시')).toBeInTheDocument();
+    // 다이얼로그가 열린 동안 폼 상단 문구는 가려지므로 토스트로도 알린다
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-sonner-toast][data-type="error"]')).toHaveTextContent(
+        '잠시 뒤 다시',
+      ),
+    );
+    expect(screen.getByText('잠시 뒤 다시', { selector: 'p[role="alert"]' })).toBeInTheDocument();
     await vi.waitFor(() => expect(inputs).toHaveLength(1));
 
     await userEvent.click(within(dialog).getByRole('button', { name: '발송' }));

@@ -50,7 +50,14 @@ export type SendValues = z.infer<typeof sendSchema>;
 
 /** 8~64자, 공백 없음. 폼을 열 때 1번 만들고 재시도에는 같은 키를 써서 중복 발송을 막는다. */
 export function newIdempotencyKey(): string {
-  return `admin-${crypto.randomUUID()}`.slice(0, 64);
+  // randomUUID는 보안 컨텍스트(https·localhost)에만 있다 — http LAN 접속에서도 화면이 떠야 한다
+  const id =
+    typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+          b.toString(16).padStart(2, '0'),
+        ).join('');
+  return `admin-${id}`;
 }
 
 export function toSendInput(v: SendValues, idempotencyKey: string): AdminSendNotificationInput {
