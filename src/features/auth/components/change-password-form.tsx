@@ -9,10 +9,13 @@ import { Label } from '@/shared/ui/label';
 
 import { changePassword } from '../session';
 import { type ChangePasswordValues, changePasswordSchema } from '../password-rules';
+import { useAuthStore } from '../store';
 import { FormError } from './form-error';
 
 interface Props {
   onSuccess: () => void;
+  /** refresh까지 실패해 세션을 잃었을 때. 이 화면은 앱의 세션 감시가 건너뛰므로 호출자가 이동시킨다. */
+  onSessionLost: (message: string) => void;
 }
 
 const FIELDS: { name: keyof ChangePasswordValues; label: string; autoComplete: string }[] = [
@@ -21,7 +24,7 @@ const FIELDS: { name: keyof ChangePasswordValues; label: string; autoComplete: s
   { name: 'confirmPassword', label: '새 비밀번호 확인', autoComplete: 'new-password' },
 ];
 
-export function ChangePasswordForm({ onSuccess }: Props) {
+export function ChangePasswordForm({ onSuccess, onSessionLost }: Props) {
   const [error, setError] = useState<string | null>(null);
   const form = useForm<ChangePasswordValues>({
     resolver: zodResolver(changePasswordSchema),
@@ -34,7 +37,8 @@ export function ChangePasswordForm({ onSuccess }: Props) {
       await changePassword(values.currentPassword, values.newPassword);
       onSuccess();
     } catch (e) {
-      setError(messageFor(e));
+      if (useAuthStore.getState().status === 'anonymous') onSessionLost(messageFor(e));
+      else setError(messageFor(e));
     }
   });
 
