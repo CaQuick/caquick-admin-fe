@@ -1,8 +1,11 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
 import { server } from './msw/server';
+
+// findBy·waitFor 기본 1초는 전체 스위트를 병렬로 돌릴 때 부하로 간헐 초과한다(단독 실행은 통과)
+configure({ asyncUtilTimeout: 3000 });
 
 // jsdom에 없는 브라우저 API — Radix Switch 등이 쓴다
 class ResizeObserverStub {
