@@ -1,22 +1,32 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { ImageUploadField } from '@/features/uploads';
 import { messageFor } from '@/shared/api';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { EntityPicker } from '@/shared/ui/entity-picker';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Switch } from '@/shared/ui/switch';
 
-import { createBanner, updateBanner } from '../api/queries';
+import {
+  type LinkTargetKind,
+  createBanner,
+  linkLabelQueryOptions,
+  linkOptionsQueryOptions,
+  updateBanner,
+} from '../api/queries';
 import {
   type Banner,
   type BannerFormValues,
   LINK_TYPES,
   PLACEMENTS,
+  SORT_ORDER_MAX,
+  SORT_ORDER_MIN,
   bannerFormSchema,
   defaultBannerValues,
   toCreateInput,
@@ -24,13 +34,42 @@ import {
   toUpdateInput,
 } from '../schema';
 
-const LINK_LABEL: Record<BannerFormValues['linkType'], string | null> = {
-  NONE: null,
-  URL: '링크 URL',
-  PRODUCT: '상품 ID',
-  STORE: '매장 ID',
-  CATEGORY: '이벤트 카테고리 ID',
+/** 선택기로 고르는 링크 대상과 그 이름 */
+const PICKER_LABEL: Record<LinkTargetKind, string> = {
+  PRODUCT: '상품',
+  STORE: '매장',
+  CATEGORY: '이벤트 카테고리',
 };
+const isPickerKind = (v: BannerFormValues['linkType']): v is LinkTargetKind =>
+  v === 'PRODUCT' || v === 'STORE' || v === 'CATEGORY';
+
+/** 링크 대상 선택기. 저장된 대상은 이름을 한 번 읽어 보여 준다(새로 고른 대상은 선택기가 이름을 안다) */
+function LinkTargetPicker({
+  kind,
+  value,
+  savedValue,
+  onChange,
+}: {
+  kind: LinkTargetKind;
+  value: string;
+  /** 서버에 저장된 같은 유형의 대상 ID. 없으면 undefined */
+  savedValue: string | undefined;
+  onChange: (id: string) => void;
+}) {
+  const isSaved = value !== '' && value === savedValue;
+  const saved = useQuery({ ...linkLabelQueryOptions(kind, value), enabled: isSaved });
+  return (
+    <EntityPicker
+      label={PICKER_LABEL[kind]}
+      value={value === '' ? undefined : value}
+      onChange={(id) => onChange(id ?? '')}
+      searchQuery={(keyword) => linkOptionsQueryOptions(kind, keyword)}
+      selectedLabel={isSaved ? (saved.data ?? undefined) : undefined}
+      idEntry={false}
+      className="[&>button[role=combobox]]:w-72"
+    />
+  );
+}
 
 interface Props {
   banner?: Banner;
@@ -78,6 +117,7 @@ export function BannerForm({ banner, onSaved }: Props) {
   const placement = form.watch('placement');
   const linkType = form.watch('linkType');
   const placementMeta = PLACEMENTS.find((p) => p.value === placement);
+  const linkValue = form.watch('linkValue');
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
@@ -91,21 +131,15 @@ export function BannerForm({ banner, onSaved }: Props) {
         onSaved(created.id);
       }
     } catch (e) {
-      setError(messageFor(e));
+      const message = messageFor(e);
+      setError(message);
+      toast.error(message);
     }
   });
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-3 lg:grid-cols-[1fr_300px]">
+    <form onSubmit={submit} noValidate className="grid gap-3 lg:grid-cols-[1fr_340px]">
       <div className="flex flex-col gap-3">
-        {error && (
-          <p
-            role="alert"
-            className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
-          >
-            {error}
-          </p>
-        )}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">배치 · 링크</CardTitle>
@@ -157,16 +191,43 @@ export function BannerForm({ banner, onSaved }: Props) {
                 <p className="text-xs text-negative-foreground">{errors.linkType.message}</p>
               )}
             </div>
-            {LINK_LABEL[linkType] && (
+            {linkType !== 'NONE' && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="bn-link">{LINK_LABEL[linkType]}</Label>
-                <Input id="bn-link" {...form.register('linkValue')} />
+                {isPickerKind(linkType) ? (
+                  <>
+                    <span className="text-sm font-medium">연결할 {PICKER_LABEL[linkType]}</span>
+                    <LinkTargetPicker
+                      kind={linkType}
+                      value={linkValue}
+                      savedValue={
+                        banner && initial.linkType === linkType ? initial.linkValue : undefined
+                      }
+                      onChange={(id) =>
+                        form.setValue('linkValue', id, {
+                          shouldValidate: form.formState.isSubmitted,
+                        })
+                      }
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Label htmlFor="bn-link">웹 주소</Label>
+                    <Input
+                      id="bn-link"
+                      type="url"
+                      placeholder="https://"
+                      {...form.register('linkValue')}
+                    />
+                  </>
+                )}
                 {errors.linkValue ? (
                   <p className="text-xs text-negative-foreground">{errors.linkValue.message}</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">
-                    대상이 없거나 비활성·삭제면 저장이 거절됩니다.
-                  </p>
+                  isPickerKind(linkType) && (
+                    <p className="text-xs text-muted-foreground">
+                      숨김이거나 삭제된 대상은 연결할 수 없습니다.
+                    </p>
+                  )
                 )}
               </div>
             )}
@@ -178,11 +239,11 @@ export function BannerForm({ banner, onSaved }: Props) {
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="bn-starts">시작 (KST)</Label>
+              <Label htmlFor="bn-starts">시작(한국 시간)</Label>
               <Input id="bn-starts" type="datetime-local" {...form.register('startsAt')} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="bn-ends">종료 (KST)</Label>
+              <Label htmlFor="bn-ends">종료(한국 시간)</Label>
               <Input id="bn-ends" type="datetime-local" {...form.register('endsAt')} />
               {errors.endsAt && (
                 <p className="text-xs text-negative-foreground">{errors.endsAt.message}</p>
@@ -193,17 +254,20 @@ export function BannerForm({ banner, onSaved }: Props) {
               <Input
                 id="bn-sort"
                 type="number"
+                step={1}
+                min={SORT_ORDER_MIN}
+                max={SORT_ORDER_MAX}
                 {...form.register('sortOrder', { valueAsNumber: true })}
               />
               <p className="text-xs text-muted-foreground">
-                구매자는 슬롯당 1개 — 오름차순 → id 오름차순으로 고릅니다.
+                정렬 순서가 가장 작은 배너 1개가 노출됩니다(같으면 먼저 등록한 것).
               </p>
               {errors.sortOrder && (
                 <p className="text-xs text-negative-foreground">{errors.sortOrder.message}</p>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="bn-active">활성</Label>
+              <Label htmlFor="bn-active">노출</Label>
               <Controller
                 control={form.control}
                 name="isActive"
@@ -211,14 +275,12 @@ export function BannerForm({ banner, onSaved }: Props) {
                   <Switch id="bn-active" checked={field.value} onCheckedChange={field.onChange} />
                 )}
               />
+              <p className="text-xs text-muted-foreground">
+                끄면 노출 기간 안이어도 구매자에게 보이지 않습니다.
+              </p>
             </div>
           </CardContent>
         </Card>
-        <div className="flex justify-end gap-2">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? '저장 중…' : banner ? '저장' : '등록'}
-          </Button>
-        </div>
       </div>
       <Card>
         <CardHeader>
@@ -235,6 +297,7 @@ export function BannerForm({ banner, onSaved }: Props) {
                 value={field.value || null}
                 onChange={(url) => field.onChange(url ?? '')}
                 aspect="3 / 1"
+                previewClassName="w-full"
               />
             )}
           />
@@ -243,6 +306,22 @@ export function BannerForm({ banner, onSaved }: Props) {
           )}
         </CardContent>
       </Card>
+      {/* 좁은 화면에서도 이미지 카드 아래, 폼 맨 끝에 둔다. 실패 문구는 누른 버튼 곁에 */}
+      <div className="flex flex-col gap-2 lg:col-span-2">
+        {error && (
+          <p
+            role="alert"
+            className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
+          >
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? '저장 중…' : banner ? '저장' : '등록'}
+          </Button>
+        </div>
+      </div>
     </form>
   );
 }

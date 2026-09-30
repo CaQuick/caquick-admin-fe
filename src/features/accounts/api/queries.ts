@@ -87,7 +87,7 @@ export function userDetailQueryOptions(accountId: string) {
   });
 }
 
-/** 정지·복구는 USER·SELLER 공용. 호출자가 자기 feature의 키를 무효화한다(구매자는 users, 판매자는 sellers). */
+/** 정지·정지 해제는 USER·SELLER 공용. 호출자가 자기 feature의 키를 무효화한다(구매자는 users, 판매자는 sellers). */
 export async function suspendAccount(accountId: string, reason: string) {
   return (await gqlRequest(AdminSuspendAccountDocument, { input: { accountId, reason } }))
     .adminSuspendAccount;

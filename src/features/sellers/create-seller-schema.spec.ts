@@ -1,8 +1,4 @@
-import {
-  createSellerSchema,
-  resetPasswordSchema,
-  toCreateSellerInput,
-} from './create-seller-schema';
+import { createSellerSchema, toCreateSellerInput } from './create-seller-schema';
 
 const base = {
   username: 'lumi.cake',
@@ -12,6 +8,12 @@ const base = {
   storeName: '루미 케이크 강남점',
   storePhone: '02-555-0118',
   addressFull: '서울 강남구 테헤란로 1',
+  addressCity: '',
+  addressDistrict: '',
+  addressNeighborhood: '',
+  regionId: '',
+  latitude: '',
+  longitude: '',
   mapProvider: 'NONE' as const,
 };
 
@@ -55,6 +57,7 @@ describe('createSellerSchema', () => {
     ['email', 'not-mail'],
     ['websiteUrl', 'not a url'],
     ['latitude', 'abc'],
+    ['latitude', '91'], // 범위 밖(BE도 거절)
     ['storeName', ''],
   ])('%s=%s 는 거절', (key, value) => {
     expect(createSellerSchema.safeParse({ ...base, [key]: value }).success).toBe(false);
@@ -117,18 +120,5 @@ describe('createSellerSchema', () => {
     ['a'.repeat(65), false],
   ])('초기 비밀번호 %s → %s (조합 규칙 없이 8~64자)', (pw, ok) => {
     expect(createSellerSchema.safeParse({ ...base, password: pw }).success).toBe(ok);
-    expect(resetPasswordSchema.safeParse({ newPassword: pw, confirmPassword: pw }).success).toBe(
-      ok,
-    );
-  });
-
-  it('resetPasswordSchema는 확인 불일치를 거절', () => {
-    expect(
-      resetPasswordSchema.safeParse({ newPassword: 'Passw0rd!', confirmPassword: 'Passw0rd!' })
-        .success,
-    ).toBe(true);
-    expect(
-      resetPasswordSchema.safeParse({ newPassword: 'Passw0rd!', confirmPassword: 'other' }).success,
-    ).toBe(false);
   });
 });

@@ -15,12 +15,15 @@ import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { CursorPager } from '@/shared/ui/cursor-pager';
 import { DataTable } from '@/shared/ui/data-table';
 import { FilterBar } from '@/shared/ui/filter-bar';
+import { FilterField } from '@/shared/ui/filter-field';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { StatusPill } from '@/shared/ui/status-pill';
 
-import { bannersListQueryOptions, deleteBanner } from '../api/queries';
+import { bannersListQueryOptions, deleteBanner, visibleBannersQueryOptions } from '../api/queries';
+import { LIVE_STATUS, bannerLiveStatus, currentBannerIds } from '../live-status';
 import { type BannersSearch, type BannersSearchInput, LINK_TYPES, PLACEMENTS } from '../schema';
+import { useLiveNow } from '../use-live-now';
 
 type BannerRow = AdminBannersQuery['adminBanners']['items'][number];
 const ALL = '__all__';
@@ -42,8 +45,11 @@ export function BannersListPage({ search, onSearchChange }: Props) {
       isActive: search.active === undefined ? null : search.active === 'true',
     }),
   );
+  const visible = useQuery(visibleBannersQueryOptions());
   const patch = (p: Partial<BannersSearchInput>) =>
     onSearchChange({ ...search, ...p, cursor: undefined });
+  const now = useLiveNow([...(list.data?.items ?? []), ...(visible.data ?? [])]);
+  const current = visible.data ? currentBannerIds(visible.data, now) : new Set<string>();
 
   const columns: ColumnDef<BannerRow, unknown>[] = [
     {
@@ -72,13 +78,17 @@ export function BannersListPage({ search, onSearchChange }: Props) {
       cell: ({ row }) => placementLabel(row.original.placement),
     },
     {
-      accessorKey: 'isActive',
-      header: '상태',
-      cell: ({ row }) => (
-        <StatusPill tone={row.original.isActive ? 'positive' : 'neutral'}>
-          {row.original.isActive ? '활성' : '비활성'}
-        </StatusPill>
-      ),
+      id: 'status',
+      header: '노출 상태',
+      cell: ({ row }) => {
+        const s = LIVE_STATUS[bannerLiveStatus(row.original, now)];
+        return (
+          <span className="flex items-center gap-1.5">
+            <StatusPill tone={s.tone}>{s.label}</StatusPill>
+            {current.has(row.original.id) && <StatusPill tone="primary">현재 노출</StatusPill>}
+          </span>
+        );
+      },
     },
     {
       accessorKey: 'linkType',
@@ -109,7 +119,7 @@ export function BannersListPage({ search, onSearchChange }: Props) {
               </Button>
             }
             title="배너를 삭제할까요?"
-            description="구매자 화면에서 바로 사라집니다."
+            description="구매자 화면에서 바로 사라지고 되돌릴 수 없습니다."
             confirmLabel="삭제"
             destructive
             onConfirm={async () => {
@@ -131,6 +141,7 @@ export function BannersListPage({ search, onSearchChange }: Props) {
     <>
       <PageHeader
         title="배너"
+        description="'현재 노출'은 자리마다 구매자에게 지금 보이는 배너 1개입니다. 연결한 상품·매장·카테고리가 숨김이면 구매자 앱에는 다음 배너가 보입니다."
         meta={list.data ? `전체 ${formatCount(list.data.totalCount)}개` : undefined}
         actions={
           <Button asChild>
@@ -145,39 +156,43 @@ export function BannersListPage({ search, onSearchChange }: Props) {
           hasActiveFilters={search.placement !== undefined || search.active !== undefined}
           onReset={() => onSearchChange({ limit: search.limit })}
         >
-          <Select
-            value={search.placement ?? ALL}
-            onValueChange={(v) =>
-              patch({ placement: v === ALL ? undefined : (v as BannersSearch['placement']) })
-            }
-          >
-            <SelectTrigger className="h-9 w-36" aria-label="배치">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>배치 전체</SelectItem>
-              {PLACEMENTS.map((p) => (
-                <SelectItem key={p.value} value={p.value}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={search.active ?? ALL}
-            onValueChange={(v) =>
-              patch({ active: v === ALL ? undefined : (v as 'true' | 'false') })
-            }
-          >
-            <SelectTrigger className="h-9 w-32" aria-label="활성 여부">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>전체</SelectItem>
-              <SelectItem value="true">활성</SelectItem>
-              <SelectItem value="false">비활성</SelectItem>
-            </SelectContent>
-          </Select>
+          <FilterField label="배치">
+            <Select
+              value={search.placement ?? ALL}
+              onValueChange={(v) =>
+                patch({ placement: v === ALL ? undefined : (v as BannersSearch['placement']) })
+              }
+            >
+              <SelectTrigger className="h-9 w-32" aria-label="배치">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>전체</SelectItem>
+                {PLACEMENTS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FilterField>
+          <FilterField label="노출 여부">
+            <Select
+              value={search.active ?? ALL}
+              onValueChange={(v) =>
+                patch({ active: v === ALL ? undefined : (v as 'true' | 'false') })
+              }
+            >
+              <SelectTrigger className="h-9 w-28" aria-label="노출 여부">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>전체</SelectItem>
+                <SelectItem value="true">노출</SelectItem>
+                <SelectItem value="false">숨김</SelectItem>
+              </SelectContent>
+            </Select>
+          </FilterField>
         </FilterBar>
         {list.isError ? (
           <p role="alert" className="px-4 py-8 text-center text-sm text-negative-foreground">
@@ -194,15 +209,10 @@ export function BannersListPage({ search, onSearchChange }: Props) {
         )}
         {list.data && (
           <CursorPager
-            totalCount={list.data.totalCount}
-            shown={list.data.items.length}
-            hasMore={list.data.hasMore}
-            atStart={!search.cursor}
+            page={list.data}
+            search={search}
             isFetching={list.isFetching}
-            onNext={() =>
-              list.data?.nextCursor && onSearchChange({ ...search, cursor: list.data.nextCursor })
-            }
-            onReset={() => onSearchChange({ ...search, cursor: undefined })}
+            onCursorChange={(cursor) => onSearchChange({ ...search, cursor })}
           />
         )}
       </Card>

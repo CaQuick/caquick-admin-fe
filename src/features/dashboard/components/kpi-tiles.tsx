@@ -48,11 +48,11 @@ export function KpiTiles({ summary }: { summary: DashboardSummary }) {
       <Tile
         label="신규 구매자"
         value={`${formatCount(summary.newUserCount)}명`}
-        note={`판매자 신규 ${formatCount(summary.newSellerCount)}`}
+        note={`신규 판매자 ${formatCount(summary.newSellerCount)}명`}
       />
       <Tile
-        label="활성 매장 / 상품"
-        value={`${formatCount(summary.activeStoreCount)} / ${formatCount(summary.activeProductCount)}`}
+        label="노출 중인 매장 / 상품"
+        value={`${formatCount(summary.activeStoreCount)}곳 / ${formatCount(summary.activeProductCount)}개`}
         note="현재 기준"
       />
       <Tile

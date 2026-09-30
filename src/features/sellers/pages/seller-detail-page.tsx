@@ -1,7 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { HistoryIcon } from 'lucide-react';
 
-import { AccountStatusActions, AccountStatusPill } from '@/features/accounts';
+import {
+  accountLabel,
+  AccountStatusActions,
+  AccountStatusPill,
+  ResetPasswordDialog,
+} from '@/features/accounts';
 import { messageFor } from '@/shared/api';
 import { formatKst } from '@/shared/lib/kst';
 import { Button } from '@/shared/ui/button';
@@ -10,8 +16,10 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { StatusPill } from '@/shared/ui/status-pill';
 
-import { invalidateSellers, sellerDetailQueryOptions } from '../api/queries';
-import { ResetPasswordDialog } from '../components/reset-password-dialog';
+import { invalidateSellers, resetSellerPassword, sellerDetailQueryOptions } from '../api/queries';
+import { StoreVisibilityPill } from '../components/store-visibility-pill';
+
+const BACK = { to: '/sellers' } as const;
 
 export function SellerDetailPage({ accountId }: { accountId: string }) {
   const queryClient = useQueryClient();
@@ -19,34 +27,45 @@ export function SellerDetailPage({ accountId }: { accountId: string }) {
   if (q.isError) {
     return (
       <>
-        <PageHeader title="판매자" />
+        <PageHeader title="판매자" back={BACK} />
         <p role="alert" className="text-sm text-negative-foreground">
           {messageFor(q.error)}
         </p>
-        <Button asChild variant="link" className="px-0">
-          <Link to="/sellers">목록으로</Link>
-        </Button>
       </>
     );
   }
   if (!q.data) return <Skeleton className="h-64" aria-busy />;
   const s = q.data;
-  const label = s.username ?? `#${s.accountId}`;
+  const label = accountLabel(s);
   const refresh = () => invalidateSellers(queryClient, s.accountId);
   return (
     <>
       <PageHeader
         title={label}
+        back={BACK}
         meta={
           <span className="flex items-center gap-1.5">
             <AccountStatusPill status={s.status} />
-            {s.mustChangePassword && <StatusPill tone="caution">비번 변경 필요</StatusPill>}
+            {s.mustChangePassword && <StatusPill tone="caution">비밀번호 변경 필요</StatusPill>}
           </span>
         }
-        description={`계정 ID ${s.accountId} · 생성 ${formatKst(s.createdAt, true)} · 마지막 로그인 ${s.lastLoginAt ? formatKst(s.lastLoginAt, true) : '없음'}`}
+        description={`계정 ID ${s.accountId} · 등록일 ${formatKst(s.createdAt, true)} · 최근 로그인 ${s.lastLoginAt ? formatKst(s.lastLoginAt, true) : '없음'}`}
         actions={
           <>
-            <ResetPasswordDialog accountId={s.accountId} label={label} onChanged={refresh} />
+            <Button asChild variant="outline">
+              <Link to="/audit-logs" search={{ targetType: 'ACCOUNT', targetId: s.accountId }}>
+                <HistoryIcon className="size-4" /> 감사 이력
+              </Link>
+            </Button>
+            <ResetPasswordDialog
+              label={label}
+              audience="판매자"
+              username={s.username}
+              onSubmit={async (pw) => {
+                await resetSellerPassword(s.accountId, pw);
+                await refresh();
+              }}
+            />
             <AccountStatusActions
               accountId={s.accountId}
               status={s.status}
@@ -63,6 +82,8 @@ export function SellerDetailPage({ accountId }: { accountId: string }) {
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-sm">
+              <dt className="text-muted-foreground">아이디</dt>
+              <dd>{s.username ?? '—'}</dd>
               <dt className="text-muted-foreground">이름</dt>
               <dd>{s.name ?? '—'}</dd>
               <dt className="text-muted-foreground">이메일</dt>
@@ -98,14 +119,18 @@ export function SellerDetailPage({ accountId }: { accountId: string }) {
               <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-sm">
                 <dt className="text-muted-foreground">매장</dt>
                 <dd className="flex items-center gap-2">
-                  {s.store.storeName}
-                  <StatusPill tone={s.store.isActive ? 'positive' : 'neutral'}>
-                    {s.store.isActive ? '활성' : '비활성'}
-                  </StatusPill>
+                  <Link
+                    to="/stores/$storeId"
+                    params={{ storeId: s.store.id }}
+                    className="text-primary-soft-foreground hover:underline"
+                  >
+                    {s.store.storeName}
+                  </Link>
+                  <StoreVisibilityPill isActive={s.store.isActive} />
                 </dd>
                 <dt className="text-muted-foreground">매장 ID</dt>
                 <dd className="font-mono">{s.store.id}</dd>
-                <dt className="text-muted-foreground">전화</dt>
+                <dt className="text-muted-foreground">매장 전화</dt>
                 <dd>{s.store.storePhone}</dd>
                 <dt className="text-muted-foreground">주소</dt>
                 <dd>{s.store.addressFull}</dd>

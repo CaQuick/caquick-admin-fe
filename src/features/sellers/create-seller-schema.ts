@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { refineCoordPair, storeLocationShape } from '@/features/stores';
 import { initialPasswordSchema } from '@/shared/lib/initial-password';
 
 const USERNAME = /^[a-z0-9._-]{4,80}$/;
@@ -13,10 +14,6 @@ const SELLER_FIELD_MAX = {
   websiteUrl: 2048,
   storeName: 200,
   storePhone: 30,
-  addressFull: 500,
-  addressCity: 50,
-  addressDistrict: 80,
-  addressNeighborhood: 80,
 } as const;
 
 const maxChars = (max: number) =>
@@ -27,15 +24,16 @@ const maxChars = (max: number) =>
 const required = (max: number, message: string) =>
   maxChars(max).refine((v) => v.length > 0, message);
 const optional = (max: number) => maxChars(max).optional();
-const coord = z
-  .string()
-  .trim()
-  .optional()
-  .refine((v) => !v || !Number.isNaN(Number(v)), '숫자여야 합니다.');
 
-/** 빈 문자열은 null로 보낸다. */
-export const createSellerSchema = z.object({
-  username: z.string().trim().regex(USERNAME, '4~80자, 소문자·숫자·. _ - 만'),
+/** 빈 문자열은 null로 보낸다. 주소·지역·좌표·지도 제공자는 매장 수정과 같은 칸이다. */
+const sellerFields = z.object({
+  username: z
+    .string()
+    .trim()
+    .regex(
+      USERNAME,
+      '아이디는 4~80자의 영문 소문자, 숫자, 마침표(.), 밑줄(_), 하이픈(-)으로 입력해 주세요.',
+    ),
   password: initialPasswordSchema,
   email: maxChars(SELLER_FIELD_MAX.email)
     .email('이메일 형식이 아닙니다.')
@@ -50,24 +48,10 @@ export const createSellerSchema = z.object({
     .or(z.literal('')),
   storeName: required(SELLER_FIELD_MAX.storeName, '매장명은 필수입니다.'),
   storePhone: required(SELLER_FIELD_MAX.storePhone, '매장 전화는 필수입니다.'),
-  addressFull: required(SELLER_FIELD_MAX.addressFull, '주소는 필수입니다.'),
-  addressCity: optional(SELLER_FIELD_MAX.addressCity),
-  addressDistrict: optional(SELLER_FIELD_MAX.addressDistrict),
-  addressNeighborhood: optional(SELLER_FIELD_MAX.addressNeighborhood),
-  regionId: z.string().trim().optional(),
-  latitude: coord,
-  longitude: coord,
-  mapProvider: z.enum(['NAVER', 'KAKAO', 'NONE']),
+  ...storeLocationShape,
 });
+export const createSellerSchema = sellerFields.superRefine(refineCoordPair);
 export type CreateSellerValues = z.infer<typeof createSellerSchema>;
-
-export const resetPasswordSchema = z
-  .object({ newPassword: initialPasswordSchema, confirmPassword: z.string() })
-  .refine((v) => v.newPassword === v.confirmPassword, {
-    path: ['confirmPassword'],
-    message: '비밀번호가 서로 다릅니다.',
-  });
-export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 const orNull = (v: string | undefined) => (v && v.length > 0 ? v : null);
 

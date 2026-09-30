@@ -17,7 +17,7 @@ export const PRESET_LABEL: Record<Preset, string> = {
   today: '오늘',
   '7d': '7일',
   '30d': '30일',
-  custom: '직접',
+  custom: '기간 지정',
 };
 
 export const periodSearchSchema = z.object({

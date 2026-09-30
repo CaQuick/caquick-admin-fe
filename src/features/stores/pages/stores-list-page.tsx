@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { RegionPicker } from '@/features/regions';
 import { messageFor } from '@/shared/api';
+import { formatCount } from '@/shared/lib/format';
 import { Card } from '@/shared/ui/card';
 import { CursorPager } from '@/shared/ui/cursor-pager';
 import { FilterBar } from '@/shared/ui/filter-bar';
-import { IdFilterInput } from '@/shared/ui/id-filter-input';
+import { FilterField } from '@/shared/ui/filter-field';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
@@ -32,7 +34,7 @@ export function StoresListPage({ search, onSearchChange }: Props) {
     <>
       <PageHeader
         title="매장"
-        meta={list.data ? `전체 ${list.data.totalCount.toLocaleString('ko-KR')}개` : undefined}
+        meta={list.data ? `전체 ${formatCount(list.data.totalCount)}곳` : undefined}
       />
       <Card className="gap-0 py-0">
         <FilterBar
@@ -42,26 +44,26 @@ export function StoresListPage({ search, onSearchChange }: Props) {
           hasActiveFilters={hasStoreFilters(search)}
           onReset={() => onSearchChange({ limit: search.limit })}
         >
-          <Select
-            value={search.active ?? ALL}
-            onValueChange={(v) =>
-              patch({ active: v === ALL ? undefined : (v as 'true' | 'false') })
-            }
-          >
-            <SelectTrigger className="h-9 w-32" aria-label="활성 여부">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>전체</SelectItem>
-              <SelectItem value="true">활성</SelectItem>
-              <SelectItem value="false">비활성</SelectItem>
-            </SelectContent>
-          </Select>
-          <IdFilterInput
-            label="지역 ID"
-            value={search.regionId}
-            onCommit={(v) => patch({ regionId: v })}
-          />
+          <FilterField label="노출">
+            <Select
+              value={search.active ?? ALL}
+              onValueChange={(v) =>
+                patch({ active: v === ALL ? undefined : (v as 'true' | 'false') })
+              }
+            >
+              <SelectTrigger className="h-9 w-28" aria-label="노출 여부">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>전체</SelectItem>
+                <SelectItem value="true">노출</SelectItem>
+                <SelectItem value="false">숨김</SelectItem>
+              </SelectContent>
+            </Select>
+          </FilterField>
+          <FilterField label="지역">
+            <RegionPicker value={search.regionId} onChange={(v) => patch({ regionId: v })} />
+          </FilterField>
         </FilterBar>
         {list.isError ? (
           <p role="alert" className="px-4 py-8 text-center text-sm text-negative-foreground">
@@ -72,15 +74,10 @@ export function StoresListPage({ search, onSearchChange }: Props) {
         )}
         {list.data && (
           <CursorPager
-            totalCount={list.data.totalCount}
-            shown={list.data.items.length}
-            hasMore={list.data.hasMore}
-            atStart={!search.cursor}
+            page={list.data}
+            search={search}
             isFetching={list.isFetching}
-            onNext={() =>
-              list.data?.nextCursor && onSearchChange({ ...search, cursor: list.data.nextCursor })
-            }
-            onReset={() => onSearchChange({ ...search, cursor: undefined })}
+            onCursorChange={(cursor) => onSearchChange({ ...search, cursor })}
           />
         )}
       </Card>

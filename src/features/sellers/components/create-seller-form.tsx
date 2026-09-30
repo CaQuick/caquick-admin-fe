@@ -1,15 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 
+import { StoreLocationFields } from '@/features/stores';
 import { messageFor } from '@/shared/api';
 import { INITIAL_PASSWORD_HELP } from '@/shared/lib/initial-password';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { FillFromUsernameButton } from '@/shared/ui/fill-from-username-button';
+import { InitialPasswordActions } from '@/shared/ui/initial-password-actions';
 import { Input } from '@/shared/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
 import { createSeller } from '../api/queries';
 import {
@@ -36,7 +37,7 @@ const TEXT: {
     label: '아이디',
     required: true,
     autoComplete: 'off',
-    help: '4~80자, 소문자·숫자·. _ -',
+    help: '4~80자의 영문 소문자, 숫자, 마침표(.), 밑줄(_), 하이픈(-)을 쓸 수 있습니다.',
   },
   {
     name: 'password',
@@ -57,13 +58,6 @@ const BIZ: typeof TEXT = [
 const STORE: typeof TEXT = [
   { name: 'storeName', label: '매장명', required: true },
   { name: 'storePhone', label: '매장 전화', required: true, type: 'tel' },
-  { name: 'addressFull', label: '주소', required: true },
-  { name: 'addressCity', label: '시/도' },
-  { name: 'addressDistrict', label: '시/군/구' },
-  { name: 'addressNeighborhood', label: '동/읍/면' },
-  { name: 'regionId', label: '지역 ID', help: '활성 2단계 지역의 ID. 지역 화면에서 확인' },
-  { name: 'latitude', label: '위도' },
-  { name: 'longitude', label: '경도' },
 ];
 
 export function CreateSellerForm({ onCreated }: Props) {
@@ -72,7 +66,6 @@ export function CreateSellerForm({ onCreated }: Props) {
   const form = useForm<CreateSellerValues>({
     resolver: zodResolver(createSellerSchema),
     defaultValues: {
-      mapProvider: 'NONE',
       username: '',
       password: '',
       businessName: '',
@@ -80,10 +73,18 @@ export function CreateSellerForm({ onCreated }: Props) {
       storeName: '',
       storePhone: '',
       addressFull: '',
+      addressCity: '',
+      addressDistrict: '',
+      addressNeighborhood: '',
+      regionId: '',
+      latitude: '',
+      longitude: '',
+      // 구매자 앱은 네이버일 때만 지도를 그린다
+      mapProvider: 'NAVER',
     },
   });
   const { errors, isSubmitting } = form.formState;
-  const username = useWatch({ control: form.control, name: 'username' });
+  const [username, password] = useWatch({ control: form.control, name: ['username', 'password'] });
 
   const submit = form.handleSubmit(async (values) => {
     setError(null);
@@ -91,7 +92,10 @@ export function CreateSellerForm({ onCreated }: Props) {
       const created = await createSeller(queryClient, toCreateSellerInput(values));
       onCreated(created.accountId);
     } catch (e) {
-      setError(messageFor(e));
+      // 저장 버튼은 폼 맨 아래라 위쪽 알림은 화면 밖일 수 있다 — 토스트와 버튼 옆에 함께 알린다
+      const message = messageFor(e);
+      setError(message);
+      toast.error(message);
     }
   });
 
@@ -112,9 +116,10 @@ export function CreateSellerForm({ onCreated }: Props) {
         {...form.register(f.name)}
       />
       {f.name === 'password' && (
-        <FillFromUsernameButton
+        <InitialPasswordActions
+          value={password}
           username={username}
-          onFill={(v) => form.setValue('password', v, { shouldValidate: true })}
+          onChange={(v) => form.setValue('password', v, { shouldValidate: true })}
         />
       )}
     </Field>
@@ -122,14 +127,6 @@ export function CreateSellerForm({ onCreated }: Props) {
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-3">
-      {error && (
-        <p
-          role="alert"
-          className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
-        >
-          {error}
-        </p>
-      )}
       <div className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -147,30 +144,21 @@ export function CreateSellerForm({ onCreated }: Props) {
           <CardHeader>
             <CardTitle className="text-sm">매장</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
-            {STORE.map(render)}
-            <Field id="cs-mapProvider" label="지도 제공자">
-              <Controller
-                control={form.control}
-                name="mapProvider"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="cs-mapProvider" aria-label="지도 제공자">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NONE">없음</SelectItem>
-                      <SelectItem value="NAVER">네이버</SelectItem>
-                      <SelectItem value="KAKAO">카카오</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+          <CardContent className="flex flex-col gap-5">
+            <div className="grid gap-3 md:grid-cols-2">{STORE.map(render)}</div>
+            <StoreLocationFields form={form} idPrefix="cs" />
           </CardContent>
         </Card>
       </div>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {error && (
+          <p
+            role="alert"
+            className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
+          >
+            {error}
+          </p>
+        )}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? '등록 중…' : '판매자 등록'}
         </Button>

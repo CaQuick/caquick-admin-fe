@@ -77,7 +77,7 @@ export type AdminCreateAdminInput = {
   email?: string | null | undefined;
   /** 이름. 선택. */
   name?: string | null | undefined;
-  /** 초기 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함해야 한다. 최초 로그인 시 변경이 강제된다. */
+  /** 초기 비밀번호. 8~64자(공백만으로는 불가). 최초 로그인 시 변경이 강제되므로 조합 규칙은 없다. */
   password: string;
   /** 로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT. */
   username: string;
@@ -153,7 +153,7 @@ export type AdminCreateSellerInput = {
   email?: string | null | undefined;
   /** 계정 이름(운영자명). 선택. */
   name?: string | null | undefined;
-  /** 초기 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함. 최초 로그인 시 변경이 강제된다. */
+  /** 초기 비밀번호. 8~64자(공백만으로는 불가). 최초 로그인 시 변경이 강제되므로 조합 규칙은 없다. */
   password: string;
   /** 매장 기본 정보. */
   store: AdminCreateSellerStoreInput;
@@ -225,6 +225,27 @@ export type AdminDeleteReviewInput = {
   reviewId: string | number;
 };
 
+/** 알림 발송 이력 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminNotificationBroadcastListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 대상 지정 방식 필터. */
+  targetKind?: AdminNotificationTargetKind | null | undefined;
+  /** 알림 분류 필터. */
+  type?: AdminNotificationType | null | undefined;
+};
+
+/** 발송 진행 상태. 조회 시각 기준으로 계산한다. */
+export type AdminNotificationBroadcastStatus =
+  /** 대상 전원에 대한 저장을 마쳤다. */
+  | 'COMPLETED'
+  /** 요청 뒤 30분이 지나도 완료 기록이 없다(처리 실패 가능성, 운영 확인 필요). */
+  | 'DELAYED'
+  /** 저장 중. 요청 뒤 30분이 지나지 않았고 완료 기록이 없다. */
+  | 'IN_PROGRESS';
+
 /** 발송 대상 지정 방식. */
 export type AdminNotificationTargetKind =
   /** accountIds로 지정한 계정. */
@@ -281,11 +302,19 @@ export type AdminRegionListInput = {
   parentId?: string | number | null | undefined;
 };
 
+/** 관리자 비밀번호 초기화 입력. */
+export type AdminResetAdminPasswordInput = {
+  /** 대상 관리자 계정 ID. 본인이면 FORBIDDEN. */
+  accountId: string | number;
+  /** 새 임시 비밀번호. 8~64자(공백만으로는 불가). 다음 로그인 때 변경이 강제되므로 조합 규칙은 없다. */
+  newPassword: string;
+};
+
 /** 판매자 비밀번호 초기화 입력. */
 export type AdminResetSellerPasswordInput = {
   /** 대상 판매자 계정 ID. */
   accountId: string | number;
-  /** 새 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함. */
+  /** 새 초기 비밀번호. 8~64자(공백만으로는 불가). 최초 로그인 시 변경이 강제되므로 조합 규칙은 없다. */
   newPassword: string;
 };
 
@@ -324,6 +353,8 @@ export type AdminReviewListInput = {
   keyword?: string | null | undefined;
   /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
   limit?: number | null | undefined;
+  /** 리뷰 ID 필터. 지정하면 그 리뷰 1건만(삭제 리뷰는 includeDeleted일 때만). 미지정 시 전체. */
+  reviewId?: string | number | null | undefined;
   /** 매장 ID 필터. 미지정 시 전체. */
   storeId?: string | number | null | undefined;
 };
@@ -680,6 +711,13 @@ export type OrderStatusType =
   /** 구매자가 주문을 넣은 직후의 초기 상태. 판매자 확인 대기. */
   | 'SUBMITTED';
 
+/** 리뷰 첨부 미디어 종류. */
+export type ReviewMediaType =
+  /** 이미지. */
+  | 'IMAGE'
+  /** 동영상. thumbnailUrl이 있으면 대표 프레임으로 쓰지만 필수가 아니라 없을 수 있다. */
+  | 'VIDEO';
+
 /** 신고 사유. */
 export type ReviewReportReason =
   /** 욕설·비방. */
@@ -735,6 +773,13 @@ export type AdminCreateAdminMutationVariables = Exact<{
 
 export type AdminCreateAdminMutation = { adminCreateAdmin: { accountId: string, username: string | null } };
 
+export type AdminResetAdminPasswordMutationVariables = Exact<{
+  input: AdminResetAdminPasswordInput;
+}>;
+
+
+export type AdminResetAdminPasswordMutation = { adminResetAdminPassword: boolean };
+
 export type AdminMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -773,7 +818,22 @@ export type AdminAuditLogsQueryVariables = Exact<{
 }>;
 
 
-export type AdminAuditLogsQuery = { adminAuditLogs: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, actorAccountId: string, actorAccountType: AccountType | null, storeId: string | null, targetType: AuditTargetType, targetId: string, action: AuditActionType, beforeJson: string | null, afterJson: string | null, ipAddress: string | null, userAgent: string | null, createdAt: string }> } };
+export type AdminAuditLogsQuery = { adminAuditLogs: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, actorAccountId: string, actorAccountType: AccountType | null, actorLabel: string | null, storeId: string | null, targetType: AuditTargetType, targetId: string, action: AuditActionType, beforeJson: string | null, afterJson: string | null, ipAddress: string | null, userAgent: string | null, createdAt: string }> } };
+
+export type AdminAuditStorePickerQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminAuditStorePickerQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminAuditActorPickerQueryVariables = Exact<{
+  sellers?: AdminSellerListInput | null | undefined;
+  admins?: CursorInput | null | undefined;
+}>;
+
+
+export type AdminAuditActorPickerQuery = { adminSellers: { items: Array<{ accountId: string, username: string | null, name: string | null }> }, adminAdmins: { items: Array<{ accountId: string, username: string | null, name: string | null }> } };
 
 export type AdminBannersQueryVariables = Exact<{
   input?: AdminBannerListInput | null | undefined;
@@ -810,6 +870,48 @@ export type AdminDeleteBannerMutationVariables = Exact<{
 
 export type AdminDeleteBannerMutation = { adminDeleteBanner: boolean };
 
+export type AdminBannersVisibleQueryVariables = Exact<{
+  input?: AdminBannerListInput | null | undefined;
+}>;
+
+
+export type AdminBannersVisibleQuery = { adminBanners: { hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, linkCategoryId: string | null, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean }> } };
+
+export type AdminBannerProductOptionsQueryVariables = Exact<{
+  input?: AdminProductListInput | null | undefined;
+}>;
+
+
+export type AdminBannerProductOptionsQuery = { adminProducts: { items: Array<{ id: string, name: string, storeName: string, storeIsActive: boolean }> } };
+
+export type AdminBannerStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminBannerStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string }> } };
+
+export type AdminBannerCategoryOptionsQueryVariables = Exact<{
+  input?: AdminCategoryListInput | null | undefined;
+}>;
+
+
+export type AdminBannerCategoryOptionsQuery = { adminCategories: Array<{ id: string, name: string, isActive: boolean }> };
+
+export type AdminBannerProductLabelQueryVariables = Exact<{
+  productId: string | number;
+}>;
+
+
+export type AdminBannerProductLabelQuery = { adminProduct: { product: { id: string, name: string } } };
+
+export type AdminBannerStoreLabelQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminBannerStoreLabelQuery = { adminStore: { store: { id: string, storeName: string } } };
+
 export type AdminDashboardSummaryQueryVariables = Exact<{
   input: AdminDashboardSummaryInput;
 }>;
@@ -824,19 +926,45 @@ export type AdminSearchKeywordSnapshotQueryVariables = Exact<{
 
 export type AdminSearchKeywordSnapshotQuery = { adminSearchKeywordSnapshot: { rankedAt: string | null, items: Array<{ rank: number, keyword: string, searchCount: number }> } };
 
+export type AdminNotificationBroadcastsQueryVariables = Exact<{
+  input?: AdminNotificationBroadcastListInput | null | undefined;
+}>;
+
+
+export type AdminNotificationBroadcastsQuery = { adminNotificationBroadcasts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, type: AdminNotificationType, title: string, body: string, targetKind: AdminNotificationTargetKind, targetCount: number, skippedCount: number, deliveredCount: number, status: AdminNotificationBroadcastStatus, actorAccountId: string, actorLabel: string | null, requestedAt: string, completedAt: string | null, targetAccountIds: Array<string>, skippedAccountIds: Array<string> }> } };
+
+export type AdminNotificationBroadcastQueryVariables = Exact<{
+  broadcastId: string | number;
+}>;
+
+
+export type AdminNotificationBroadcastQuery = { adminNotificationBroadcast: { id: string, type: AdminNotificationType, title: string, body: string, targetKind: AdminNotificationTargetKind, targetCount: number, skippedCount: number, deliveredCount: number, status: AdminNotificationBroadcastStatus, actorAccountId: string, actorLabel: string | null, requestedAt: string, completedAt: string | null, targetAccountIds: Array<string>, skippedAccountIds: Array<string> } | null };
+
 export type AdminSendNotificationMutationVariables = Exact<{
   input: AdminSendNotificationInput;
 }>;
 
 
-export type AdminSendNotificationMutation = { adminSendNotification: { sentCount: number, skippedAccountIds: Array<string> } };
+export type AdminSendNotificationMutation = { adminSendNotification: { sentCount: number, skippedAccountIds: Array<string>, broadcastId: string } };
+
+export type AdminNotificationActiveUserCountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminNotificationActiveUserCountQuery = { adminUsers: { totalCount: number } };
+
+export type AdminNotificationUserOptionsQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminNotificationUserOptionsQuery = { adminUsers: { items: Array<{ accountId: string, nickname: string | null, name: string | null, email: string | null }> } };
 
 export type AdminOrdersQueryVariables = Exact<{
   input?: AdminOrderListInput | null | undefined;
 }>;
 
 
-export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string }> } };
+export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, storeName: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string }> } };
 
 export type AdminOrderQueryVariables = Exact<{
   orderId: string | number;
@@ -844,6 +972,34 @@ export type AdminOrderQueryVariables = Exact<{
 
 
 export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customTexts: Array<{ id: string, tokenKey: string, defaultText: string, valueText: string, sortOrder: number }>, freeEdits: Array<{ id: string, cropImageUrl: string, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null }> } };
+
+export type AdminOrdersStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminOrdersStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminOrdersBuyerOptionsQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminOrdersBuyerOptionsQuery = { adminUsers: { items: Array<{ accountId: string, nickname: string | null, name: string | null, email: string | null }> } };
+
+export type AdminOrdersStoreNameQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminOrdersStoreNameQuery = { adminStore: { store: { id: string, storeName: string } } };
+
+export type AdminOrdersBuyerNameQueryVariables = Exact<{
+  accountId: string | number;
+}>;
+
+
+export type AdminOrdersBuyerNameQuery = { adminUser: { accountId: string, nickname: string | null, name: string | null, email: string | null } };
 
 export type AdminCancelOrderMutationVariables = Exact<{
   input: AdminCancelOrderInput;
@@ -864,7 +1020,14 @@ export type AdminProductQueryVariables = Exact<{
 }>;
 
 
-export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string } } };
+export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }, categories: Array<{ id: string, categoryType: CategoryType, name: string, isActive: boolean }>, tags: Array<{ id: string, name: string }>, optionGroups: Array<{ id: string, name: string, description: string | null, isRequired: boolean, minSelect: number, maxSelect: number, optionRequiresDescription: boolean, optionRequiresImage: boolean, sortOrder: number, isActive: boolean, optionItems: Array<{ id: string, title: string, description: string | null, imageUrl: string | null, priceDelta: number, sortOrder: number, isActive: boolean }> }>, customTemplate: { id: string, baseImageUrl: string, isActive: boolean, textTokens: Array<{ id: string, tokenKey: string, defaultText: string, maxLength: number, sortOrder: number, isRequired: boolean }> } | null } };
+
+export type AdminProductStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminProductStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
 
 export type AdminSetProductActiveMutationVariables = Exact<{
   input: AdminSetProductActiveInput;
@@ -879,6 +1042,13 @@ export type AdminRegionsQueryVariables = Exact<{
 
 
 export type AdminRegionsQuery = { adminRegions: Array<{ id: string, parentId: string | null, level: number, name: string, slug: string, sortOrder: number, isActive: boolean, centerLat: string | null, centerLng: string | null, storeCount: number, childCount: number, createdAt: string, updatedAt: string }> };
+
+export type AdminGeocodeAddressQueryVariables = Exact<{
+  query: string;
+}>;
+
+
+export type AdminGeocodeAddressQuery = { adminGeocodeAddress: { latitude: number, longitude: number, sigunguCode: string | null, regionId: string | null } | null };
 
 export type AdminCreateRegionMutationVariables = Exact<{
   input: AdminCreateRegionInput;
@@ -906,7 +1076,7 @@ export type AdminReviewsQueryVariables = Exact<{
 }>;
 
 
-export type AdminReviewsQuery = { adminReviews: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, productId: string, authorAccountId: string, authorNickname: string | null, rating: number, content: string | null, commentCount: number, likeCount: number, deleted: boolean, createdAt: string }> } };
+export type AdminReviewsQuery = { adminReviews: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, productId: string, productName: string, authorAccountId: string, authorNickname: string | null, rating: number, content: string | null, commentCount: number, likeCount: number, deleted: boolean, createdAt: string, media: Array<{ mediaType: ReviewMediaType, mediaUrl: string, thumbnailUrl: string | null, sortOrder: number }> }> } };
 
 export type AdminReviewCommentsQueryVariables = Exact<{
   input?: AdminReviewCommentListInput | null | undefined;
@@ -920,14 +1090,28 @@ export type AdminReviewReportsQueryVariables = Exact<{
 }>;
 
 
-export type AdminReviewReportsQuery = { adminReviewReports: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }> } };
+export type AdminReviewReportsQuery = { adminReviewReports: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reporterNickname: string | null, reporterWithdrawn: boolean, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedByLabel: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }> } };
 
 export type AdminReviewReportQueryVariables = Exact<{
   reportId: string | number;
 }>;
 
 
-export type AdminReviewReportQuery = { adminReviewReport: { report: { id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }, target: { id: string, reviewId: string | null, authorAccountId: string, authorNickname: string | null, content: string | null, storeId: string, deleted: boolean } } };
+export type AdminReviewReportQuery = { adminReviewReport: { report: { id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reporterNickname: string | null, reporterWithdrawn: boolean, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedByLabel: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }, target: { id: string, reviewId: string | null, authorAccountId: string, authorNickname: string | null, content: string | null, storeId: string, storeName: string, deleted: boolean, media: Array<{ mediaType: ReviewMediaType, mediaUrl: string, thumbnailUrl: string | null, sortOrder: number }> } } };
+
+export type AdminReviewStorePickerQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminReviewStorePickerQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminReviewAuthorPickerQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminReviewAuthorPickerQuery = { adminUsers: { items: Array<{ accountId: string, nickname: string | null, name: string | null, email: string | null }> } };
 
 export type AdminDeleteReviewMutationVariables = Exact<{
   input: AdminDeleteReviewInput;
@@ -983,14 +1167,14 @@ export type AdminStoresQueryVariables = Exact<{
 }>;
 
 
-export type AdminStoresQuery = { adminStores: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, sellerAccountId: string, storeName: string, storePhone: string, addressFull: string, regionId: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
+export type AdminStoresQuery = { adminStores: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, sellerAccountId: string, sellerLabel: string | null, storeName: string, storePhone: string, addressFull: string, regionId: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
 
 export type AdminStoreQueryVariables = Exact<{
   storeId: string | number;
 }>;
 
 
-export type AdminStoreQuery = { adminStore: { productCount: number, orderItemCount: number, store: { id: string, sellerAccountId: string, storeName: string, storePhone: string, addressFull: string, addressCity: string | null, addressDistrict: string | null, addressNeighborhood: string | null, regionId: string | null, latitude: string | null, longitude: string | null, mapProvider: StoreMapProvider, websiteUrl: string | null, businessHoursText: string | null, profileImageUrl: string | null, greetingMessage: string | null, pickupSlotIntervalMinutes: number, minLeadTimeMinutes: number, maxDaysAhead: number, isActive: boolean, createdAt: string, updatedAt: string }, seller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus } } };
+export type AdminStoreQuery = { adminStore: { productCount: number, orderItemCount: number, store: { id: string, sellerAccountId: string, sellerLabel: string | null, storeName: string, storePhone: string, addressFull: string, addressCity: string | null, addressDistrict: string | null, addressNeighborhood: string | null, regionId: string | null, latitude: string | null, longitude: string | null, mapProvider: StoreMapProvider, websiteUrl: string | null, businessHoursText: string | null, profileImageUrl: string | null, greetingMessage: string | null, pickupSlotIntervalMinutes: number, minLeadTimeMinutes: number, maxDaysAhead: number, isActive: boolean, createdAt: string, updatedAt: string }, seller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus } } };
 
 export type AdminSetStoreActiveMutationVariables = Exact<{
   input: AdminSetStoreActiveInput;
@@ -1115,6 +1299,11 @@ export const AdminCreateAdminDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminCreateAdminMutation, AdminCreateAdminMutationVariables>;
+export const AdminResetAdminPasswordDocument = new TypedDocumentString(`
+    mutation AdminResetAdminPassword($input: AdminResetAdminPasswordInput!) {
+  adminResetAdminPassword(input: $input)
+}
+    `) as unknown as TypedDocumentString<AdminResetAdminPasswordMutation, AdminResetAdminPasswordMutationVariables>;
 export const AdminMeDocument = new TypedDocumentString(`
     query AdminMe {
   adminMe {
@@ -1193,6 +1382,7 @@ export const AdminAuditLogsDocument = new TypedDocumentString(`
       id
       actorAccountId
       actorAccountType
+      actorLabel
       storeId
       targetType
       targetId
@@ -1209,6 +1399,35 @@ export const AdminAuditLogsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminAuditLogsQuery, AdminAuditLogsQueryVariables>;
+export const AdminAuditStorePickerDocument = new TypedDocumentString(`
+    query AdminAuditStorePicker($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminAuditStorePickerQuery, AdminAuditStorePickerQueryVariables>;
+export const AdminAuditActorPickerDocument = new TypedDocumentString(`
+    query AdminAuditActorPicker($sellers: AdminSellerListInput, $admins: CursorInput) {
+  adminSellers(input: $sellers) {
+    items {
+      accountId
+      username
+      name
+    }
+  }
+  adminAdmins(input: $admins) {
+    items {
+      accountId
+      username
+      name
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminAuditActorPickerQuery, AdminAuditActorPickerQueryVariables>;
 export const AdminBannersDocument = new TypedDocumentString(`
     query AdminBanners($input: AdminBannerListInput) {
   adminBanners(input: $input) {
@@ -1276,6 +1495,74 @@ export const AdminDeleteBannerDocument = new TypedDocumentString(`
   adminDeleteBanner(bannerId: $bannerId)
 }
     `) as unknown as TypedDocumentString<AdminDeleteBannerMutation, AdminDeleteBannerMutationVariables>;
+export const AdminBannersVisibleDocument = new TypedDocumentString(`
+    query AdminBannersVisible($input: AdminBannerListInput) {
+  adminBanners(input: $input) {
+    items {
+      id
+      placement
+      linkCategoryId
+      startsAt
+      endsAt
+      sortOrder
+      isActive
+    }
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannersVisibleQuery, AdminBannersVisibleQueryVariables>;
+export const AdminBannerProductOptionsDocument = new TypedDocumentString(`
+    query AdminBannerProductOptions($input: AdminProductListInput) {
+  adminProducts(input: $input) {
+    items {
+      id
+      name
+      storeName
+      storeIsActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerProductOptionsQuery, AdminBannerProductOptionsQueryVariables>;
+export const AdminBannerStoreOptionsDocument = new TypedDocumentString(`
+    query AdminBannerStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerStoreOptionsQuery, AdminBannerStoreOptionsQueryVariables>;
+export const AdminBannerCategoryOptionsDocument = new TypedDocumentString(`
+    query AdminBannerCategoryOptions($input: AdminCategoryListInput) {
+  adminCategories(input: $input) {
+    id
+    name
+    isActive
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerCategoryOptionsQuery, AdminBannerCategoryOptionsQueryVariables>;
+export const AdminBannerProductLabelDocument = new TypedDocumentString(`
+    query AdminBannerProductLabel($productId: ID!) {
+  adminProduct(productId: $productId) {
+    product {
+      id
+      name
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerProductLabelQuery, AdminBannerProductLabelQueryVariables>;
+export const AdminBannerStoreLabelDocument = new TypedDocumentString(`
+    query AdminBannerStoreLabel($storeId: ID!) {
+  adminStore(storeId: $storeId) {
+    store {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerStoreLabelQuery, AdminBannerStoreLabelQueryVariables>;
 export const AdminDashboardSummaryDocument = new TypedDocumentString(`
     query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {
   adminDashboardSummary(input: $input) {
@@ -1309,14 +1596,81 @@ export const AdminSearchKeywordSnapshotDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminSearchKeywordSnapshotQuery, AdminSearchKeywordSnapshotQueryVariables>;
+export const AdminNotificationBroadcastsDocument = new TypedDocumentString(`
+    query AdminNotificationBroadcasts($input: AdminNotificationBroadcastListInput) {
+  adminNotificationBroadcasts(input: $input) {
+    items {
+      id
+      type
+      title
+      body
+      targetKind
+      targetCount
+      skippedCount
+      deliveredCount
+      status
+      actorAccountId
+      actorLabel
+      requestedAt
+      completedAt
+      targetAccountIds
+      skippedAccountIds
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationBroadcastsQuery, AdminNotificationBroadcastsQueryVariables>;
+export const AdminNotificationBroadcastDocument = new TypedDocumentString(`
+    query AdminNotificationBroadcast($broadcastId: ID!) {
+  adminNotificationBroadcast(broadcastId: $broadcastId) {
+    id
+    type
+    title
+    body
+    targetKind
+    targetCount
+    skippedCount
+    deliveredCount
+    status
+    actorAccountId
+    actorLabel
+    requestedAt
+    completedAt
+    targetAccountIds
+    skippedAccountIds
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationBroadcastQuery, AdminNotificationBroadcastQueryVariables>;
 export const AdminSendNotificationDocument = new TypedDocumentString(`
     mutation AdminSendNotification($input: AdminSendNotificationInput!) {
   adminSendNotification(input: $input) {
     sentCount
     skippedAccountIds
+    broadcastId
   }
 }
     `) as unknown as TypedDocumentString<AdminSendNotificationMutation, AdminSendNotificationMutationVariables>;
+export const AdminNotificationActiveUserCountDocument = new TypedDocumentString(`
+    query AdminNotificationActiveUserCount {
+  adminUsers(input: { status: ACTIVE, limit: 1 }) {
+    totalCount
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationActiveUserCountQuery, AdminNotificationActiveUserCountQueryVariables>;
+export const AdminNotificationUserOptionsDocument = new TypedDocumentString(`
+    query AdminNotificationUserOptions($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      nickname
+      name
+      email
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationUserOptionsQuery, AdminNotificationUserOptionsQueryVariables>;
 export const AdminOrdersDocument = new TypedDocumentString(`
     query AdminOrders($input: AdminOrderListInput) {
   adminOrders(input: $input) {
@@ -1325,6 +1679,7 @@ export const AdminOrdersDocument = new TypedDocumentString(`
       orderNumber
       accountId
       storeId
+      storeName
       status
       pickupAt
       buyerName
@@ -1407,6 +1762,49 @@ export const AdminOrderDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminOrderQuery, AdminOrderQueryVariables>;
+export const AdminOrdersStoreOptionsDocument = new TypedDocumentString(`
+    query AdminOrdersStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersStoreOptionsQuery, AdminOrdersStoreOptionsQueryVariables>;
+export const AdminOrdersBuyerOptionsDocument = new TypedDocumentString(`
+    query AdminOrdersBuyerOptions($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      nickname
+      name
+      email
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersBuyerOptionsQuery, AdminOrdersBuyerOptionsQueryVariables>;
+export const AdminOrdersStoreNameDocument = new TypedDocumentString(`
+    query AdminOrdersStoreName($storeId: ID!) {
+  adminStore(storeId: $storeId) {
+    store {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersStoreNameQuery, AdminOrdersStoreNameQueryVariables>;
+export const AdminOrdersBuyerNameDocument = new TypedDocumentString(`
+    query AdminOrdersBuyerName($accountId: ID!) {
+  adminUser(accountId: $accountId) {
+    accountId
+    nickname
+    name
+    email
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersBuyerNameQuery, AdminOrdersBuyerNameQueryVariables>;
 export const AdminCancelOrderDocument = new TypedDocumentString(`
     mutation AdminCancelOrder($input: AdminCancelOrderInput!) {
   adminCancelOrder(input: $input) {
@@ -1460,9 +1858,64 @@ export const AdminProductDocument = new TypedDocumentString(`
     imageUrls
     reviewCount
     orderItemCount
+    categories {
+      id
+      categoryType
+      name
+      isActive
+    }
+    tags {
+      id
+      name
+    }
+    optionGroups {
+      id
+      name
+      description
+      isRequired
+      minSelect
+      maxSelect
+      optionRequiresDescription
+      optionRequiresImage
+      sortOrder
+      isActive
+      optionItems {
+        id
+        title
+        description
+        imageUrl
+        priceDelta
+        sortOrder
+        isActive
+      }
+    }
+    customTemplate {
+      id
+      baseImageUrl
+      isActive
+      textTokens {
+        id
+        tokenKey
+        defaultText
+        maxLength
+        sortOrder
+        isRequired
+      }
+    }
   }
 }
     `) as unknown as TypedDocumentString<AdminProductQuery, AdminProductQueryVariables>;
+export const AdminProductStoreOptionsDocument = new TypedDocumentString(`
+    query AdminProductStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminProductStoreOptionsQuery, AdminProductStoreOptionsQueryVariables>;
 export const AdminSetProductActiveDocument = new TypedDocumentString(`
     mutation AdminSetProductActive($input: AdminSetProductActiveInput!) {
   adminSetProductActive(input: $input) {
@@ -1490,6 +1943,16 @@ export const AdminRegionsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminRegionsQuery, AdminRegionsQueryVariables>;
+export const AdminGeocodeAddressDocument = new TypedDocumentString(`
+    query AdminGeocodeAddress($query: String!) {
+  adminGeocodeAddress(query: $query) {
+    latitude
+    longitude
+    sigunguCode
+    regionId
+  }
+}
+    `) as unknown as TypedDocumentString<AdminGeocodeAddressQuery, AdminGeocodeAddressQueryVariables>;
 export const AdminCreateRegionDocument = new TypedDocumentString(`
     mutation AdminCreateRegion($input: AdminCreateRegionInput!) {
   adminCreateRegion(input: $input) {
@@ -1517,6 +1980,7 @@ export const AdminReviewsDocument = new TypedDocumentString(`
       storeId
       storeName
       productId
+      productName
       authorAccountId
       authorNickname
       rating
@@ -1524,6 +1988,12 @@ export const AdminReviewsDocument = new TypedDocumentString(`
       commentCount
       likeCount
       deleted
+      media {
+        mediaType
+        mediaUrl
+        thumbnailUrl
+        sortOrder
+      }
       createdAt
     }
     totalCount
@@ -1558,11 +2028,14 @@ export const AdminReviewReportsDocument = new TypedDocumentString(`
       targetType
       targetId
       reporterAccountId
+      reporterNickname
+      reporterWithdrawn
       reason
       detail
       contentSnapshot
       status
       resolvedByAccountId
+      resolvedByLabel
       resolvedAt
       resolutionNote
       createdAt
@@ -1581,11 +2054,14 @@ export const AdminReviewReportDocument = new TypedDocumentString(`
       targetType
       targetId
       reporterAccountId
+      reporterNickname
+      reporterWithdrawn
       reason
       detail
       contentSnapshot
       status
       resolvedByAccountId
+      resolvedByLabel
       resolvedAt
       resolutionNote
       createdAt
@@ -1597,11 +2073,41 @@ export const AdminReviewReportDocument = new TypedDocumentString(`
       authorNickname
       content
       storeId
+      storeName
       deleted
+      media {
+        mediaType
+        mediaUrl
+        thumbnailUrl
+        sortOrder
+      }
     }
   }
 }
     `) as unknown as TypedDocumentString<AdminReviewReportQuery, AdminReviewReportQueryVariables>;
+export const AdminReviewStorePickerDocument = new TypedDocumentString(`
+    query AdminReviewStorePicker($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewStorePickerQuery, AdminReviewStorePickerQueryVariables>;
+export const AdminReviewAuthorPickerDocument = new TypedDocumentString(`
+    query AdminReviewAuthorPicker($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      nickname
+      name
+      email
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewAuthorPickerQuery, AdminReviewAuthorPickerQueryVariables>;
 export const AdminDeleteReviewDocument = new TypedDocumentString(`
     mutation AdminDeleteReview($input: AdminDeleteReviewInput!) {
   adminDeleteReview(input: $input)
@@ -1696,6 +2202,7 @@ export const AdminStoresDocument = new TypedDocumentString(`
     items {
       id
       sellerAccountId
+      sellerLabel
       storeName
       storePhone
       addressFull
@@ -1716,6 +2223,7 @@ export const AdminStoreDocument = new TypedDocumentString(`
     store {
       id
       sellerAccountId
+      sellerLabel
       storeName
       storePhone
       addressFull

@@ -7,8 +7,11 @@ import { formatCount } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { FilterBar } from '@/shared/ui/filter-bar';
+import { IconButton } from '@/shared/ui/icon-button';
 import { Label } from '@/shared/ui/label';
 import { PageHeader } from '@/shared/ui/page-header';
+import { Skeleton } from '@/shared/ui/skeleton';
 import { StatusPill } from '@/shared/ui/status-pill';
 import { Switch } from '@/shared/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
@@ -17,6 +20,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { categoriesQueryOptions, categoryMutations } from '../api/queries';
 import { CategoryDialog } from '../components/category-dialog';
 import { CATEGORY_TYPES, type CategoriesSearch, type CategoryType } from '../schemas';
+
+const COLUMN_COUNT = 6;
+const SKELETON_ROWS = 4;
 
 interface Props {
   search: CategoriesSearch;
@@ -47,7 +53,22 @@ export function CategoriesPage({ search, onSearchChange }: Props) {
         }
       />
       <Card className="gap-0 py-0">
-        <div className="flex flex-wrap items-center gap-3 border-b border-divider px-4 py-3">
+        <FilterBar
+          trailing={
+            <>
+              <Switch
+                id="cat-inactive"
+                checked={includeInactive}
+                onCheckedChange={(v) =>
+                  onSearchChange({ ...search, inactive: v ? 'true' : undefined })
+                }
+              />
+              <Label htmlFor="cat-inactive" className="text-xs">
+                숨김 포함
+              </Label>
+            </>
+          }
+        >
           <Tabs
             value={type}
             onValueChange={(v) => onSearchChange({ ...search, type: v as CategoryType })}
@@ -60,19 +81,7 @@ export function CategoriesPage({ search, onSearchChange }: Props) {
               ))}
             </TabsList>
           </Tabs>
-          <div className="ml-auto flex items-center gap-2">
-            <Switch
-              id="cat-inactive"
-              checked={includeInactive}
-              onCheckedChange={(v) =>
-                onSearchChange({ ...search, inactive: v ? 'true' : undefined })
-              }
-            />
-            <Label htmlFor="cat-inactive" className="text-xs">
-              비활성 포함
-            </Label>
-          </div>
-        </div>
+        </FilterBar>
         {q.isError ? (
           <p role="alert" className="px-4 py-8 text-center text-sm text-negative-foreground">
             {messageFor(q.error)}
@@ -91,9 +100,22 @@ export function CategoriesPage({ search, onSearchChange }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {q.data?.length === 0 && (
+                {q.isPending &&
+                  Array.from({ length: SKELETON_ROWS }, (_, i) => (
+                    <TableRow key={`s-${i}`} aria-hidden>
+                      {Array.from({ length: COLUMN_COUNT }, (__, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-full max-w-40" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                {q.isSuccess && q.data.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={COLUMN_COUNT}
+                      className="h-24 text-center text-muted-foreground"
+                    >
                       {typeMeta.label} 카테고리가 없습니다.
                     </TableCell>
                   </TableRow>
@@ -107,7 +129,7 @@ export function CategoriesPage({ search, onSearchChange }: Props) {
                     </TableCell>
                     <TableCell>
                       <StatusPill tone={c.isActive ? 'positive' : 'neutral'}>
-                        {c.isActive ? '활성' : '비활성'}
+                        {c.isActive ? '노출' : '숨김'}
                       </StatusPill>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -119,26 +141,19 @@ export function CategoriesPage({ search, onSearchChange }: Props) {
                           categoryType={type}
                           category={c}
                           trigger={
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8"
-                              aria-label={`${c.name} 수정`}
-                            >
-                              <PencilIcon className="size-4" />
-                            </Button>
+                            <IconButton label={`${c.name} 수정`}>
+                              <PencilIcon />
+                            </IconButton>
                           }
                         />
                         <ConfirmDialog
                           trigger={
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8 text-negative-foreground"
-                              aria-label={`${c.name} 삭제`}
+                            <IconButton
+                              label={`${c.name} 삭제`}
+                              className="text-negative-foreground"
                             >
-                              <Trash2Icon className="size-4" />
-                            </Button>
+                              <Trash2Icon />
+                            </IconButton>
                           }
                           title={`${c.name} 카테고리를 삭제할까요?`}
                           description={`상품 ${formatCount(c.productCount)}개와의 연결이 끊깁니다. 같은 이름으로 다시 만들면 복구되지만 연결은 돌아오지 않습니다.`}

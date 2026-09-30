@@ -12,6 +12,9 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 ARG VITE_API_BASE_URL=https://api.caquick.site
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# 네이버 지도 키(공개 키지만 레포가 public이라 기본값을 두지 않는다). 비면 지도 미리보기만 꺼진다
+ARG VITE_NAVER_MAP_CLIENT_ID=
+ENV VITE_NAVER_MAP_CLIENT_ID=${VITE_NAVER_MAP_CLIENT_ID}
 RUN pnpm build && test -f dist/index.html
 
 FROM ${NGINX_IMAGE} AS runtime

@@ -33,7 +33,7 @@ interface NavItem {
     | '/reports'
     | '/reviews'
     | '/review-comments'
-    | '/notifications/send'
+    | '/notifications'
     | '/regions'
     | '/audit-logs'
     | '/admins';
@@ -54,7 +54,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/reports', label: '신고', icon: FlagIcon },
       { to: '/reviews', label: '리뷰', icon: MessageSquareIcon },
       { to: '/review-comments', label: '리뷰 댓글', icon: MessagesSquareIcon },
-      { to: '/notifications/send', label: '알림 발송', icon: BellIcon },
+      { to: '/notifications', label: '알림', icon: BellIcon },
     ],
   },
   {

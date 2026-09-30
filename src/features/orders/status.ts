@@ -3,7 +3,7 @@ import { type PillTone } from '@/shared/ui/status-pill';
 
 export const ORDER_STATUS: { value: OrderStatusType; label: string; tone: PillTone }[] = [
   { value: 'SUBMITTED', label: '접수', tone: 'primary' },
-  { value: 'CONFIRMED', label: '확인', tone: 'caution' },
+  { value: 'CONFIRMED', label: '주문 확정', tone: 'caution' },
   { value: 'MADE', label: '제작 완료', tone: 'neutral' },
   { value: 'PICKED_UP', label: '픽업 완료', tone: 'positive' },
   { value: 'CANCELED', label: '취소', tone: 'negative' },

@@ -1,17 +1,17 @@
 import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 
 import { type KeywordSnapshot } from './types';
 
 export function KeywordRanking({ snapshot }: { snapshot: KeywordSnapshot }) {
   return (
     <Card>
-      <CardHeader className="flex-row items-baseline gap-2">
+      <CardHeader>
         <CardTitle className="text-sm">검색어 순위</CardTitle>
-        <span className="text-xs text-muted-foreground">
-          {snapshot.rankedAt ? `${formatKst(snapshot.rankedAt)} 스냅샷` : '스냅샷 없음'}
-        </span>
+        <CardDescription className="text-xs">
+          {snapshot.rankedAt ? `${formatKst(snapshot.rankedAt)} 기준 집계` : '집계 전'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {snapshot.items.length === 0 ? (

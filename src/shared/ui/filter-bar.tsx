@@ -12,9 +12,11 @@ interface Props {
   onKeywordSubmit?: (keyword: string) => void;
   /** Select·날짜 등 추가 필터 */
   children?: ReactNode;
-  /** 필터가 하나라도 걸려 있으면 초기화 버튼을 보인다 */
-  hasActiveFilters: boolean;
-  onReset: () => void;
+  /** 보기 범위 토글('삭제 포함' 등). 줄바꿈돼도 필터 줄의 오른쪽 끝에 둔다 */
+  trailing?: ReactNode;
+  /** 필터가 하나라도 걸려 있으면 초기화 버튼을 보인다(onReset이 없으면 버튼을 두지 않는다) */
+  hasActiveFilters?: boolean;
+  onReset?: () => void;
 }
 
 /** 목록 상단 필터 줄. 값은 전부 URL 검색 파라미터가 정본이고, 여기서는 제출만 한다. */
@@ -23,13 +25,17 @@ export function FilterBar({
   keywordPlaceholder,
   onKeywordSubmit,
   children,
-  hasActiveFilters,
+  trailing,
+  hasActiveFilters = false,
   onReset,
 }: Props) {
   // 초기화는 URL 값이 그대로인 입력(미커밋 초안·검증 오류)까지 비워야 한다 — 입력들을 새로 마운트한다
   const [resetCount, setResetCount] = useState(0);
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b border-divider px-4 py-3">
+    <div
+      data-slot="filter-bar"
+      className="flex flex-wrap items-center gap-2 border-b border-divider px-4 py-3 last:border-b-0"
+    >
       {keyword !== undefined && onKeywordSubmit && (
         <form
           className="relative min-w-0 flex-1 basis-56"
@@ -55,7 +61,7 @@ export function FilterBar({
         </form>
       )}
       <Fragment key={resetCount}>{children}</Fragment>
-      {hasActiveFilters && (
+      {hasActiveFilters && onReset && (
         <Button
           type="button"
           variant="ghost"
@@ -68,6 +74,11 @@ export function FilterBar({
         >
           <XIcon className="size-3.5" /> 초기화
         </Button>
+      )}
+      {trailing && (
+        <div data-slot="filter-bar-trailing" className="ml-auto flex items-center gap-1.5">
+          {trailing}
+        </div>
       )}
     </div>
   );

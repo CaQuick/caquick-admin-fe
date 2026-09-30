@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { HistoryIcon } from 'lucide-react';
 
 import { messageFor } from '@/shared/api';
 import { formatCount } from '@/shared/lib/format';
@@ -12,6 +13,10 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { invalidateUsers, userDetailQueryOptions } from '../api/queries';
 import { AccountStatusActions } from '../components/account-status-actions';
 import { AccountStatusPill } from '../components/account-status-pill';
+import { identityProvidersLabel } from '../status';
+
+const BACK = { to: '/users' } as const;
+const LINK = 'text-primary-soft-foreground hover:underline';
 
 export function UserDetailPage({ accountId }: { accountId: string }) {
   const queryClient = useQueryClient();
@@ -19,13 +24,10 @@ export function UserDetailPage({ accountId }: { accountId: string }) {
   if (q.isError) {
     return (
       <>
-        <PageHeader title="구매자" />
+        <PageHeader title="구매자" back={BACK} />
         <p role="alert" className="text-sm text-negative-foreground">
           {messageFor(q.error)}
         </p>
-        <Button asChild variant="link" className="px-0">
-          <Link to="/users">목록으로</Link>
-        </Button>
       </>
     );
   }
@@ -36,15 +38,23 @@ export function UserDetailPage({ accountId }: { accountId: string }) {
     <>
       <PageHeader
         title={label}
+        back={BACK}
         meta={<AccountStatusPill status={u.status} />}
-        description={`계정 ID ${u.accountId} · 가입 ${formatKst(u.createdAt, true)}`}
+        description={`계정 ID ${u.accountId} · 가입일 ${formatKst(u.createdAt, true)}`}
         actions={
-          <AccountStatusActions
-            accountId={u.accountId}
-            status={u.status}
-            label={label}
-            onChanged={() => invalidateUsers(queryClient, u.accountId)}
-          />
+          <>
+            <Button asChild variant="outline">
+              <Link to="/audit-logs" search={{ targetType: 'ACCOUNT', targetId: u.accountId }}>
+                <HistoryIcon className="size-4" /> 감사 이력
+              </Link>
+            </Button>
+            <AccountStatusActions
+              accountId={u.accountId}
+              status={u.status}
+              label={label}
+              onChanged={() => invalidateUsers(queryClient, u.accountId)}
+            />
+          </>
         }
       />
       <div className="grid gap-3 lg:grid-cols-2">
@@ -53,7 +63,7 @@ export function UserDetailPage({ accountId }: { accountId: string }) {
             <CardTitle className="text-sm">프로필</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-sm">
+            <dl className="grid grid-cols-[104px_1fr] gap-x-3 gap-y-1.5 text-sm">
               <dt className="text-muted-foreground">닉네임</dt>
               <dd>{u.nickname ?? '—'}</dd>
               <dt className="text-muted-foreground">이름</dt>
@@ -63,8 +73,8 @@ export function UserDetailPage({ accountId }: { accountId: string }) {
               <dt className="text-muted-foreground">전화</dt>
               <dd>{u.phoneNumber ?? '—'}</dd>
               <dt className="text-muted-foreground">로그인 수단</dt>
-              <dd>{u.identityProviders.join(', ') || '—'}</dd>
-              <dt className="text-muted-foreground">온보딩</dt>
+              <dd>{identityProvidersLabel(u.identityProviders)}</dd>
+              <dt className="text-muted-foreground">가입 정보 입력</dt>
               <dd>{u.onboardingCompleted ? '완료' : '미완료'}</dd>
             </dl>
           </CardContent>
@@ -74,20 +84,21 @@ export function UserDetailPage({ accountId }: { accountId: string }) {
             <CardTitle className="text-sm">활동</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums">
+            <dl className="grid grid-cols-[104px_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums">
               <dt className="text-muted-foreground">주문</dt>
               <dd>
                 {formatCount(u.orderCount)}건 ·{' '}
-                <Link
-                  to="/orders"
-                  search={{ accountId: u.accountId }}
-                  className="text-primary-soft-foreground hover:underline"
-                >
+                <Link to="/orders" search={{ accountId: u.accountId }} className={LINK}>
                   주문 보기
                 </Link>
               </dd>
               <dt className="text-muted-foreground">리뷰</dt>
-              <dd>{formatCount(u.reviewCount)}건</dd>
+              <dd>
+                {formatCount(u.reviewCount)}건 ·{' '}
+                <Link to="/reviews" search={{ accountId: u.accountId }} className={LINK}>
+                  리뷰 보기
+                </Link>
+              </dd>
             </dl>
           </CardContent>
         </Card>
