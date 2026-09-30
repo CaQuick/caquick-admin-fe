@@ -1,13 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { messageFor } from '@/shared/api';
 import { Button } from '@/shared/ui/button';
+import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Skeleton } from '@/shared/ui/skeleton';
 
-import { bannerDetailQueryOptions } from '../api/queries';
+import { bannerDetailQueryOptions, deleteBanner } from '../api/queries';
 import { BannerForm } from '../components/banner-form';
 
 export function BannerCreatePage() {
@@ -16,7 +18,8 @@ export function BannerCreatePage() {
     <>
       <PageHeader
         title="새 배너"
-        description="유형에 맞는 링크 필드 하나만 보냅니다. 카테고리 배치는 이벤트 카테고리 링크가 필수입니다."
+        back={{ to: '/banners' }}
+        description="구매자 앱의 홈·검색 화면에 보일 배너를 등록합니다. 같은 자리에서는 정렬 순서가 가장 작은 배너 1개만 보입니다."
       />
       <BannerForm
         onSaved={(id) => {
@@ -29,6 +32,8 @@ export function BannerCreatePage() {
 }
 
 export function BannerEditPage({ bannerId }: { bannerId: string }) {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const q = useQuery(bannerDetailQueryOptions(bannerId));
   if (q.isError) {
     return (
@@ -48,7 +53,31 @@ export function BannerEditPage({ bannerId }: { bannerId: string }) {
     <>
       <PageHeader
         title={q.data.title ?? `배너 #${q.data.id}`}
+        back={{ to: '/banners' }}
         description={`배너 ID ${q.data.id}`}
+        actions={
+          <ConfirmDialog
+            trigger={
+              <Button type="button" variant="outline" className="text-negative-foreground">
+                <Trash2Icon className="size-4" /> 삭제
+              </Button>
+            }
+            title="배너를 삭제할까요?"
+            description="구매자 화면에서 바로 사라지고 되돌릴 수 없습니다."
+            confirmLabel="삭제"
+            destructive
+            onConfirm={async () => {
+              try {
+                await deleteBanner(qc, bannerId);
+              } catch (e) {
+                toast.error(messageFor(e));
+                throw e;
+              }
+              toast.success('배너를 삭제했습니다.');
+              void navigate({ to: '/banners', replace: true });
+            }}
+          />
+        }
       />
       <BannerForm
         key={q.data.updatedAt}

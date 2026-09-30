@@ -31,6 +31,12 @@ type Documents = {
     "\n  mutation AdminCreateBanner($input: AdminCreateBannerInput!) {\n    adminCreateBanner(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminCreateBannerDocument,
     "\n  mutation AdminUpdateBanner($input: AdminUpdateBannerInput!) {\n    adminUpdateBanner(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": typeof types.AdminUpdateBannerDocument,
     "\n  mutation AdminDeleteBanner($bannerId: ID!) {\n    adminDeleteBanner(bannerId: $bannerId)\n  }\n": typeof types.AdminDeleteBannerDocument,
+    "\n  query AdminBannersVisible($input: AdminBannerListInput) {\n    adminBanners(input: $input) {\n      items {\n        id\n        placement\n        linkCategoryId\n        startsAt\n        endsAt\n        sortOrder\n        isActive\n      }\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminBannersVisibleDocument,
+    "\n  query AdminBannerProductOptions($input: AdminProductListInput) {\n    adminProducts(input: $input) {\n      items {\n        id\n        name\n        storeName\n      }\n    }\n  }\n": typeof types.AdminBannerProductOptionsDocument,
+    "\n  query AdminBannerStoreOptions($input: AdminStoreListInput) {\n    adminStores(input: $input) {\n      items {\n        id\n        storeName\n      }\n    }\n  }\n": typeof types.AdminBannerStoreOptionsDocument,
+    "\n  query AdminBannerCategoryOptions($input: AdminCategoryListInput) {\n    adminCategories(input: $input) {\n      id\n      name\n      isActive\n    }\n  }\n": typeof types.AdminBannerCategoryOptionsDocument,
+    "\n  query AdminBannerProductLabel($productId: ID!) {\n    adminProduct(productId: $productId) {\n      product {\n        id\n        name\n      }\n    }\n  }\n": typeof types.AdminBannerProductLabelDocument,
+    "\n  query AdminBannerStoreLabel($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        storeName\n      }\n    }\n  }\n": typeof types.AdminBannerStoreLabelDocument,
     "\n  query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {\n    adminDashboardSummary(input: $input) {\n      from\n      to\n      newUserCount\n      newSellerCount\n      orderCounts {\n        submitted\n        confirmed\n        made\n        pickedUp\n        canceled\n      }\n      orderAmountSum\n      activeStoreCount\n      activeProductCount\n      pendingReportCount\n    }\n  }\n": typeof types.AdminDashboardSummaryDocument,
     "\n  query AdminSearchKeywordSnapshot($input: AdminSearchKeywordSnapshotInput) {\n    adminSearchKeywordSnapshot(input: $input) {\n      rankedAt\n      items {\n        rank\n        keyword\n        searchCount\n      }\n    }\n  }\n": typeof types.AdminSearchKeywordSnapshotDocument,
     "\n  query AdminNotificationBroadcasts($input: AdminNotificationBroadcastListInput) {\n    adminNotificationBroadcasts(input: $input) {\n      items {\n        id\n        type\n        title\n        body\n        targetKind\n        targetCount\n        skippedCount\n        deliveredCount\n        status\n        actorAccountId\n        actorLabel\n        requestedAt\n        completedAt\n        targetAccountIds\n        skippedAccountIds\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminNotificationBroadcastsDocument,
@@ -97,6 +103,12 @@ const documents: Documents = {
     "\n  mutation AdminCreateBanner($input: AdminCreateBannerInput!) {\n    adminCreateBanner(input: $input) {\n      id\n    }\n  }\n": types.AdminCreateBannerDocument,
     "\n  mutation AdminUpdateBanner($input: AdminUpdateBannerInput!) {\n    adminUpdateBanner(input: $input) {\n      id\n      updatedAt\n    }\n  }\n": types.AdminUpdateBannerDocument,
     "\n  mutation AdminDeleteBanner($bannerId: ID!) {\n    adminDeleteBanner(bannerId: $bannerId)\n  }\n": types.AdminDeleteBannerDocument,
+    "\n  query AdminBannersVisible($input: AdminBannerListInput) {\n    adminBanners(input: $input) {\n      items {\n        id\n        placement\n        linkCategoryId\n        startsAt\n        endsAt\n        sortOrder\n        isActive\n      }\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminBannersVisibleDocument,
+    "\n  query AdminBannerProductOptions($input: AdminProductListInput) {\n    adminProducts(input: $input) {\n      items {\n        id\n        name\n        storeName\n      }\n    }\n  }\n": types.AdminBannerProductOptionsDocument,
+    "\n  query AdminBannerStoreOptions($input: AdminStoreListInput) {\n    adminStores(input: $input) {\n      items {\n        id\n        storeName\n      }\n    }\n  }\n": types.AdminBannerStoreOptionsDocument,
+    "\n  query AdminBannerCategoryOptions($input: AdminCategoryListInput) {\n    adminCategories(input: $input) {\n      id\n      name\n      isActive\n    }\n  }\n": types.AdminBannerCategoryOptionsDocument,
+    "\n  query AdminBannerProductLabel($productId: ID!) {\n    adminProduct(productId: $productId) {\n      product {\n        id\n        name\n      }\n    }\n  }\n": types.AdminBannerProductLabelDocument,
+    "\n  query AdminBannerStoreLabel($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        storeName\n      }\n    }\n  }\n": types.AdminBannerStoreLabelDocument,
     "\n  query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {\n    adminDashboardSummary(input: $input) {\n      from\n      to\n      newUserCount\n      newSellerCount\n      orderCounts {\n        submitted\n        confirmed\n        made\n        pickedUp\n        canceled\n      }\n      orderAmountSum\n      activeStoreCount\n      activeProductCount\n      pendingReportCount\n    }\n  }\n": types.AdminDashboardSummaryDocument,
     "\n  query AdminSearchKeywordSnapshot($input: AdminSearchKeywordSnapshotInput) {\n    adminSearchKeywordSnapshot(input: $input) {\n      rankedAt\n      items {\n        rank\n        keyword\n        searchCount\n      }\n    }\n  }\n": types.AdminSearchKeywordSnapshotDocument,
     "\n  query AdminNotificationBroadcasts($input: AdminNotificationBroadcastListInput) {\n    adminNotificationBroadcasts(input: $input) {\n      items {\n        id\n        type\n        title\n        body\n        targetKind\n        targetCount\n        skippedCount\n        deliveredCount\n        status\n        actorAccountId\n        actorLabel\n        requestedAt\n        completedAt\n        targetAccountIds\n        skippedAccountIds\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminNotificationBroadcastsDocument,
@@ -211,6 +223,30 @@ export function graphql(source: "\n  mutation AdminUpdateBanner($input: AdminUpd
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminDeleteBanner($bannerId: ID!) {\n    adminDeleteBanner(bannerId: $bannerId)\n  }\n"): typeof import('./graphql').AdminDeleteBannerDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBannersVisible($input: AdminBannerListInput) {\n    adminBanners(input: $input) {\n      items {\n        id\n        placement\n        linkCategoryId\n        startsAt\n        endsAt\n        sortOrder\n        isActive\n      }\n      hasMore\n      nextCursor\n    }\n  }\n"): typeof import('./graphql').AdminBannersVisibleDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBannerProductOptions($input: AdminProductListInput) {\n    adminProducts(input: $input) {\n      items {\n        id\n        name\n        storeName\n      }\n    }\n  }\n"): typeof import('./graphql').AdminBannerProductOptionsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBannerStoreOptions($input: AdminStoreListInput) {\n    adminStores(input: $input) {\n      items {\n        id\n        storeName\n      }\n    }\n  }\n"): typeof import('./graphql').AdminBannerStoreOptionsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBannerCategoryOptions($input: AdminCategoryListInput) {\n    adminCategories(input: $input) {\n      id\n      name\n      isActive\n    }\n  }\n"): typeof import('./graphql').AdminBannerCategoryOptionsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBannerProductLabel($productId: ID!) {\n    adminProduct(productId: $productId) {\n      product {\n        id\n        name\n      }\n    }\n  }\n"): typeof import('./graphql').AdminBannerProductLabelDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminBannerStoreLabel($storeId: ID!) {\n    adminStore(storeId: $storeId) {\n      store {\n        id\n        storeName\n      }\n    }\n  }\n"): typeof import('./graphql').AdminBannerStoreLabelDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

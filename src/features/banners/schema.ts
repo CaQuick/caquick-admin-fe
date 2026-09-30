@@ -5,23 +5,28 @@ import {
   type AdminCreateBannerInput,
   type AdminUpdateBannerInput,
 } from '@/graphql/generated/graphql';
+import { formatCount } from '@/shared/lib/format';
 import { listSearchBase, optionalBoolText } from '@/shared/lib/list-search';
 
 export type Banner = AdminBannerQuery['adminBanner'];
 
 /** HOME_SUB·STORE는 소비자가 없어 선택지에서 뺀다. */
 export const PLACEMENTS = [
-  { value: 'HOME_MAIN', label: '홈 메인', help: '홈에서 "전체" 칩일 때' },
+  {
+    value: 'HOME_MAIN',
+    label: '홈 메인',
+    help: '홈 상단 카테고리 탭에서 "전체"를 골랐을 때 보입니다.',
+  },
   {
     value: 'CATEGORY',
     label: '카테고리',
-    help: '특정 이벤트 카테고리 칩일 때 — 이벤트 카테고리 링크 필수',
+    help: '홈 상단 카테고리 탭에서 특정 이벤트 카테고리를 골랐을 때 보입니다. 링크는 그 이벤트 카테고리로 연결해야 합니다.',
   },
-  { value: 'SEARCH', label: '검색', help: '검색 진입 화면' },
+  { value: 'SEARCH', label: '검색', help: '검색 첫 화면에 보입니다.' },
 ] as const;
 export const LINK_TYPES = [
   { value: 'NONE', label: '없음' },
-  { value: 'URL', label: 'URL' },
+  { value: 'URL', label: '웹 주소' },
   { value: 'PRODUCT', label: '상품' },
   { value: 'STORE', label: '매장' },
   { value: 'CATEGORY', label: '카테고리' },
@@ -58,37 +63,53 @@ export function isoToLocal(iso: string | null | undefined): string {
   return `${k.getUTCFullYear()}-${p(k.getUTCMonth() + 1)}-${p(k.getUTCDate())}T${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
 }
 
+/** GraphQL Int(32비트 부호 있는 정수) 범위. 넘으면 서버가 요청 자체를 거절한다 */
+export const SORT_ORDER_MIN = -(2 ** 31);
+export const SORT_ORDER_MAX = 2 ** 31 - 1;
+
 export const bannerFormSchema = z
   .object({
     placement: z.enum(['HOME_MAIN', 'CATEGORY', 'SEARCH']),
-    title: z.string().trim().max(200, '200자 이하'),
+    title: z.string().trim().max(200, '제목은 200자 이하로 입력해 주세요.'),
     imageUrl: z.string().min(1, '이미지를 올려 주세요.'),
     linkType: z.enum(['NONE', 'URL', 'PRODUCT', 'STORE', 'CATEGORY']),
     linkValue: z.string().trim(),
     startsAt: z.string(),
     endsAt: z.string(),
-    sortOrder: z.number({ message: '숫자여야 합니다.' }).int('정수'),
+    sortOrder: z
+      .number({ message: '정렬 순서를 숫자로 입력해 주세요.' })
+      .int('정렬 순서는 소수점 없이 입력해 주세요.')
+      .min(SORT_ORDER_MIN, `정렬 순서는 ${formatCount(SORT_ORDER_MIN)} 이상으로 입력해 주세요.`)
+      .max(SORT_ORDER_MAX, `정렬 순서는 ${formatCount(SORT_ORDER_MAX)} 이하로 입력해 주세요.`),
     isActive: z.boolean(),
   })
   .superRefine((v, ctx) => {
     if (v.linkType !== 'NONE' && v.linkValue === '')
-      ctx.addIssue({ path: ['linkValue'], code: 'custom', message: '링크 대상을 입력해 주세요.' });
+      ctx.addIssue({
+        path: ['linkValue'],
+        code: 'custom',
+        message: v.linkType === 'URL' ? '웹 주소를 입력해 주세요.' : '연결할 대상을 골라 주세요.',
+      });
     if (v.linkType === 'URL' && v.linkValue && !/^https?:\/\//.test(v.linkValue))
       ctx.addIssue({
         path: ['linkValue'],
         code: 'custom',
-        message: 'http(s):// 로 시작해야 합니다.',
+        message: 'http:// 또는 https://로 시작하는 주소를 입력해 주세요.',
       });
     if (v.placement === 'CATEGORY' && v.linkType !== 'CATEGORY')
       ctx.addIssue({
         path: ['linkType'],
         code: 'custom',
-        message: '카테고리 배치는 이벤트 카테고리 링크가 필수입니다.',
+        message: '카테고리 배치는 이벤트 카테고리로 연결해야 합니다.',
       });
     const s = localToIso(v.startsAt);
     const e = localToIso(v.endsAt);
     if (s && e && s >= e)
-      ctx.addIssue({ path: ['endsAt'], code: 'custom', message: '종료가 시작보다 뒤여야 합니다.' });
+      ctx.addIssue({
+        path: ['endsAt'],
+        code: 'custom',
+        message: '종료 시각은 시작 시각보다 뒤로 정해 주세요.',
+      });
   });
 export type BannerFormValues = z.infer<typeof bannerFormSchema>;
 

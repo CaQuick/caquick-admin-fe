@@ -870,6 +870,48 @@ export type AdminDeleteBannerMutationVariables = Exact<{
 
 export type AdminDeleteBannerMutation = { adminDeleteBanner: boolean };
 
+export type AdminBannersVisibleQueryVariables = Exact<{
+  input?: AdminBannerListInput | null | undefined;
+}>;
+
+
+export type AdminBannersVisibleQuery = { adminBanners: { hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, linkCategoryId: string | null, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean }> } };
+
+export type AdminBannerProductOptionsQueryVariables = Exact<{
+  input?: AdminProductListInput | null | undefined;
+}>;
+
+
+export type AdminBannerProductOptionsQuery = { adminProducts: { items: Array<{ id: string, name: string, storeName: string }> } };
+
+export type AdminBannerStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminBannerStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string }> } };
+
+export type AdminBannerCategoryOptionsQueryVariables = Exact<{
+  input?: AdminCategoryListInput | null | undefined;
+}>;
+
+
+export type AdminBannerCategoryOptionsQuery = { adminCategories: Array<{ id: string, name: string, isActive: boolean }> };
+
+export type AdminBannerProductLabelQueryVariables = Exact<{
+  productId: string | number;
+}>;
+
+
+export type AdminBannerProductLabelQuery = { adminProduct: { product: { id: string, name: string } } };
+
+export type AdminBannerStoreLabelQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminBannerStoreLabelQuery = { adminStore: { store: { id: string, storeName: string } } };
+
 export type AdminDashboardSummaryQueryVariables = Exact<{
   input: AdminDashboardSummaryInput;
 }>;
@@ -1446,6 +1488,73 @@ export const AdminDeleteBannerDocument = new TypedDocumentString(`
   adminDeleteBanner(bannerId: $bannerId)
 }
     `) as unknown as TypedDocumentString<AdminDeleteBannerMutation, AdminDeleteBannerMutationVariables>;
+export const AdminBannersVisibleDocument = new TypedDocumentString(`
+    query AdminBannersVisible($input: AdminBannerListInput) {
+  adminBanners(input: $input) {
+    items {
+      id
+      placement
+      linkCategoryId
+      startsAt
+      endsAt
+      sortOrder
+      isActive
+    }
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannersVisibleQuery, AdminBannersVisibleQueryVariables>;
+export const AdminBannerProductOptionsDocument = new TypedDocumentString(`
+    query AdminBannerProductOptions($input: AdminProductListInput) {
+  adminProducts(input: $input) {
+    items {
+      id
+      name
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerProductOptionsQuery, AdminBannerProductOptionsQueryVariables>;
+export const AdminBannerStoreOptionsDocument = new TypedDocumentString(`
+    query AdminBannerStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerStoreOptionsQuery, AdminBannerStoreOptionsQueryVariables>;
+export const AdminBannerCategoryOptionsDocument = new TypedDocumentString(`
+    query AdminBannerCategoryOptions($input: AdminCategoryListInput) {
+  adminCategories(input: $input) {
+    id
+    name
+    isActive
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerCategoryOptionsQuery, AdminBannerCategoryOptionsQueryVariables>;
+export const AdminBannerProductLabelDocument = new TypedDocumentString(`
+    query AdminBannerProductLabel($productId: ID!) {
+  adminProduct(productId: $productId) {
+    product {
+      id
+      name
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerProductLabelQuery, AdminBannerProductLabelQueryVariables>;
+export const AdminBannerStoreLabelDocument = new TypedDocumentString(`
+    query AdminBannerStoreLabel($storeId: ID!) {
+  adminStore(storeId: $storeId) {
+    store {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerStoreLabelQuery, AdminBannerStoreLabelQueryVariables>;
 export const AdminDashboardSummaryDocument = new TypedDocumentString(`
     query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {
   adminDashboardSummary(input: $input) {

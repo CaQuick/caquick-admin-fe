@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 
 import { type UploadPurpose } from '@/graphql/generated/graphql';
 import { messageFor } from '@/shared/api';
+import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 
 import { ACCEPTED_TYPES, uploadImage } from './upload';
@@ -14,10 +15,19 @@ interface Props {
   onChange: (publicUrl: string | null) => void;
   /** 미리보기 비율 */
   aspect?: string;
+  /** 미리보기 크기. 기본은 폭 128px이고, 가로로 긴 이미지는 넓혀 쓴다(버튼은 아래로 내려간다) */
+  previewClassName?: string;
 }
 
 /** 이미지 1장 업로드 필드. 선택 즉시 presigned PUT으로 올리고 publicUrl을 value로 준다. */
-export function ImageUploadField({ id, purpose, value, onChange, aspect = '1 / 1' }: Props) {
+export function ImageUploadField({
+  id,
+  purpose,
+  value,
+  onChange,
+  aspect = '1 / 1',
+  previewClassName,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +48,12 @@ export function ImageUploadField({ id, purpose, value, onChange, aspect = '1 / 1
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-3">
+      <div className="flex flex-wrap items-start gap-3">
         <div
-          className="grid w-32 shrink-0 place-items-center overflow-hidden rounded-lg border bg-surface-tint"
+          className={cn(
+            'grid w-32 shrink-0 place-items-center overflow-hidden rounded-lg border bg-surface-tint',
+            previewClassName,
+          )}
           style={{ aspectRatio: aspect }}
         >
           {value ? (
