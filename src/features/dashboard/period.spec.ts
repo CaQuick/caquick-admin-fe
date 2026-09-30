@@ -18,7 +18,7 @@ describe('resolvePeriod', () => {
     expect(periodLabel(resolvePeriod({ period }, now))).toBe(label);
   });
 
-  it('직접 지정은 from·to를 쓰고, 역순·366일 초과·형식 오류는 7일로', () => {
+  it('기간 지정은 from·to를 쓰고, 역순·366일 초과·형식 오류는 7일로', () => {
     expect(
       periodLabel(resolvePeriod({ period: 'custom', from: '2026-09-01', to: '2026-09-10' }, now)),
     ).toBe('2026-09-01 ~ 2026-09-10');

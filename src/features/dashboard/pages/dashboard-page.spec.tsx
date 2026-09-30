@@ -72,9 +72,66 @@ describe('DashboardPage', () => {
     const table = screen.getByRole('table', { name: '주문 상태별 건수' });
     expect(within(table).getByText('78건')).toBeInTheDocument();
     expect(screen.getByText('생일 케이크')).toBeInTheDocument();
-    expect(screen.getByText('09-27 17:00 스냅샷')).toBeInTheDocument();
+    expect(screen.getByText('09-27 17:00 기준 집계')).toBeInTheDocument();
     expect(inputs[0]?.from).toMatch(/T15:00:00\.000Z$/);
     expect(inputs[0]?.to).toMatch(/T14:59:59\.999Z$/);
+  });
+
+  it.each([['신규 판매자 3명'], ['노출 중인 매장 / 상품'], ['42곳 / 517개'], ['한국 시간 기준']])(
+    '요약 문구 "%s"를 보인다',
+    async (text) => {
+      server.use(
+        gqlOk('AdminDashboardSummary', { adminDashboardSummary: summary }),
+        gqlOk('AdminSearchKeywordSnapshot', { adminSearchKeywordSnapshot: snapshot }),
+      );
+      boot();
+      await screen.findByText('4,812,000원');
+      expect(screen.getByText(text)).toBeInTheDocument();
+    },
+  );
+
+  it.each([
+    ['접수', '21건'],
+    ['주문 확정', '34건'],
+    ['제작 완료', '18건'],
+    ['픽업 완료', '78건'],
+    ['취소', '12건'],
+  ])('상태 분포 표에서 %s는 %s', async (label, count) => {
+    server.use(
+      gqlOk('AdminDashboardSummary', { adminDashboardSummary: summary }),
+      gqlOk('AdminSearchKeywordSnapshot', { adminSearchKeywordSnapshot: snapshot }),
+    );
+    boot();
+    const table = await screen.findByRole('table', { name: '주문 상태별 건수' });
+    const header = within(table).getByRole('rowheader', { name: label });
+    expect(header.closest('tr')).toHaveTextContent(`${label}${count}`);
+  });
+
+  // CardHeader는 grid라 flex-row를 덧붙여도 한 줄이 되지 않았다. 보조 문구는 CardDescription 자리에 둔다
+  it.each([
+    ['주문 상태 분포', '기간 내 주문 163건'],
+    ['검색어 순위', '09-27 17:00 기준 집계'],
+  ])('%s 카드의 보조 문구는 카드 설명 자리에 있다', async (title, caption) => {
+    server.use(
+      gqlOk('AdminDashboardSummary', { adminDashboardSummary: summary }),
+      gqlOk('AdminSearchKeywordSnapshot', { adminSearchKeywordSnapshot: snapshot }),
+    );
+    boot();
+    const titleEl = await screen.findByText(title);
+    const header = titleEl.closest<HTMLElement>('[data-slot="card-header"]')!;
+    expect(header.className).not.toContain('flex-row');
+    expect(within(header).getByText(caption)).toHaveAttribute('data-slot', 'card-description');
+  });
+
+  it('검색어 집계가 아직 없으면 집계 전이라고 알린다', async () => {
+    server.use(
+      gqlOk('AdminDashboardSummary', { adminDashboardSummary: summary }),
+      gqlOk('AdminSearchKeywordSnapshot', {
+        adminSearchKeywordSnapshot: { rankedAt: null, items: [] },
+      }),
+    );
+    boot();
+    expect(await screen.findByText('집계 전')).toHaveAttribute('data-slot', 'card-description');
   });
 
   it('프리셋을 누르면 URL과 조회 기간이 바뀐다', async () => {
@@ -97,7 +154,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('아직 집계된 검색어가 없습니다.')).toBeInTheDocument();
   });
 
-  it('직접 지정은 날짜 입력을 적용해 조회한다', async () => {
+  it('기간 지정은 날짜 입력을 적용해 조회한다', async () => {
     const inputs: { from: string; to: string }[] = [];
     server.use(
       graphql.query('AdminDashboardSummary', ({ variables }) => {
@@ -108,6 +165,10 @@ describe('DashboardPage', () => {
     );
     boot('/?period=custom&from=2026-09-01&to=2026-09-10');
     expect(await screen.findByText('2026-09-01 ~ 2026-09-10')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '기간 지정' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     expect(inputs[0]).toEqual({ from: '2026-08-31T15:00:00.000Z', to: '2026-09-10T14:59:59.999Z' });
     const from = screen.getByLabelText('시작일');
     await userEvent.clear(from);

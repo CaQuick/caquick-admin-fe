@@ -69,7 +69,7 @@ export function PeriodPicker({ period, onChange }: Props) {
           </Button>
         </form>
       )}
-      <span className="text-xs text-muted-foreground">KST 기준</span>
+      <span className="text-xs text-muted-foreground">한국 시간 기준</span>
     </div>
   );
 }

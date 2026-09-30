@@ -10,30 +10,35 @@ import {
   YAxis,
 } from 'recharts';
 
+import { orderStatusMeta } from '@/features/orders';
+import { type OrderStatusType } from '@/graphql/generated/graphql';
 import { formatCount } from '@/shared/lib/format';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 
 import { type DashboardSummary } from './types';
 
-const STATUS: { key: keyof DashboardSummary['orderCounts']; label: string }[] = [
-  { key: 'submitted', label: '접수' },
-  { key: 'confirmed', label: '확인' },
-  { key: 'made', label: '제작 완료' },
-  { key: 'pickedUp', label: '픽업 완료' },
-  { key: 'canceled', label: '취소' },
+// 라벨은 주문 화면과 한 벌(주문 확정 등)
+const STATUS: { key: keyof DashboardSummary['orderCounts']; status: OrderStatusType }[] = [
+  { key: 'submitted', status: 'SUBMITTED' },
+  { key: 'confirmed', status: 'CONFIRMED' },
+  { key: 'made', status: 'MADE' },
+  { key: 'pickedUp', status: 'PICKED_UP' },
+  { key: 'canceled', status: 'CANCELED' },
 ];
 
 /** 기간 내 주문 상태 분포. 단일 계열(진행 단계)이라 색 1개, 취소만 회색. 표는 스크린리더·색각 보조용. */
 export function OrderStatusChart({ summary }: { summary: DashboardSummary }) {
-  const data = STATUS.map((s) => ({ ...s, count: summary.orderCounts[s.key] }));
+  const data = STATUS.map((s) => ({
+    key: s.key,
+    label: orderStatusMeta(s.status).label,
+    count: summary.orderCounts[s.key],
+  }));
   const total = data.reduce((a, d) => a + d.count, 0);
   return (
     <Card>
-      <CardHeader className="flex-row items-baseline gap-2">
+      <CardHeader>
         <CardTitle className="text-sm">주문 상태 분포</CardTitle>
-        <span className="text-xs text-muted-foreground">
-          기간 내 생성 주문 {formatCount(total)}건
-        </span>
+        <CardDescription className="text-xs">기간 내 주문 {formatCount(total)}건</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-56" aria-hidden>
