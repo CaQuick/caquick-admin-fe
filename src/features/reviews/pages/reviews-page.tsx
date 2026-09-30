@@ -123,7 +123,7 @@ export function ReviewsPage({
         isFetching={list.isFetching}
         isError={list.isError}
         errorMessage={list.error ? messageFor(list.error) : ''}
-        cursor={search.cursor}
+        search={search}
         onCursor={(cursor) => onSearchChange({ ...search, cursor })}
         filters={
           <FilterBar

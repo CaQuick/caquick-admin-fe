@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { createQueryClient } from '@/app/query-client';
 import { createAppRouter } from '@/app/router';
 import { installSessionHooks, useAuthStore } from '@/features/auth';
+import { forgetSearches, trackListSearches } from '@/shared/lib/list-return';
 import { initTheme } from '@/shared/theme';
 import { Toaster } from '@/shared/ui/sonner';
 
@@ -25,8 +26,9 @@ export function App() {
     () =>
       useAuthStore.subscribe((state, prev) => {
         if (prev.status !== 'authenticated' || state.status !== 'anonymous') return;
-        // 어느 화면에서든 비운다 — 다음에 로그인한 계정이 이전 관리자의 캐시를 보지 않게
+        // 어느 화면에서든 비운다 — 다음에 로그인한 계정이 이전 관리자의 캐시·목록 필터를 보지 않게
         queryClient.clear();
+        forgetSearches();
         const { pathname, href } = router.state.location;
         if (SELF_HANDLED_PATHS.has(pathname)) return;
         void router.navigate({ to: '/login', search: { redirect: href }, replace: true });
@@ -34,10 +36,14 @@ export function App() {
     [router, queryClient],
   );
 
+  // 상세의 '목록으로'가 마지막에 본 필터·페이지로 돌아가게 위치를 기록한다
+  useEffect(() => trackListSearches(router), [router]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-      <Toaster position="bottom-right" />
+      {/* 저장 버튼이 대부분 오른쪽 아래라 가리지 않게 위 가운데에 띄운다 */}
+      <Toaster position="top-center" />
     </QueryClientProvider>
   );
 }

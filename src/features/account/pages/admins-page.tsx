@@ -80,13 +80,10 @@ export function AdminsPage({
         )}
         {list.data && (
           <CursorPager
-            totalCount={list.data.totalCount}
-            shown={list.data.items.length}
-            hasMore={list.data.hasMore}
-            atStart={!cursor}
+            page={list.data}
+            search={{ cursor }}
             isFetching={list.isFetching}
-            onNext={() => list.data?.nextCursor && onCursor(list.data.nextCursor)}
-            onReset={() => onCursor(undefined)}
+            onCursorChange={onCursor}
           />
         )}
       </Card>

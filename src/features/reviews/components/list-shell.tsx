@@ -16,7 +16,8 @@ interface Props {
   isFetching: boolean;
   isError: boolean;
   errorMessage: string;
-  cursor: string | undefined;
+  /** 목록 검색 파라미터(커서·필터). 필터가 바뀌면 '이전' 스택을 비운다 */
+  search: { cursor?: string; limit?: number };
   onCursor: (cursor: string | undefined) => void;
   children: ReactNode;
 }
@@ -28,7 +29,7 @@ export function ListShell({
   isFetching,
   isError,
   errorMessage,
-  cursor,
+  search,
   onCursor,
   children,
 }: Props) {
@@ -44,13 +45,10 @@ export function ListShell({
       )}
       {data && (
         <CursorPager
-          totalCount={data.totalCount}
-          shown={data.items.length}
-          hasMore={data.hasMore}
-          atStart={!cursor}
+          page={data}
+          search={search}
           isFetching={isFetching}
-          onNext={() => data.nextCursor && onCursor(data.nextCursor)}
-          onReset={() => onCursor(undefined)}
+          onCursorChange={onCursor}
         />
       )}
     </Card>

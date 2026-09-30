@@ -102,12 +102,12 @@ describe('구매자', () => {
     );
     boot('/users/10');
     expect(await screen.findByRole('heading', { level: 2, name: 'seo10' })).toBeInTheDocument();
-    // TanStack Router는 숫자처럼 보이는 문자열을 JSON으로 감싸 직렬화한다("10") — 파싱하면 문자열 '10'
+    // 검색 파라미터는 따옴표 없이 쓴다(앱 라우터의 search 직렬화)
     expect(
       decodeURIComponent(
         screen.getByRole('link', { name: '주문 보기' }).getAttribute('href') ?? '',
       ),
-    ).toBe('/orders?accountId="10"');
+    ).toBe('/orders?accountId=10');
 
     await userEvent.click(screen.getByRole('button', { name: '계정 정지' }));
     const dialog = await screen.findByRole('dialog');

@@ -159,6 +159,32 @@ describe('주문 목록', () => {
     expect(inputs.at(-1)).toMatchObject({ status: null, keyword: null });
   });
 
+  it('이전은 지나온 커서로 돌아가고 필터를 유지한다', async () => {
+    server.use(
+      graphql.query('AdminOrders', ({ variables }) => {
+        const page2 = (variables as { input: { cursor: string | null } }).input.cursor === 'next-1';
+        return HttpResponse.json({
+          data: {
+            adminOrders: {
+              items: page2 ? [row('3')] : [row('1')],
+              totalCount: 2,
+              hasMore: !page2,
+              nextCursor: page2 ? null : 'next-1',
+            },
+          },
+        });
+      }),
+    );
+    boot('/orders?status=CONFIRMED');
+    await screen.findByText('CQ-2609-1');
+    await userEvent.click(screen.getByRole('button', { name: '다음' }));
+    await screen.findByText('CQ-2609-3');
+    await userEvent.click(screen.getByRole('button', { name: '이전' }));
+    await screen.findByText('CQ-2609-1');
+    expect(window.location.search).toBe('?status=CONFIRMED');
+    expect(screen.queryByRole('button', { name: '이전' })).not.toBeInTheDocument();
+  });
+
   it('검색어 제출은 커서를 버리고 첫 페이지부터 조회한다', async () => {
     const inputs: Record<string, unknown>[] = [];
     server.use(

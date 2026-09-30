@@ -2,7 +2,12 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
+import { installZodKorean } from '@/shared/lib/zod-locale';
+
 import { server } from './msw/server';
+
+// 앱 부팅(main.tsx)과 같은 zod 문구 설정
+installZodKorean();
 
 // findBy·waitFor 기본 1초는 전체 스위트를 병렬로 돌릴 때 부하로 간헐 초과한다(단독 실행은 통과)
 configure({ asyncUtilTimeout: 3000 });

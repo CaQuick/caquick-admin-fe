@@ -2,6 +2,8 @@
 import headersInc from '../../../infra/security-headers.inc?raw';
 import nginxConf from '../../../infra/nginx.conf?raw';
 
+import { POSTCODE_SCRIPT_URL } from '@/shared/lib/kakao-postcode';
+
 const read = (f: 'security-headers.inc' | 'nginx.conf') =>
   f === 'nginx.conf' ? nginxConf : headersInc;
 
@@ -28,6 +30,28 @@ describe('nginx 설정', () => {
     expect(csp).toContain("connect-src 'self' https://api.caquick.site https://*.amazonaws.com");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).not.toContain('\n');
+  });
+
+  /** 지시어별 출처 목록. 'script-src' → ["'self'", 'https://…'] */
+  function cspDirectives() {
+    const csp = /Content-Security-Policy "([^"]+)"/.exec(read('security-headers.inc'))?.[1] ?? '';
+    return new Map(
+      csp
+        .split(';')
+        .map((d) => d.trim().split(/\s+/))
+        .filter((parts) => parts[0])
+        .map(([name, ...sources]) => [name!, sources]),
+    );
+  }
+
+  it('CSP는 카카오 우편번호 스크립트와 검색 iframe만 추가로 허용한다', () => {
+    const d = cspDirectives();
+    // 앱이 실제로 넣는 스크립트 주소의 오리진이 허용돼 있어야 한다
+    expect(d.get('script-src')).toEqual(["'self'", new URL(POSTCODE_SCRIPT_URL).origin]);
+    // postcode.v2.js가 만드는 iframe(https://postcode.map.kakao.com/search)
+    expect(d.get('frame-src')).toEqual(['https://postcode.map.kakao.com']);
+    expect(d.get('default-src')).toEqual(["'self'"]);
+    expect(d.get('frame-ancestors')).toEqual(["'none'"]);
   });
 
   it('nginx.conf는 SPA fallback·healthz·헤더 include를 가진다', () => {
