@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { type ReactNode } from 'react';
 
+import { messageFor } from '@/shared/api';
 import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
@@ -12,10 +13,12 @@ import { BROADCAST_STATUS, TARGET_KINDS, actorText, typeLabel } from '../meta';
 interface Props {
   /** 열린 이력 ID. undefined면 닫힌다 */
   broadcastId: string | undefined;
-  /** 현재 목록에서 찾은 이력. 목록에 없으면 null */
+  /** 읽어 온 이력. 없는 ID면 null */
   broadcast: Broadcast | null;
-  /** 목록을 아직 읽는 중이면 '찾지 못함' 대신 기다린다 */
+  /** 아직 읽는 중이면 '찾지 못함' 대신 기다린다 */
   isLoading: boolean;
+  /** 읽기에 실패했으면 그 오류 */
+  error: Error | null;
   onClose: () => void;
 }
 
@@ -111,7 +114,11 @@ function Detail({ b }: { b: Broadcast }) {
 }
 
 /** 발송 이력 1건의 상세. 주소(broadcastId)로 열려 새로고침·공유해도 같은 이력을 보인다 */
-export function BroadcastDetailSheet({ broadcastId, broadcast, isLoading, onClose }: Props) {
+export function BroadcastDetailSheet({ broadcastId, broadcast, isLoading, error, onClose }: Props) {
+  let description = '해당 발송 이력을 찾을 수 없습니다. 주소를 다시 확인해 주세요.';
+  if (broadcast) description = `${formatKst(broadcast.requestedAt, true)} 요청`;
+  else if (error) description = messageFor(error);
+  else if (isLoading) description = '불러오고 있습니다.';
   return (
     <Sheet open={broadcastId !== undefined} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full sm:max-w-lg">
@@ -119,13 +126,7 @@ export function BroadcastDetailSheet({ broadcastId, broadcast, isLoading, onClos
           <SheetTitle className="break-words">
             {broadcast ? broadcast.title : '발송 이력'}
           </SheetTitle>
-          <SheetDescription>
-            {broadcast
-              ? `${formatKst(broadcast.requestedAt, true)} 요청`
-              : isLoading
-                ? '불러오고 있습니다.'
-                : '이 목록에서 해당 발송 이력을 찾지 못했습니다. 필터를 지우거나 처음 페이지에서 다시 찾아 주세요.'}
-          </SheetDescription>
+          <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
         {broadcast && <Detail b={broadcast} />}
       </SheetContent>

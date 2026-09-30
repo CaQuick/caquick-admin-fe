@@ -933,6 +933,13 @@ export type AdminNotificationBroadcastsQueryVariables = Exact<{
 
 export type AdminNotificationBroadcastsQuery = { adminNotificationBroadcasts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, type: AdminNotificationType, title: string, body: string, targetKind: AdminNotificationTargetKind, targetCount: number, skippedCount: number, deliveredCount: number, status: AdminNotificationBroadcastStatus, actorAccountId: string, actorLabel: string | null, requestedAt: string, completedAt: string | null, targetAccountIds: Array<string>, skippedAccountIds: Array<string> }> } };
 
+export type AdminNotificationBroadcastQueryVariables = Exact<{
+  broadcastId: string | number;
+}>;
+
+
+export type AdminNotificationBroadcastQuery = { adminNotificationBroadcast: { id: string, type: AdminNotificationType, title: string, body: string, targetKind: AdminNotificationTargetKind, targetCount: number, skippedCount: number, deliveredCount: number, status: AdminNotificationBroadcastStatus, actorAccountId: string, actorLabel: string | null, requestedAt: string, completedAt: string | null, targetAccountIds: Array<string>, skippedAccountIds: Array<string> } | null };
+
 export type AdminSendNotificationMutationVariables = Exact<{
   input: AdminSendNotificationInput;
 }>;
@@ -1614,6 +1621,27 @@ export const AdminNotificationBroadcastsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminNotificationBroadcastsQuery, AdminNotificationBroadcastsQueryVariables>;
+export const AdminNotificationBroadcastDocument = new TypedDocumentString(`
+    query AdminNotificationBroadcast($broadcastId: ID!) {
+  adminNotificationBroadcast(broadcastId: $broadcastId) {
+    id
+    type
+    title
+    body
+    targetKind
+    targetCount
+    skippedCount
+    deliveredCount
+    status
+    actorAccountId
+    actorLabel
+    requestedAt
+    completedAt
+    targetAccountIds
+    skippedAccountIds
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationBroadcastQuery, AdminNotificationBroadcastQueryVariables>;
 export const AdminSendNotificationDocument = new TypedDocumentString(`
     mutation AdminSendNotification($input: AdminSendNotificationInput!) {
   adminSendNotification(input: $input) {

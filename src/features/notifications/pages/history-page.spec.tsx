@@ -4,7 +4,7 @@ import { HttpResponse, graphql } from 'msw';
 
 import { App } from '@/app/app';
 import { useAuthStore } from '@/features/auth';
-import { gqlOk, restOk } from '@/test/msw/graphql';
+import { gqlError, gqlOk, restOk } from '@/test/msw/graphql';
 import { server } from '@/test/msw/server';
 
 import { BROADCAST_POLL_MS, type Broadcast, broadcastPollInterval } from '../api/queries';
@@ -56,7 +56,19 @@ const ROWS = [
   }),
 ];
 
-function boot(path: string, onInput?: (input: Record<string, unknown>) => void) {
+// 단건 조회는 목록 페이지와 상관없이 이 표에서 찾는다. 5번은 다른 페이지에 있는 이력
+const BY_ID: Record<string, Broadcast> = Object.fromEntries(
+  [
+    ...ROWS,
+    broadcast({ id: '5', title: '지난달 공지', skippedCount: 0, skippedAccountIds: [] }),
+  ].map((b) => [b.id, b]),
+);
+
+function boot(
+  path: string,
+  onInput?: (input: Record<string, unknown>) => void,
+  onDetail?: (broadcastId: string) => void,
+) {
   server.use(
     restOk('/admin/refresh', {
       accessToken: 'at',
@@ -76,6 +88,13 @@ function boot(path: string, onInput?: (input: Record<string, unknown>) => void) 
             nextCursor: '76',
           },
         },
+      });
+    }),
+    graphql.query('AdminNotificationBroadcast', ({ variables }) => {
+      const { broadcastId } = variables as { broadcastId: string };
+      onDetail?.(broadcastId);
+      return HttpResponse.json({
+        data: { adminNotificationBroadcast: BY_ID[broadcastId] ?? null },
       });
     }),
   );
@@ -177,11 +196,39 @@ describe('알림 발송 이력', () => {
     expect(within(sheet).queryByText(/받지 못한 계정 ID/)).toBeNull();
   });
 
-  it('주소의 이력이 현재 목록에 없으면 찾지 못했다고 알린다', async () => {
-    boot('/notifications?broadcastId=5');
+  it('주소의 이력이 현재 목록 페이지에 없어도 단건으로 읽어 연다', async () => {
+    const reads: string[] = [];
+    boot('/notifications?broadcastId=5', undefined, (id) => reads.push(id));
+    const sheet = await screen.findByRole('dialog', { name: '지난달 공지' });
+    expect(within(sheet).getByText('대상 계정 ID 2개')).toBeInTheDocument();
+    expect(reads).toEqual(['5']);
+    // 목록은 그대로 첫 페이지다(시트가 열려 배경은 접근성 트리에서 숨는다)
+    expect(screen.getByRole('button', { name: '점검 안내', hidden: true })).toBeInTheDocument();
+  });
+
+  it('없는 이력이면 찾을 수 없다고 알린다', async () => {
+    boot('/notifications?broadcastId=404');
     const sheet = await screen.findByRole('dialog', { name: '발송 이력' });
     expect(
-      await within(sheet).findByText(/이 목록에서 해당 발송 이력을 찾지 못했습니다/),
+      await within(sheet).findByText(
+        '해당 발송 이력을 찾을 수 없습니다. 주소를 다시 확인해 주세요.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('단건을 읽지 못하면 그 오류를 보인다', async () => {
+    boot('/notifications?broadcastId=77');
+    server.use(
+      gqlError('AdminNotificationBroadcast', {
+        message: '권한이 없습니다.',
+        code: 'FORBIDDEN',
+        classification: 'FORBIDDEN',
+        statusCode: 403,
+      }),
+    );
+    const sheet = await screen.findByRole('dialog');
+    expect(
+      await within(sheet).findByText('권한이 없습니다.', {}, { timeout: 5000 }),
     ).toBeInTheDocument();
   });
 

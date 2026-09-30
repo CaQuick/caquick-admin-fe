@@ -15,6 +15,9 @@ const notificationsKeys = {
   broadcasts: () => [...notificationsKeys.all, 'broadcasts'] as const,
   broadcastList: (input: AdminNotificationBroadcastListInput) =>
     [...notificationsKeys.broadcasts(), input] as const,
+  /** broadcasts() 아래라 발송 뒤 무효화에 함께 걸린다 */
+  broadcastDetail: (broadcastId: string) =>
+    [...notificationsKeys.broadcasts(), 'detail', broadcastId] as const,
   activeUserCount: () => [...notificationsKeys.all, 'active-user-count'] as const,
   userOptions: (keyword: string) => [...notificationsKeys.all, 'user-options', keyword] as const,
 };
@@ -47,6 +50,28 @@ const AdminNotificationBroadcastsDocument = graphql(/* GraphQL */ `
 `);
 export type Broadcast =
   AdminNotificationBroadcastsQuery['adminNotificationBroadcasts']['items'][number];
+
+const AdminNotificationBroadcastDocument = graphql(/* GraphQL */ `
+  query AdminNotificationBroadcast($broadcastId: ID!) {
+    adminNotificationBroadcast(broadcastId: $broadcastId) {
+      id
+      type
+      title
+      body
+      targetKind
+      targetCount
+      skippedCount
+      deliveredCount
+      status
+      actorAccountId
+      actorLabel
+      requestedAt
+      completedAt
+      targetAccountIds
+      skippedAccountIds
+    }
+  }
+`);
 
 const AdminSendNotificationDocument = graphql(/* GraphQL */ `
   mutation AdminSendNotification($input: AdminSendNotificationInput!) {
@@ -96,6 +121,20 @@ export function broadcastsQueryOptions(input: AdminNotificationBroadcastListInpu
         .adminNotificationBroadcasts,
     placeholderData: (prev) => prev,
     refetchInterval: (query) => broadcastPollInterval(query.state.data?.items),
+  });
+}
+
+/** 발송 이력 1건. 목록의 페이지·필터와 상관없이 주소의 ID로 읽는다. 없으면 null */
+export function broadcastQueryOptions(broadcastId: string) {
+  return queryOptions({
+    queryKey: notificationsKeys.broadcastDetail(broadcastId),
+    queryFn: async () =>
+      (await gqlRequest(AdminNotificationBroadcastDocument, { broadcastId }))
+        .adminNotificationBroadcast ?? null,
+    refetchInterval: (query) => {
+      const b = query.state.data;
+      return broadcastPollInterval(b ? [b] : undefined);
+    },
   });
 }
 

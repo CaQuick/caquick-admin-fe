@@ -16,7 +16,7 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { StatusPill } from '@/shared/ui/status-pill';
 
-import { type Broadcast, broadcastsQueryOptions } from '../api/queries';
+import { type Broadcast, broadcastQueryOptions, broadcastsQueryOptions } from '../api/queries';
 import { BroadcastDetailSheet } from '../components/broadcast-detail-sheet';
 import {
   BROADCAST_STATUS,
@@ -43,8 +43,14 @@ export function NotificationHistoryPage({ search, onSearchChange }: Props) {
   const patch = (p: Partial<NotificationsSearchInput>) =>
     onSearchChange({ ...listSearch, ...p, cursor: undefined });
   const open = (id: string | undefined) => onSearchChange({ ...listSearch, broadcastId: id });
-  const selected =
-    broadcastId === undefined ? null : (list.data?.items.find((b) => b.id === broadcastId) ?? null);
+  // 공유된 주소의 이력이 지금 페이지·필터에 없어도 열리도록 단건으로 읽고, 목록에 있으면 그 행을 먼저 보인다
+  const listed =
+    broadcastId === undefined ? undefined : list.data?.items.find((b) => b.id === broadcastId);
+  const detail = useQuery({
+    ...broadcastQueryOptions(broadcastId ?? ''),
+    enabled: broadcastId !== undefined,
+    placeholderData: listed,
+  });
 
   const columns: ColumnDef<Broadcast, unknown>[] = [
     {
@@ -184,8 +190,9 @@ export function NotificationHistoryPage({ search, onSearchChange }: Props) {
       </Card>
       <BroadcastDetailSheet
         broadcastId={broadcastId}
-        broadcast={selected}
-        isLoading={list.isPending}
+        broadcast={detail.data ?? null}
+        isLoading={detail.isPending}
+        error={detail.isError ? detail.error : null}
         onClose={() => open(undefined)}
       />
     </>
