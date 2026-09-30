@@ -121,7 +121,18 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
                   <dt className="text-muted-foreground">처리</dt>
                   <dd>
                     {report.resolvedAt ? formatKst(report.resolvedAt, true) : ''} · 처리자{' '}
-                    {resolverName(report.resolvedByLabel, report.resolvedByAccountId)}
+                    {report.resolvedByAccountId == null ? (
+                      '없음(자동으로 닫힘)'
+                    ) : (
+                      // 관리자 상세 화면이 없어 그 관리자의 작업 기록으로 잇는다
+                      <Link
+                        to="/audit-logs"
+                        search={{ actorId: report.resolvedByAccountId }}
+                        className={linkClass}
+                      >
+                        {report.resolvedByLabel ?? `#${report.resolvedByAccountId}`}
+                      </Link>
+                    )}
                     {report.resolutionNote && (
                       <span className="block text-xs text-muted-foreground">
                         {report.resolutionNote}
@@ -180,10 +191,4 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
       </div>
     </>
   );
-}
-
-/** 처리자 표시. 라벨이 없으면 ID, ID도 없으면 작성자 삭제 등으로 저절로 닫힌 신고다 */
-function resolverName(label: string | null | undefined, accountId: string | null | undefined) {
-  if (label != null) return label;
-  return accountId != null ? `#${accountId}` : '없음(자동으로 닫힘)';
 }

@@ -530,7 +530,10 @@ describe('신고', () => {
     );
     expect(await screen.findByText('처리 완료(대상 삭제)')).toBeInTheDocument();
     expect(screen.getByText('삭제됨')).toBeInTheDocument(); // 대상 배지
-    expect(screen.getByText(/처리자 운영자\(ops\.admin\)/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '운영자(ops.admin)' })).toHaveAttribute(
+      'href',
+      '/audit-logs?actorId=1',
+    );
     expect(screen.queryByRole('button', { name: '대상 삭제' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '반려' })).not.toBeInTheDocument();
   });
@@ -553,7 +556,12 @@ describe('신고', () => {
       }),
     );
     boot('/reports/r1');
-    expect(await screen.findByText(new RegExp(shown.replace(/[()]/g, '\\$&')))).toBeInTheDocument();
+    expect(await screen.findByText('처리 완료(대상 삭제)')).toBeInTheDocument();
+    const dd = screen.getByText('처리').nextElementSibling!;
+    expect(dd).toHaveTextContent(shown);
+    const link = within(dd as HTMLElement).queryByRole('link');
+    if (id === null) expect(link).toBeNull();
+    else expect(link).toHaveAttribute('href', `/audit-logs?actorId=${id}`);
   });
 
   it('상세: 댓글 대상은 사진 줄 없이 상위 리뷰 링크, 탈퇴 신고자는 배지만, 삭제 확인은 "댓글을"', async () => {
