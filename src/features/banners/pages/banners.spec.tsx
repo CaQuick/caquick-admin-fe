@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, graphql } from 'msw';
 
@@ -116,6 +116,35 @@ describe('배너', () => {
     await userEvent.click(await screen.findByRole('button', { name: '삭제' }));
     await vi.waitFor(() => expect(deleted).toEqual({ bannerId: '5' }));
   }, 15_000); // 앱 부팅부터 여러 단계를 한 번에 도는 흐름이라 기본 5초가 빠듯하다
+
+  it('목록을 켜 둔 채 시작 시각이 되면 예약이 노출 중·현재 노출로 바뀐다', async () => {
+    // 실제 시간도 흐르게 둬 부팅·요청은 그대로 진행되고, 시작 시각만 앞당겨 넘긴다
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const startsAt = new Date(Date.now() + 10 * 60_000).toISOString();
+      const scheduled = { ...banner, id: '7', title: '예약 배너', startsAt };
+      server.use(
+        gqlOk('AdminBanners', {
+          adminBanners: { items: [scheduled], totalCount: 1, hasMore: false, nextCursor: null },
+        }),
+        gqlOk('AdminBannersVisible', {
+          adminBanners: { items: [scheduled], hasMore: false, nextCursor: null },
+        }),
+      );
+      boot('/banners');
+      const cell = async () =>
+        within(
+          (await screen.findByRole('link', { name: '예약 배너' })).closest('tr')!,
+        ).getAllByRole('cell')[2]!;
+      await vi.waitFor(async () => expect((await cell()).textContent).toBe('예약'));
+      act(() => {
+        vi.advanceTimersByTime(10 * 60_000);
+      });
+      await vi.waitFor(async () => expect((await cell()).textContent).toBe('노출 중현재 노출'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it('등록: 이미지 없으면 거절, 업로드 뒤 카테고리 배치는 이벤트 카테고리를 이름으로 골라 연결, 성공 시 상세로', async () => {
     let created: Record<string, unknown> | undefined;

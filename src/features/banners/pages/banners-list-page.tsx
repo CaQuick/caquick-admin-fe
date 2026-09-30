@@ -23,6 +23,7 @@ import { StatusPill } from '@/shared/ui/status-pill';
 import { bannersListQueryOptions, deleteBanner, visibleBannersQueryOptions } from '../api/queries';
 import { LIVE_STATUS, bannerLiveStatus, currentBannerIds } from '../live-status';
 import { type BannersSearch, type BannersSearchInput, LINK_TYPES, PLACEMENTS } from '../schema';
+import { useLiveNow } from '../use-live-now';
 
 type BannerRow = AdminBannersQuery['adminBanners']['items'][number];
 const ALL = '__all__';
@@ -47,7 +48,7 @@ export function BannersListPage({ search, onSearchChange }: Props) {
   const visible = useQuery(visibleBannersQueryOptions());
   const patch = (p: Partial<BannersSearchInput>) =>
     onSearchChange({ ...search, ...p, cursor: undefined });
-  const now = new Date();
+  const now = useLiveNow([...(list.data?.items ?? []), ...(visible.data ?? [])]);
   const current = visible.data ? currentBannerIds(visible.data, now) : new Set<string>();
 
   const columns: ColumnDef<BannerRow, unknown>[] = [

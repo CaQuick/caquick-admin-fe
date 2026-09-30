@@ -10,7 +10,7 @@ export const LIVE_STATUS: Record<BannerLiveStatus, { label: string; tone: PillTo
   HIDDEN: { label: '숨김', tone: 'neutral' },
 };
 
-interface Timed {
+export interface Timed {
   isActive: boolean;
   startsAt?: string | null;
   endsAt?: string | null;
@@ -67,4 +67,19 @@ export function currentBannerIds(banners: readonly SlotBanner[], now: Date): Set
     }
   }
   return new Set([...winners.values()].map((b) => b.id));
+}
+
+/** 노출 상태가 바뀌는 다음 시각(ms). 지금 이후의 시작·종료 시각 가운데 가장 이른 것, 없으면 null. 숨김은 시각으로 바뀌지 않는다 */
+export function nextLiveBoundary(banners: readonly Timed[], now: Date): number | null {
+  const t = now.getTime();
+  let next: number | null = null;
+  for (const b of banners) {
+    if (!b.isActive) continue;
+    for (const at of [b.startsAt, b.endsAt]) {
+      if (!at) continue;
+      const ms = new Date(at).getTime();
+      if (ms > t && (next === null || ms < next)) next = ms;
+    }
+  }
+  return next;
 }
