@@ -1,4 +1,4 @@
-# 생성 파일 — 수정하지 않는다. caquick-be local@d52fa69e7086902d3e93f22f17590377558ba322 의 src/features/**/*.graphql 63개를 경로순으로 합쳤다.
+# 생성 파일 — 수정하지 않는다. caquick-be local@c37d83f5a4c189e7fbcb390d3c8b46f5bf66265f 의 src/features/**/*.graphql 63개를 경로순으로 합쳤다.
 # 갱신: pnpm schema:pull [ref]
 
 # ---- src/features/audit-log/audit-log.types.graphql ----
@@ -1851,6 +1851,10 @@ extend type Query {
   adminNotificationBroadcasts(
     input: AdminNotificationBroadcastListInput
   ): AdminNotificationBroadcastConnection!
+  """
+  알림 발송 이력 1건. 없으면 null. 관리자 로그인 필수. ADMIN 계정이 아니면 FORBIDDEN.
+  """
+  adminNotificationBroadcast(broadcastId: ID!): AdminNotificationBroadcast
 }
 
 extend type Mutation {
@@ -3584,6 +3588,10 @@ type AdminProduct {
   소속 매장명.
   """
   storeName: String!
+  """
+  소속 매장 노출 여부. 매장이 내려가 있으면 상품도 구매자에게 보이지 않는다.
+  """
+  storeIsActive: Boolean!
   """
   상품명.
   """
