@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Trash2Icon } from 'lucide-react';
+import { HistoryIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { messageFor } from '@/shared/api';
@@ -56,27 +56,34 @@ export function BannerEditPage({ bannerId }: { bannerId: string }) {
         back={{ to: '/banners' }}
         description={`배너 ID ${q.data.id}`}
         actions={
-          <ConfirmDialog
-            trigger={
-              <Button type="button" variant="outline" className="text-negative-foreground">
-                <Trash2Icon className="size-4" /> 삭제
-              </Button>
-            }
-            title="배너를 삭제할까요?"
-            description="구매자 화면에서 바로 사라지고 되돌릴 수 없습니다."
-            confirmLabel="삭제"
-            destructive
-            onConfirm={async () => {
-              try {
-                await deleteBanner(qc, bannerId);
-              } catch (e) {
-                toast.error(messageFor(e));
-                throw e;
+          <>
+            <Button asChild variant="outline">
+              <Link to="/audit-logs" search={{ targetType: 'BANNER', targetId: q.data.id }}>
+                <HistoryIcon className="size-4" /> 감사 이력
+              </Link>
+            </Button>
+            <ConfirmDialog
+              trigger={
+                <Button type="button" variant="outline" className="text-negative-foreground">
+                  <Trash2Icon className="size-4" /> 삭제
+                </Button>
               }
-              toast.success('배너를 삭제했습니다.');
-              void navigate({ to: '/banners', replace: true });
-            }}
-          />
+              title="배너를 삭제할까요?"
+              description="구매자 화면에서 바로 사라지고 되돌릴 수 없습니다."
+              confirmLabel="삭제"
+              destructive
+              onConfirm={async () => {
+                try {
+                  await deleteBanner(qc, bannerId);
+                } catch (e) {
+                  toast.error(messageFor(e));
+                  throw e;
+                }
+                toast.success('배너를 삭제했습니다.');
+                void navigate({ to: '/banners', replace: true });
+              }}
+            />
+          </>
         }
       />
       <BannerForm

@@ -115,7 +115,7 @@ describe('배너', () => {
     await userEvent.click(screen.getByRole('button', { name: '가을 한정 삭제' }));
     await userEvent.click(await screen.findByRole('button', { name: '삭제' }));
     await vi.waitFor(() => expect(deleted).toEqual({ bannerId: '5' }));
-  });
+  }, 15_000); // 앱 부팅부터 여러 단계를 한 번에 도는 흐름이라 기본 5초가 빠듯하다
 
   it('등록: 이미지 없으면 거절, 업로드 뒤 카테고리 배치는 이벤트 카테고리를 이름으로 골라 연결, 성공 시 상세로', async () => {
     let created: Record<string, unknown> | undefined;
@@ -293,7 +293,7 @@ describe('배너', () => {
     );
   });
 
-  it('상세: 헤더의 삭제를 확인하면 지우고 목록으로 간다', async () => {
+  it('상세: 감사 이력 바로가기, 헤더의 삭제를 확인하면 지우고 목록으로 간다', async () => {
     let deleted: unknown;
     let detailReads = 0;
     server.use(
@@ -313,6 +313,10 @@ describe('배너', () => {
       }),
     );
     boot('/banners/5');
+    expect(await screen.findByRole('link', { name: '감사 이력' })).toHaveAttribute(
+      'href',
+      '/audit-logs?targetType=BANNER&targetId=5',
+    );
     await userEvent.click(await screen.findByRole('button', { name: '삭제' }));
     const dialog = await screen.findByRole('alertdialog');
     expect(dialog).toHaveTextContent('되돌릴 수 없습니다');

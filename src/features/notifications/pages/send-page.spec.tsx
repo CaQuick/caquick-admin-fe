@@ -191,5 +191,5 @@ describe('알림 보내기', () => {
     );
     expect(screen.getByLabelText('제목')).toHaveValue('');
     expect(screen.queryByRole('alertdialog')).toBeNull();
-  });
+  }, 15_000); // 앱 부팅부터 여러 단계를 한 번에 도는 흐름이라 기본 5초가 빠듯하다
 });
