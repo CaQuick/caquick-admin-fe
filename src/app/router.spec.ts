@@ -46,6 +46,7 @@ describe('ID 검색 파라미터 정밀도', () => {
         '/_authed/_shell/audit-logs actorId',
         '/_authed/_shell/audit-logs storeId',
         '/_authed/_shell/audit-logs targetId',
+        '/_authed/_shell/notifications/ broadcastId',
         '/_authed/_shell/orders/ accountId',
         '/_authed/_shell/orders/ storeId',
         '/_authed/_shell/products/ storeId',

@@ -1,49 +1,52 @@
 import { z } from 'zod';
 
 import { type AdminSendNotificationInput } from '@/graphql/generated/graphql';
+import { isIdText } from '@/shared/lib/list-search';
 
-export const NOTIFICATION_TYPES = [
-  { value: 'SYSTEM', label: '시스템', help: '운영 공지' },
-  { value: 'MARKETING', label: '마케팅', help: '프로모션·이벤트' },
-] as const;
+export const MAX_TARGET_ACCOUNTS = 500;
 
-/** "1, 2\n3" → ['1','2','3'] (중복 제거, 숫자만) */
-export function parseAccountIds(raw: string): string[] {
-  const ids = raw
-    .split(/[\s,]+/)
-    .map((v) => v.trim())
-    .filter((v) => v.length > 0);
-  return [...new Set(ids)];
+/** "1, 2\n3" → ['1','2','3'] (중복 제거). 숫자가 아닌 값은 invalid로 따로 돌려준다 */
+export function parseAccountIds(raw: string): { ids: string[]; invalid: string[] } {
+  const tokens = [
+    ...new Set(
+      raw
+        .split(/[\s,]+/)
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0),
+    ),
+  ];
+  return { ids: tokens.filter(isIdText), invalid: tokens.filter((v) => !isIdText(v)) };
 }
 
 export const sendSchema = z
   .object({
     type: z.enum(['SYSTEM', 'MARKETING']),
-    title: z.string().trim().min(1, '제목은 필수입니다.').max(200, '200자 이하'),
-    body: z.string().trim().min(1, '본문은 필수입니다.').max(2000, '2000자 이하'),
+    title: z
+      .string()
+      .trim()
+      .min(1, '제목을 입력해 주세요.')
+      .max(200, '제목은 200자 이하로 입력해 주세요.'),
+    body: z
+      .string()
+      .trim()
+      .min(1, '본문을 입력해 주세요.')
+      .max(2000, '본문은 2,000자 이하로 입력해 주세요.'),
     targetKind: z.enum(['ALL_USERS', 'ACCOUNT_IDS']),
-    accountIdsRaw: z.string(),
+    accountIds: z.array(z.string()),
   })
   .superRefine((v, ctx) => {
     if (v.targetKind !== 'ACCOUNT_IDS') return;
-    const ids = parseAccountIds(v.accountIdsRaw);
-    if (ids.length === 0)
+    if (v.accountIds.length === 0)
       ctx.addIssue({
-        path: ['accountIdsRaw'],
+        path: ['accountIds'],
         code: 'custom',
-        message: '계정 ID를 1개 이상 입력해 주세요.',
+        message: '받을 구매자를 1명 이상 골라 주세요.',
       });
-    else if (ids.length > 500)
+    else if (v.accountIds.length > MAX_TARGET_ACCOUNTS)
       ctx.addIssue({
-        path: ['accountIdsRaw'],
+        path: ['accountIds'],
         code: 'custom',
-        message: `최대 500개까지 보낼 수 있습니다(${ids.length}개).`,
-      });
-    else if (ids.some((id) => !/^\d+$/.test(id)))
-      ctx.addIssue({
-        path: ['accountIdsRaw'],
-        code: 'custom',
-        message: '계정 ID는 숫자만 가능합니다.',
+        message: `한 번에 ${MAX_TARGET_ACCOUNTS}명까지 보낼 수 있습니다. 지금 ${v.accountIds.length}명을 골랐습니다.`,
       });
   });
 export type SendValues = z.infer<typeof sendSchema>;
@@ -67,6 +70,6 @@ export function toSendInput(v: SendValues, idempotencyKey: string): AdminSendNot
     body: v.body,
     idempotencyKey,
     targetKind: v.targetKind,
-    accountIds: v.targetKind === 'ACCOUNT_IDS' ? parseAccountIds(v.accountIdsRaw) : null,
+    accountIds: v.targetKind === 'ACCOUNT_IDS' ? [...new Set(v.accountIds)] : null,
   };
 }

@@ -225,6 +225,27 @@ export type AdminDeleteReviewInput = {
   reviewId: string | number;
 };
 
+/** 알림 발송 이력 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminNotificationBroadcastListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 대상 지정 방식 필터. */
+  targetKind?: AdminNotificationTargetKind | null | undefined;
+  /** 알림 분류 필터. */
+  type?: AdminNotificationType | null | undefined;
+};
+
+/** 발송 진행 상태. 조회 시각 기준으로 계산한다. */
+export type AdminNotificationBroadcastStatus =
+  /** 대상 전원에 대한 저장을 마쳤다. */
+  | 'COMPLETED'
+  /** 요청 뒤 30분이 지나도 완료 기록이 없다(처리 실패 가능성, 운영 확인 필요). */
+  | 'DELAYED'
+  /** 저장 중. 요청 뒤 30분이 지나지 않았고 완료 기록이 없다. */
+  | 'IN_PROGRESS';
+
 /** 발송 대상 지정 방식. */
 export type AdminNotificationTargetKind =
   /** accountIds로 지정한 계정. */
@@ -849,6 +870,48 @@ export type AdminDeleteBannerMutationVariables = Exact<{
 
 export type AdminDeleteBannerMutation = { adminDeleteBanner: boolean };
 
+export type AdminBannersVisibleQueryVariables = Exact<{
+  input?: AdminBannerListInput | null | undefined;
+}>;
+
+
+export type AdminBannersVisibleQuery = { adminBanners: { hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, linkCategoryId: string | null, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean }> } };
+
+export type AdminBannerProductOptionsQueryVariables = Exact<{
+  input?: AdminProductListInput | null | undefined;
+}>;
+
+
+export type AdminBannerProductOptionsQuery = { adminProducts: { items: Array<{ id: string, name: string, storeName: string, storeIsActive: boolean }> } };
+
+export type AdminBannerStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminBannerStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string }> } };
+
+export type AdminBannerCategoryOptionsQueryVariables = Exact<{
+  input?: AdminCategoryListInput | null | undefined;
+}>;
+
+
+export type AdminBannerCategoryOptionsQuery = { adminCategories: Array<{ id: string, name: string, isActive: boolean }> };
+
+export type AdminBannerProductLabelQueryVariables = Exact<{
+  productId: string | number;
+}>;
+
+
+export type AdminBannerProductLabelQuery = { adminProduct: { product: { id: string, name: string } } };
+
+export type AdminBannerStoreLabelQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminBannerStoreLabelQuery = { adminStore: { store: { id: string, storeName: string } } };
+
 export type AdminDashboardSummaryQueryVariables = Exact<{
   input: AdminDashboardSummaryInput;
 }>;
@@ -863,12 +926,38 @@ export type AdminSearchKeywordSnapshotQueryVariables = Exact<{
 
 export type AdminSearchKeywordSnapshotQuery = { adminSearchKeywordSnapshot: { rankedAt: string | null, items: Array<{ rank: number, keyword: string, searchCount: number }> } };
 
+export type AdminNotificationBroadcastsQueryVariables = Exact<{
+  input?: AdminNotificationBroadcastListInput | null | undefined;
+}>;
+
+
+export type AdminNotificationBroadcastsQuery = { adminNotificationBroadcasts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, type: AdminNotificationType, title: string, body: string, targetKind: AdminNotificationTargetKind, targetCount: number, skippedCount: number, deliveredCount: number, status: AdminNotificationBroadcastStatus, actorAccountId: string, actorLabel: string | null, requestedAt: string, completedAt: string | null, targetAccountIds: Array<string>, skippedAccountIds: Array<string> }> } };
+
+export type AdminNotificationBroadcastQueryVariables = Exact<{
+  broadcastId: string | number;
+}>;
+
+
+export type AdminNotificationBroadcastQuery = { adminNotificationBroadcast: { id: string, type: AdminNotificationType, title: string, body: string, targetKind: AdminNotificationTargetKind, targetCount: number, skippedCount: number, deliveredCount: number, status: AdminNotificationBroadcastStatus, actorAccountId: string, actorLabel: string | null, requestedAt: string, completedAt: string | null, targetAccountIds: Array<string>, skippedAccountIds: Array<string> } | null };
+
 export type AdminSendNotificationMutationVariables = Exact<{
   input: AdminSendNotificationInput;
 }>;
 
 
-export type AdminSendNotificationMutation = { adminSendNotification: { sentCount: number, skippedAccountIds: Array<string> } };
+export type AdminSendNotificationMutation = { adminSendNotification: { sentCount: number, skippedAccountIds: Array<string>, broadcastId: string } };
+
+export type AdminNotificationActiveUserCountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminNotificationActiveUserCountQuery = { adminUsers: { totalCount: number } };
+
+export type AdminNotificationUserOptionsQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminNotificationUserOptionsQuery = { adminUsers: { items: Array<{ accountId: string, nickname: string | null, name: string | null, email: string | null }> } };
 
 export type AdminOrdersQueryVariables = Exact<{
   input?: AdminOrderListInput | null | undefined;
@@ -1406,6 +1495,74 @@ export const AdminDeleteBannerDocument = new TypedDocumentString(`
   adminDeleteBanner(bannerId: $bannerId)
 }
     `) as unknown as TypedDocumentString<AdminDeleteBannerMutation, AdminDeleteBannerMutationVariables>;
+export const AdminBannersVisibleDocument = new TypedDocumentString(`
+    query AdminBannersVisible($input: AdminBannerListInput) {
+  adminBanners(input: $input) {
+    items {
+      id
+      placement
+      linkCategoryId
+      startsAt
+      endsAt
+      sortOrder
+      isActive
+    }
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannersVisibleQuery, AdminBannersVisibleQueryVariables>;
+export const AdminBannerProductOptionsDocument = new TypedDocumentString(`
+    query AdminBannerProductOptions($input: AdminProductListInput) {
+  adminProducts(input: $input) {
+    items {
+      id
+      name
+      storeName
+      storeIsActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerProductOptionsQuery, AdminBannerProductOptionsQueryVariables>;
+export const AdminBannerStoreOptionsDocument = new TypedDocumentString(`
+    query AdminBannerStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerStoreOptionsQuery, AdminBannerStoreOptionsQueryVariables>;
+export const AdminBannerCategoryOptionsDocument = new TypedDocumentString(`
+    query AdminBannerCategoryOptions($input: AdminCategoryListInput) {
+  adminCategories(input: $input) {
+    id
+    name
+    isActive
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerCategoryOptionsQuery, AdminBannerCategoryOptionsQueryVariables>;
+export const AdminBannerProductLabelDocument = new TypedDocumentString(`
+    query AdminBannerProductLabel($productId: ID!) {
+  adminProduct(productId: $productId) {
+    product {
+      id
+      name
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerProductLabelQuery, AdminBannerProductLabelQueryVariables>;
+export const AdminBannerStoreLabelDocument = new TypedDocumentString(`
+    query AdminBannerStoreLabel($storeId: ID!) {
+  adminStore(storeId: $storeId) {
+    store {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminBannerStoreLabelQuery, AdminBannerStoreLabelQueryVariables>;
 export const AdminDashboardSummaryDocument = new TypedDocumentString(`
     query AdminDashboardSummary($input: AdminDashboardSummaryInput!) {
   adminDashboardSummary(input: $input) {
@@ -1439,14 +1596,81 @@ export const AdminSearchKeywordSnapshotDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminSearchKeywordSnapshotQuery, AdminSearchKeywordSnapshotQueryVariables>;
+export const AdminNotificationBroadcastsDocument = new TypedDocumentString(`
+    query AdminNotificationBroadcasts($input: AdminNotificationBroadcastListInput) {
+  adminNotificationBroadcasts(input: $input) {
+    items {
+      id
+      type
+      title
+      body
+      targetKind
+      targetCount
+      skippedCount
+      deliveredCount
+      status
+      actorAccountId
+      actorLabel
+      requestedAt
+      completedAt
+      targetAccountIds
+      skippedAccountIds
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationBroadcastsQuery, AdminNotificationBroadcastsQueryVariables>;
+export const AdminNotificationBroadcastDocument = new TypedDocumentString(`
+    query AdminNotificationBroadcast($broadcastId: ID!) {
+  adminNotificationBroadcast(broadcastId: $broadcastId) {
+    id
+    type
+    title
+    body
+    targetKind
+    targetCount
+    skippedCount
+    deliveredCount
+    status
+    actorAccountId
+    actorLabel
+    requestedAt
+    completedAt
+    targetAccountIds
+    skippedAccountIds
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationBroadcastQuery, AdminNotificationBroadcastQueryVariables>;
 export const AdminSendNotificationDocument = new TypedDocumentString(`
     mutation AdminSendNotification($input: AdminSendNotificationInput!) {
   adminSendNotification(input: $input) {
     sentCount
     skippedAccountIds
+    broadcastId
   }
 }
     `) as unknown as TypedDocumentString<AdminSendNotificationMutation, AdminSendNotificationMutationVariables>;
+export const AdminNotificationActiveUserCountDocument = new TypedDocumentString(`
+    query AdminNotificationActiveUserCount {
+  adminUsers(input: { status: ACTIVE, limit: 1 }) {
+    totalCount
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationActiveUserCountQuery, AdminNotificationActiveUserCountQueryVariables>;
+export const AdminNotificationUserOptionsDocument = new TypedDocumentString(`
+    query AdminNotificationUserOptions($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      nickname
+      name
+      email
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationUserOptionsQuery, AdminNotificationUserOptionsQueryVariables>;
 export const AdminOrdersDocument = new TypedDocumentString(`
     query AdminOrders($input: AdminOrderListInput) {
   adminOrders(input: $input) {
