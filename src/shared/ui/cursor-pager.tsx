@@ -76,6 +76,7 @@ export function CursorPager({ page, search, onCursorChange, isFetching = false }
       <div className="ml-auto flex gap-1.5">
         {cursor !== undefined && (
           <Button
+            type="button"
             variant="outline"
             size="sm"
             className="h-7"
@@ -87,6 +88,7 @@ export function CursorPager({ page, search, onCursorChange, isFetching = false }
         )}
         {prevCursor !== null && (
           <Button
+            type="button"
             variant="outline"
             size="sm"
             className="h-7"
@@ -97,6 +99,7 @@ export function CursorPager({ page, search, onCursorChange, isFetching = false }
           </Button>
         )}
         <Button
+          type="button"
           variant="outline"
           size="sm"
           className="h-7"

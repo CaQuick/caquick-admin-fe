@@ -40,6 +40,8 @@ export function IconButton({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            // 폼 안에 두는 경우가 많다 — 기본을 submit이 아닌 button으로(명시하면 그 값을 쓴다)
+            type="button"
             {...rest}
             variant={variant}
             size={size}
