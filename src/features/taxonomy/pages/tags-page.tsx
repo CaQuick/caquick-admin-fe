@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
 import { CursorPager } from '@/shared/ui/cursor-pager';
 import { DataTable } from '@/shared/ui/data-table';
 import { FilterBar } from '@/shared/ui/filter-bar';
+import { IconButton } from '@/shared/ui/icon-button';
 import { PageHeader } from '@/shared/ui/page-header';
 
 import { tagMutations, tagsQueryOptions } from '../api/queries';
@@ -51,7 +52,7 @@ export function TagsPage({ search, onSearchChange }: Props) {
     },
     {
       accessorKey: 'updatedAt',
-      header: '수정',
+      header: '수정일',
       cell: ({ row }) => formatKst(row.original.updatedAt),
     },
     {
@@ -62,26 +63,16 @@ export function TagsPage({ search, onSearchChange }: Props) {
           <TagDialog
             tag={row.original}
             trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                aria-label={`${row.original.name} 수정`}
-              >
-                <PencilIcon className="size-4" />
-              </Button>
+              <IconButton label={`${row.original.name} 수정`}>
+                <PencilIcon />
+              </IconButton>
             }
           />
           <ConfirmDialog
             trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 text-negative-foreground"
-                aria-label={`${row.original.name} 삭제`}
-              >
-                <Trash2Icon className="size-4" />
-              </Button>
+              <IconButton label={`${row.original.name} 삭제`} className="text-negative-foreground">
+                <Trash2Icon />
+              </IconButton>
             }
             title={`${row.original.name} 태그를 삭제할까요?`}
             description={`상품 ${formatCount(row.original.productCount)}개와의 연결이 끊깁니다.`}
