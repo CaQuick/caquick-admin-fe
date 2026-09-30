@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { messageFor } from '@/shared/api';
+import { withJosa } from '@/shared/lib/josa';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -42,7 +43,9 @@ export function TagDialog({ trigger, tag }: Props) {
       if (tag) await tagMutations.update(qc, { tagId: tag.id, name: v.name });
       else await tagMutations.create(qc, { name: v.name });
       toast.success(
-        tag ? `태그를 ${v.name}(으)로 수정했습니다.` : `${v.name} 태그를 만들었습니다.`,
+        tag
+          ? `태그 이름을 ${withJosa(v.name, '으로/로')} 바꿨습니다.`
+          : `${v.name} 태그를 만들었습니다.`,
       );
       setOpen(false);
       form.reset({ name: tag ? v.name : '' });
@@ -66,7 +69,8 @@ export function TagDialog({ trigger, tag }: Props) {
           <DialogHeader>
             <DialogTitle>{tag ? '태그 수정' : '태그 추가'}</DialogTitle>
             <DialogDescription>
-              이름은 전체에서 유일합니다. 삭제된 같은 이름이 있으면 복구됩니다.
+              같은 이름의 태그는 하나만 둘 수 있습니다. 삭제된 같은 이름이 있으면 그 태그가
+              복구됩니다.
             </DialogDescription>
           </DialogHeader>
           {error && (

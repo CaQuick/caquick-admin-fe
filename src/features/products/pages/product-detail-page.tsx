@@ -13,19 +13,19 @@ import { StatusPill } from '@/shared/ui/status-pill';
 
 import { productDetailQueryOptions } from '../api/queries';
 import { ProductActiveToggle } from '../components/product-active-toggle';
+import { ProductOptionsCard } from '../components/product-options-card';
+import { ProductTaxonomyCard } from '../components/product-taxonomy-card';
+import { ProductTemplateCard } from '../components/product-template-card';
 
 export function ProductDetailPage({ productId }: { productId: string }) {
   const q = useQuery(productDetailQueryOptions(productId));
   if (q.isError) {
     return (
       <>
-        <PageHeader title="상품" />
+        <PageHeader title="상품" back={{ to: '/products' }} />
         <p role="alert" className="text-sm text-negative-foreground">
           {messageFor(q.error)}
         </p>
-        <Button asChild variant="link" className="px-0">
-          <Link to="/products">목록으로</Link>
-        </Button>
       </>
     );
   }
@@ -39,20 +39,25 @@ export function ProductDetailPage({ productId }: { productId: string }) {
     imageUrls,
     reviewCount,
     orderItemCount,
+    categories,
+    tags,
+    optionGroups,
+    customTemplate,
   } = q.data;
   return (
     <>
       <PageHeader
+        back={{ to: '/products' }}
         title={p.name}
         meta={
           <span className="flex items-center gap-1.5">
             <StatusPill tone={p.isActive ? 'positive' : 'neutral'}>
               {p.isActive ? '노출' : '숨김'}
             </StatusPill>
-            {!storeIsActive && <StatusPill tone="caution">매장 비활성</StatusPill>}
+            {!storeIsActive && <StatusPill tone="caution">매장 숨김</StatusPill>}
           </span>
         }
-        description={`상품 ID ${p.id} · 생성 ${formatKst(p.createdAt, true)} · 수정 ${formatKst(p.updatedAt, true)}`}
+        description={`상품 ID ${p.id} · 등록일 ${formatKst(p.createdAt, true)} · 수정일 ${formatKst(p.updatedAt, true)}`}
         actions={
           <>
             <Button asChild variant="outline">
@@ -60,7 +65,12 @@ export function ProductDetailPage({ productId }: { productId: string }) {
                 <HistoryIcon className="size-4" /> 감사 이력
               </Link>
             </Button>
-            <ProductActiveToggle productId={p.id} name={p.name} isActive={p.isActive} />
+            <ProductActiveToggle
+              productId={p.id}
+              name={p.name}
+              isActive={p.isActive}
+              storeIsActive={storeIsActive}
+            />
           </>
         }
       />
@@ -102,6 +112,8 @@ export function ProductDetailPage({ productId }: { productId: string }) {
               </div>
             </CardContent>
           </Card>
+          <ProductOptionsCard optionGroups={optionGroups} />
+          <ProductTemplateCard template={customTemplate} />
         </div>
         <div className="flex flex-col gap-3">
           <Card>
@@ -131,6 +143,7 @@ export function ProductDetailPage({ productId }: { productId: string }) {
               </dl>
             </CardContent>
           </Card>
+          <ProductTaxonomyCard categories={categories} tags={tags} />
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">집계</CardTitle>
@@ -139,7 +152,7 @@ export function ProductDetailPage({ productId }: { productId: string }) {
               <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums">
                 <dt className="text-muted-foreground">리뷰</dt>
                 <dd>{formatCount(reviewCount)}건</dd>
-                <dt className="text-muted-foreground">주문 아이템</dt>
+                <dt className="text-muted-foreground">주문 건수(누적)</dt>
                 <dd>{formatCount(orderItemCount)}건</dd>
               </dl>
             </CardContent>

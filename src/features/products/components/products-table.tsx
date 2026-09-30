@@ -56,21 +56,26 @@ const columns: ColumnDef<ProductRow, unknown>[] = [
     accessorKey: 'regularPrice',
     header: '가격',
     meta: { align: 'right' },
-    cell: ({ row }) =>
-      row.original.salePrice !== null && row.original.salePrice !== undefined ? (
-        <span>
-          {formatKrw(row.original.salePrice)}
-          <span className="ml-1 text-[11.5px] text-muted-foreground line-through">
-            {formatKrw(row.original.regularPrice)}
-          </span>
+    // 판매가를 늘 첫 줄 오른쪽 끝에 둔다. 할인 중이면 정가를 둘째 줄에 작게
+    cell: ({ row }) => {
+      const { salePrice, regularPrice } = row.original;
+      const onSale = salePrice !== null && salePrice !== undefined;
+      return (
+        <span className="flex flex-col items-end leading-tight">
+          <span>{formatKrw(onSale ? salePrice : regularPrice)}</span>
+          {onSale && (
+            <span className="text-[11.5px] text-muted-foreground">
+              <span className="sr-only">정가 </span>
+              <s>{formatKrw(regularPrice)}</s>
+            </span>
+          )}
         </span>
-      ) : (
-        formatKrw(row.original.regularPrice)
-      ),
+      );
+    },
   },
   {
     accessorKey: 'updatedAt',
-    header: '수정',
+    header: '수정일',
     cell: ({ row }) => formatKst(row.original.updatedAt),
   },
 ];

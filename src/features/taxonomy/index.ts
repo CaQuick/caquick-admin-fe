@@ -1,3 +1,3 @@
 export { CategoriesPage } from './pages/categories-page';
 export { TagsPage } from './pages/tags-page';
-export { categoriesSearchSchema, tagsSearchSchema } from './schemas';
+export { CATEGORY_TYPES, categoriesSearchSchema, tagsSearchSchema } from './schemas';

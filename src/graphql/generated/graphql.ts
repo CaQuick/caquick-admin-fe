@@ -77,7 +77,7 @@ export type AdminCreateAdminInput = {
   email?: string | null | undefined;
   /** 이름. 선택. */
   name?: string | null | undefined;
-  /** 초기 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함해야 한다. 최초 로그인 시 변경이 강제된다. */
+  /** 초기 비밀번호. 8~64자(공백만으로는 불가). 최초 로그인 시 변경이 강제되므로 조합 규칙은 없다. */
   password: string;
   /** 로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT. */
   username: string;
@@ -153,7 +153,7 @@ export type AdminCreateSellerInput = {
   email?: string | null | undefined;
   /** 계정 이름(운영자명). 선택. */
   name?: string | null | undefined;
-  /** 초기 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함. 최초 로그인 시 변경이 강제된다. */
+  /** 초기 비밀번호. 8~64자(공백만으로는 불가). 최초 로그인 시 변경이 강제되므로 조합 규칙은 없다. */
   password: string;
   /** 매장 기본 정보. */
   store: AdminCreateSellerStoreInput;
@@ -285,7 +285,7 @@ export type AdminRegionListInput = {
 export type AdminResetSellerPasswordInput = {
   /** 대상 판매자 계정 ID. */
   accountId: string | number;
-  /** 새 비밀번호. 8~64자에 대문자·소문자·숫자·특수문자를 각각 1개 이상 포함. */
+  /** 새 초기 비밀번호. 8~64자(공백만으로는 불가). 최초 로그인 시 변경이 강제되므로 조합 규칙은 없다. */
   newPassword: string;
 };
 
@@ -324,6 +324,8 @@ export type AdminReviewListInput = {
   keyword?: string | null | undefined;
   /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
   limit?: number | null | undefined;
+  /** 리뷰 ID 필터. 지정하면 그 리뷰 1건만(삭제 리뷰는 includeDeleted일 때만). 미지정 시 전체. */
+  reviewId?: string | number | null | undefined;
   /** 매장 ID 필터. 미지정 시 전체. */
   storeId?: string | number | null | undefined;
 };
@@ -864,7 +866,14 @@ export type AdminProductQueryVariables = Exact<{
 }>;
 
 
-export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string } } };
+export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }, categories: Array<{ id: string, categoryType: CategoryType, name: string, isActive: boolean }>, tags: Array<{ id: string, name: string }>, optionGroups: Array<{ id: string, name: string, description: string | null, isRequired: boolean, minSelect: number, maxSelect: number, optionRequiresDescription: boolean, optionRequiresImage: boolean, sortOrder: number, isActive: boolean, optionItems: Array<{ id: string, title: string, description: string | null, imageUrl: string | null, priceDelta: number, sortOrder: number, isActive: boolean }> }>, customTemplate: { id: string, baseImageUrl: string, isActive: boolean, textTokens: Array<{ id: string, tokenKey: string, defaultText: string, maxLength: number, sortOrder: number, isRequired: boolean }> } | null } };
+
+export type AdminProductStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminProductStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
 
 export type AdminSetProductActiveMutationVariables = Exact<{
   input: AdminSetProductActiveInput;
@@ -1460,9 +1469,64 @@ export const AdminProductDocument = new TypedDocumentString(`
     imageUrls
     reviewCount
     orderItemCount
+    categories {
+      id
+      categoryType
+      name
+      isActive
+    }
+    tags {
+      id
+      name
+    }
+    optionGroups {
+      id
+      name
+      description
+      isRequired
+      minSelect
+      maxSelect
+      optionRequiresDescription
+      optionRequiresImage
+      sortOrder
+      isActive
+      optionItems {
+        id
+        title
+        description
+        imageUrl
+        priceDelta
+        sortOrder
+        isActive
+      }
+    }
+    customTemplate {
+      id
+      baseImageUrl
+      isActive
+      textTokens {
+        id
+        tokenKey
+        defaultText
+        maxLength
+        sortOrder
+        isRequired
+      }
+    }
   }
 }
     `) as unknown as TypedDocumentString<AdminProductQuery, AdminProductQueryVariables>;
+export const AdminProductStoreOptionsDocument = new TypedDocumentString(`
+    query AdminProductStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminProductStoreOptionsQuery, AdminProductStoreOptionsQueryVariables>;
 export const AdminSetProductActiveDocument = new TypedDocumentString(`
     mutation AdminSetProductActive($input: AdminSetProductActiveInput!) {
   adminSetProductActive(input: $input) {

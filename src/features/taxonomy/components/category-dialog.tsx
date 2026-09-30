@@ -102,8 +102,8 @@ export function CategoryDialog({ trigger, category, categoryType }: Props) {
             <DialogTitle>{category ? '카테고리 수정' : `${typeLabel} 카테고리 추가`}</DialogTitle>
             <DialogDescription>
               {category
-                ? '타입은 바꿀 수 없습니다.'
-                : '같은 타입 안에서 이름이 겹치면 거절됩니다. 삭제된 같은 이름이 있으면 복구됩니다.'}
+                ? '유형은 바꿀 수 없습니다.'
+                : '같은 유형 안에 같은 이름이 있으면 추가할 수 없습니다. 삭제된 같은 이름이 있으면 그 카테고리가 복구됩니다.'}
             </DialogDescription>
           </DialogHeader>
           {error && (
@@ -134,14 +134,17 @@ export function CategoryDialog({ trigger, category, categoryType }: Props) {
               <Input
                 id="cat-sort"
                 type="number"
+                inputMode="numeric"
                 {...form.register('sortOrder', { valueAsNumber: true })}
               />
-              {errors.sortOrder && (
+              {errors.sortOrder ? (
                 <p className="text-xs text-negative-foreground">{errors.sortOrder.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">숫자가 작을수록 앞에 보입니다.</p>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="cat-active">활성</Label>
+              <Label htmlFor="cat-active">구매자 화면에 노출</Label>
               <Controller
                 control={form.control}
                 name="isActive"
