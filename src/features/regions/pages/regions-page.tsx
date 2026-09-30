@@ -10,6 +10,7 @@ import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { FilterBar } from '@/shared/ui/filter-bar';
 import { IconButton } from '@/shared/ui/icon-button';
 import { Label } from '@/shared/ui/label';
 import { PageHeader } from '@/shared/ui/page-header';
@@ -161,21 +162,25 @@ export function RegionsPage({ search, onSearchChange }: Props) {
         title="지역"
         meta={roots.data ? `권역 ${formatCount(level1.length)}곳` : undefined}
         description="권역 아래에 시·군·구를 둡니다. 매장은 시·군·구에 연결됩니다."
-        actions={
-          <span className="flex items-center gap-2">
-            <Switch
-              id="rg-inactive"
-              checked={includeInactive}
-              onCheckedChange={(v) =>
-                onSearchChange({ ...search, inactive: v ? 'true' : undefined })
-              }
-            />
-            <Label htmlFor="rg-inactive" className="text-xs">
-              숨긴 지역 포함
-            </Label>
-          </span>
-        }
       />
+      <Card className="mb-3 gap-0 py-0">
+        <FilterBar
+          trailing={
+            <>
+              <Switch
+                id="rg-inactive"
+                checked={includeInactive}
+                onCheckedChange={(v) =>
+                  onSearchChange({ ...search, inactive: v ? 'true' : undefined })
+                }
+              />
+              <Label htmlFor="rg-inactive" className="text-xs">
+                숨긴 지역 포함
+              </Label>
+            </>
+          }
+        />
+      </Card>
       {roots.isError ? (
         <p role="alert" className="text-sm text-negative-foreground">
           {messageFor(roots.error)}

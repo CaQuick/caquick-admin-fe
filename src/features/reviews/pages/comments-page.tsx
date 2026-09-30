@@ -121,6 +121,18 @@ export function CommentsPage({
               (v) => v !== undefined,
             )}
             onReset={() => onSearchChange({ limit: search.limit })}
+            trailing={
+              <>
+                <Switch
+                  id="rc-deleted"
+                  checked={search.deleted === 'true'}
+                  onCheckedChange={(v) => patch({ deleted: v ? 'true' : undefined })}
+                />
+                <Label htmlFor="rc-deleted" className="text-xs">
+                  삭제 포함
+                </Label>
+              </>
+            }
           >
             <FilterField label="리뷰 번호">
               <IdFilterInput
@@ -139,16 +151,6 @@ export function CommentsPage({
                 searchQuery={authorPickerQuery}
               />
             </FilterField>
-            <span className="ml-auto flex items-center gap-1.5">
-              <Switch
-                id="rc-deleted"
-                checked={search.deleted === 'true'}
-                onCheckedChange={(v) => patch({ deleted: v ? 'true' : undefined })}
-              />
-              <Label htmlFor="rc-deleted" className="text-xs">
-                삭제 포함
-              </Label>
-            </span>
           </FilterBar>
         }
       >

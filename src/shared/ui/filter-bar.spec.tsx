@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import { FilterBar } from './filter-bar';
 import { IdFilterInput } from './id-filter-input';
+import { Label } from './label';
+import { Switch } from './switch';
 
 function Harness() {
   const [store, setStore] = useState<string | undefined>(undefined);
@@ -48,5 +50,40 @@ describe('FilterBar', () => {
     await userEvent.click(input);
     await userEvent.paste('😀'.repeat(typed));
     expect([...(input as HTMLInputElement).value]).toHaveLength(kept);
+  });
+
+  it('오른쪽 끝 슬롯은 초기화 버튼보다 뒤, 필터 줄의 마지막 요소로 그린다', () => {
+    render(
+      <FilterBar
+        keyword=""
+        onKeywordSubmit={() => undefined}
+        hasActiveFilters
+        onReset={() => undefined}
+        trailing={
+          <>
+            <Switch id="t-deleted" />
+            <Label htmlFor="t-deleted">삭제 포함</Label>
+          </>
+        }
+      >
+        <IdFilterInput label="매장 ID" value={undefined} onCommit={() => undefined} />
+      </FilterBar>,
+    );
+    const toggle = screen.getByRole('switch', { name: '삭제 포함' });
+    const bar = toggle.closest('[data-slot="filter-bar"]')!;
+    const slot = bar.lastElementChild!;
+    expect(slot).toContainElement(toggle);
+    expect(slot).toHaveClass('ml-auto');
+    const reset = screen.getByRole('button', { name: /초기화/ });
+    expect(reset.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('onReset이 없으면 필터가 걸려 있어도 초기화 버튼을 두지 않는다', () => {
+    render(<FilterBar hasActiveFilters trailing={<span>보기</span>} />);
+    expect(screen.queryByRole('button', { name: /초기화/ })).toBeNull();
+    expect(screen.getByText('보기').parentElement).toHaveAttribute(
+      'data-slot',
+      'filter-bar-trailing',
+    );
   });
 });

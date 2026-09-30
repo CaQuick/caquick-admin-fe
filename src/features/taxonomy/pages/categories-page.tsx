@@ -7,6 +7,7 @@ import { formatCount } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog';
+import { FilterBar } from '@/shared/ui/filter-bar';
 import { IconButton } from '@/shared/ui/icon-button';
 import { Label } from '@/shared/ui/label';
 import { PageHeader } from '@/shared/ui/page-header';
@@ -52,7 +53,22 @@ export function CategoriesPage({ search, onSearchChange }: Props) {
         }
       />
       <Card className="gap-0 py-0">
-        <div className="flex flex-wrap items-center gap-3 border-b border-divider px-4 py-3">
+        <FilterBar
+          trailing={
+            <>
+              <Switch
+                id="cat-inactive"
+                checked={includeInactive}
+                onCheckedChange={(v) =>
+                  onSearchChange({ ...search, inactive: v ? 'true' : undefined })
+                }
+              />
+              <Label htmlFor="cat-inactive" className="text-xs">
+                숨김 포함
+              </Label>
+            </>
+          }
+        >
           <Tabs
             value={type}
             onValueChange={(v) => onSearchChange({ ...search, type: v as CategoryType })}
@@ -65,19 +81,7 @@ export function CategoriesPage({ search, onSearchChange }: Props) {
               ))}
             </TabsList>
           </Tabs>
-          <div className="ml-auto flex items-center gap-2">
-            <Switch
-              id="cat-inactive"
-              checked={includeInactive}
-              onCheckedChange={(v) =>
-                onSearchChange({ ...search, inactive: v ? 'true' : undefined })
-              }
-            />
-            <Label htmlFor="cat-inactive" className="text-xs">
-              숨김 포함
-            </Label>
-          </div>
-        </div>
+        </FilterBar>
         {q.isError ? (
           <p role="alert" className="px-4 py-8 text-center text-sm text-negative-foreground">
             {messageFor(q.error)}
