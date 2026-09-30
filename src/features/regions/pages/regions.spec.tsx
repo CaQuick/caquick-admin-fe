@@ -250,6 +250,49 @@ describe('지역', () => {
     delete window.kakao;
   });
 
+  it('좌표를 기다리는 사이 다이얼로그를 닫았다 다시 열면 늦게 온 좌표를 버린다', async () => {
+    installFakePostcode(postcodeResult());
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      gqlOk('AdminRegions', { adminRegions: [seoul] }),
+      graphql.query('AdminGeocodeAddress', async () => {
+        await held;
+        return HttpResponse.json({
+          data: {
+            adminGeocodeAddress: {
+              latitude: 37.5172,
+              longitude: 127.0473,
+              sigunguCode: '11680',
+              regionId: '5',
+            },
+          },
+        });
+      }),
+    );
+    boot('/regions');
+    await userEvent.click(await screen.findByRole('button', { name: '서울 수정' }));
+    let dialog = await screen.findByRole('dialog');
+    const originalLat = within(dialog).getByLabelText<HTMLInputElement>('중심 위도').value;
+    await userEvent.click(within(dialog).getByRole('button', { name: '주소로 채우기' }));
+    const search = await screen.findByRole('dialog', { name: '주소 검색' });
+    await userEvent.click(await within(search).findByRole('button', { name: /테헤란로/ }));
+    await within(dialog).findByText('주소로 좌표를 찾고 있습니다.');
+
+    await userEvent.keyboard('{Escape}');
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: '서울 수정' }));
+    dialog = await screen.findByRole('dialog');
+
+    release();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(within(dialog).getByLabelText('중심 위도')).toHaveValue(originalLat);
+    expect(within(dialog).queryByText(/의 좌표로 채웠습니다/)).not.toBeInTheDocument();
+    delete window.kakao;
+  });
+
   it.each([
     { title: '선택한 권역이 노출 중이면 하위 추가 버튼을 보여 준다', isActive: true, canAdd: true },
     { title: '선택한 권역이 숨김이면 버튼 대신 안내를 보여 준다', isActive: false, canAdd: false },

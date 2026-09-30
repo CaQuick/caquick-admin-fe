@@ -52,7 +52,7 @@ export function RegionDialog({ trigger, region, parent }: Props) {
   const { errors, isSubmitting } = form.formState;
   const levelLabel = (region ? region.level : parent ? 2 : 1) === 1 ? '권역' : '시·군·구';
   const [geocodeNote, setGeocodeNote] = useState<string | null>(null);
-  // 주소를 연달아 고르면 앞선 응답은 버린다
+  // 주소를 연달아 고르거나 다이얼로그를 닫으면 앞선 응답은 버린다
   const request = useRef(0);
 
   const fillCenter = async (address: string) => {
@@ -96,6 +96,8 @@ export function RegionDialog({ trigger, region, parent }: Props) {
     <Dialog
       open={open}
       onOpenChange={(o) => {
+        // 닫았다 다시 열면 폼을 새로 채우므로 기다리던 좌표 응답은 버린다
+        request.current += 1;
         setOpen(o);
         if (o) form.reset(initial);
         setError(null);
