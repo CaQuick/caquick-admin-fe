@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { type ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 
+import { BuyerRef } from '@/features/accounts';
 import { messageFor } from '@/shared/api';
 import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
@@ -50,13 +50,10 @@ function commentColumns(open: (id: string) => void): ColumnDef<CommentRow, unkno
       header: '작성자',
       cell: ({ row }) => (
         <StopRowClick>
-          <Link
-            to="/users/$accountId"
-            params={{ accountId: row.original.authorAccountId }}
-            className="hover:underline"
-          >
-            {row.original.authorNickname ?? `#${row.original.authorAccountId}`}
-          </Link>
+          <BuyerRef
+            accountId={row.original.authorAccountId}
+            nickname={row.original.authorNickname}
+          />
         </StopRowClick>
       ),
     },

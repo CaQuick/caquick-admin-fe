@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
-import { AccountStatusPill } from '@/features/accounts';
+import { AccountStatusPill, BuyerRef } from '@/features/accounts';
 import { type AdminOrderQuery } from '@/graphql/generated/graphql';
 import { formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
@@ -232,26 +232,25 @@ export function OrderBuyer({ order }: { order: OrderDetail }) {
           </dd>
           <dt className="text-muted-foreground">계정</dt>
           <dd className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/users/$accountId"
-              params={{ accountId: b.accountId }}
-              className="text-primary-soft-foreground hover:underline"
-            >
-              {b.nickname ?? '탈퇴 회원'}
-            </Link>
+            <BuyerRef
+              accountId={b.accountId}
+              nickname={b.nickname}
+              className="text-primary-soft-foreground"
+            />
             <AccountStatusPill status={b.status} />
           </dd>
           <dt className="text-muted-foreground">이메일</dt>
           <dd className="break-all">{b.email ?? '—'}</dd>
           <dt className="text-muted-foreground">계정 ID</dt>
           <dd>
-            <Link
-              to="/users/$accountId"
-              params={{ accountId: b.accountId }}
-              className="font-mono text-primary-soft-foreground hover:underline"
+            <BuyerRef
+              accountId={b.accountId}
+              nickname={b.nickname}
+              badge={false}
+              className="font-mono text-primary-soft-foreground"
             >
               {b.accountId}
-            </Link>
+            </BuyerRef>
           </dd>
         </dl>
       </CardContent>

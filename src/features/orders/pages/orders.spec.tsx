@@ -505,7 +505,7 @@ describe('주문 상세', () => {
     expect(within(buyer).queryByText('ACTIVE')).not.toBeInTheDocument();
   });
 
-  it('탈퇴한 구매자는 탈퇴 회원으로, 매장 이름을 못 불러오면 #ID로 보인다', async () => {
+  it('탈퇴한 구매자는 링크 없이 탈퇴 회원·계정 ID로, 매장 이름을 못 불러오면 #ID로 보인다', async () => {
     server.use(
       gqlOk('AdminOrder', {
         adminOrder: {
@@ -523,10 +523,11 @@ describe('주문 상세', () => {
     boot('/orders/1');
     await screen.findByText('레터링 생크림 케이크');
     const buyer = buyerCard();
-    expect(within(buyer).getByRole('link', { name: '탈퇴 회원' })).toHaveAttribute(
-      'href',
-      '/users/10',
-    );
+    // 탈퇴 계정은 구매자 상세가 NOT_FOUND라 잇지 않는다
+    expect(within(buyer).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(buyer).getAllByText('탈퇴 회원')).toHaveLength(1);
+    expect(within(buyer).getByText('#10')).toBeInTheDocument();
+    expect(within(buyer).getByText('10')).toBeInTheDocument();
     expect(within(buyer).getByText('정지')).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: '매장 #17' })).toHaveAttribute(
       'href',

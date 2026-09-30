@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { HistoryIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { BuyerRef } from '@/features/accounts';
 import { messageFor } from '@/shared/api';
 import { withJosa } from '@/shared/lib/josa';
 import { formatKst } from '@/shared/lib/kst';
@@ -153,13 +154,11 @@ export function ReportDetailPage({ reportId }: { reportId: string }) {
             <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-sm">
               <dt className="text-muted-foreground">작성자</dt>
               <dd>
-                <Link
-                  to="/users/$accountId"
-                  params={{ accountId: target.authorAccountId }}
-                  className={linkClass}
-                >
-                  {target.authorNickname ?? `#${target.authorAccountId}`}
-                </Link>
+                <BuyerRef
+                  accountId={target.authorAccountId}
+                  nickname={target.authorNickname}
+                  className="text-primary-soft-foreground"
+                />
               </dd>
               <dt className="text-muted-foreground">현재 본문</dt>
               <dd className="whitespace-pre-line">{target.content ?? '—'}</dd>

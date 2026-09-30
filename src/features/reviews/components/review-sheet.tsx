@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { StarIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
 
+import { BuyerRef } from '@/features/accounts';
 import { type AdminReviewCommentsQuery, type AdminReviewsQuery } from '@/graphql/generated/graphql';
 import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
@@ -87,13 +88,11 @@ export function ReviewSheet({
           </section>
           <dl className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-sm">
             <Field label="작성자">
-              <Link
-                to="/users/$accountId"
-                params={{ accountId: review.authorAccountId }}
-                className={linkClass}
-              >
-                {review.authorNickname ?? `#${review.authorAccountId}`}
-              </Link>
+              <BuyerRef
+                accountId={review.authorAccountId}
+                nickname={review.authorNickname}
+                className="text-primary-soft-foreground"
+              />
             </Field>
             <Field label="매장">
               <Link
@@ -155,13 +154,11 @@ export function CommentSheet({
           </p>
           <dl className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-sm">
             <Field label="작성자">
-              <Link
-                to="/users/$accountId"
-                params={{ accountId: comment.authorAccountId }}
-                className={linkClass}
-              >
-                {comment.authorNickname ?? `#${comment.authorAccountId}`}
-              </Link>
+              <BuyerRef
+                accountId={comment.authorAccountId}
+                nickname={comment.authorNickname}
+                className="text-primary-soft-foreground"
+              />
             </Field>
             <Field label="리뷰">
               <ReviewLink reviewId={comment.reviewId} className={linkClass} />
