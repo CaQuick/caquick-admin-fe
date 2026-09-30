@@ -954,6 +954,13 @@ export type AdminRegionsQueryVariables = Exact<{
 
 export type AdminRegionsQuery = { adminRegions: Array<{ id: string, parentId: string | null, level: number, name: string, slug: string, sortOrder: number, isActive: boolean, centerLat: string | null, centerLng: string | null, storeCount: number, childCount: number, createdAt: string, updatedAt: string }> };
 
+export type AdminGeocodeAddressQueryVariables = Exact<{
+  query: string;
+}>;
+
+
+export type AdminGeocodeAddressQuery = { adminGeocodeAddress: { latitude: number, longitude: number, sigunguCode: string | null, regionId: string | null } | null };
+
 export type AdminCreateRegionMutationVariables = Exact<{
   input: AdminCreateRegionInput;
 }>;
@@ -1071,14 +1078,14 @@ export type AdminStoresQueryVariables = Exact<{
 }>;
 
 
-export type AdminStoresQuery = { adminStores: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, sellerAccountId: string, storeName: string, storePhone: string, addressFull: string, regionId: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
+export type AdminStoresQuery = { adminStores: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, sellerAccountId: string, sellerLabel: string | null, storeName: string, storePhone: string, addressFull: string, regionId: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
 
 export type AdminStoreQueryVariables = Exact<{
   storeId: string | number;
 }>;
 
 
-export type AdminStoreQuery = { adminStore: { productCount: number, orderItemCount: number, store: { id: string, sellerAccountId: string, storeName: string, storePhone: string, addressFull: string, addressCity: string | null, addressDistrict: string | null, addressNeighborhood: string | null, regionId: string | null, latitude: string | null, longitude: string | null, mapProvider: StoreMapProvider, websiteUrl: string | null, businessHoursText: string | null, profileImageUrl: string | null, greetingMessage: string | null, pickupSlotIntervalMinutes: number, minLeadTimeMinutes: number, maxDaysAhead: number, isActive: boolean, createdAt: string, updatedAt: string }, seller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus } } };
+export type AdminStoreQuery = { adminStore: { productCount: number, orderItemCount: number, store: { id: string, sellerAccountId: string, sellerLabel: string | null, storeName: string, storePhone: string, addressFull: string, addressCity: string | null, addressDistrict: string | null, addressNeighborhood: string | null, regionId: string | null, latitude: string | null, longitude: string | null, mapProvider: StoreMapProvider, websiteUrl: string | null, businessHoursText: string | null, profileImageUrl: string | null, greetingMessage: string | null, pickupSlotIntervalMinutes: number, minLeadTimeMinutes: number, maxDaysAhead: number, isActive: boolean, createdAt: string, updatedAt: string }, seller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus } } };
 
 export type AdminSetStoreActiveMutationVariables = Exact<{
   input: AdminSetStoreActiveInput;
@@ -1712,6 +1719,16 @@ export const AdminRegionsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminRegionsQuery, AdminRegionsQueryVariables>;
+export const AdminGeocodeAddressDocument = new TypedDocumentString(`
+    query AdminGeocodeAddress($query: String!) {
+  adminGeocodeAddress(query: $query) {
+    latitude
+    longitude
+    sigunguCode
+    regionId
+  }
+}
+    `) as unknown as TypedDocumentString<AdminGeocodeAddressQuery, AdminGeocodeAddressQueryVariables>;
 export const AdminCreateRegionDocument = new TypedDocumentString(`
     mutation AdminCreateRegion($input: AdminCreateRegionInput!) {
   adminCreateRegion(input: $input) {
@@ -1961,6 +1978,7 @@ export const AdminStoresDocument = new TypedDocumentString(`
     items {
       id
       sellerAccountId
+      sellerLabel
       storeName
       storePhone
       addressFull
@@ -1981,6 +1999,7 @@ export const AdminStoreDocument = new TypedDocumentString(`
     store {
       id
       sellerAccountId
+      sellerLabel
       storeName
       storePhone
       addressFull

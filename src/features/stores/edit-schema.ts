@@ -5,33 +5,40 @@ import {
   type AdminUpdateStoreBasicInfoInput,
 } from '@/graphql/generated/graphql';
 
+import { maxChars, refineCoordPair, storeLocationShape } from './location-schema';
+
 export type StoreDetail = AdminStoreQuery['adminStore']['store'];
 
-const coord = z
-  .string()
-  .trim()
-  .refine((v) => v === '' || !Number.isNaN(Number(v)), '숫자여야 합니다.');
+/** BE store-field-limits. */
+const STORE_TEXT_MAX = {
+  storeName: 200,
+  storePhone: 30,
+  websiteUrl: 2048,
+  businessHoursText: 500,
+  greetingMessage: 500,
+} as const;
 
 /** 부분 수정 폼. 모든 필드를 현재 값으로 채워 두고, 바뀐 것만 보낸다. 빈 문자열은 "지움(null)". */
-export const storeEditSchema = z.object({
-  storeName: z.string().trim().min(1, '매장명은 필수입니다.').max(200),
-  storePhone: z.string().trim().min(1, '전화는 필수입니다.').max(50),
-  addressFull: z.string().trim().min(1, '주소는 필수입니다.').max(500),
-  addressCity: z.string().trim().max(100),
-  addressDistrict: z.string().trim().max(100),
-  addressNeighborhood: z.string().trim().max(100),
-  regionId: z.string().trim().max(20),
-  latitude: coord,
-  longitude: coord,
-  mapProvider: z.enum(['NAVER', 'KAKAO', 'NONE']),
-  websiteUrl: z
-    .string()
-    .trim()
-    .refine((v) => v === '' || /^https?:\/\//.test(v), 'http(s):// 로 시작해야 합니다.'),
-  businessHoursText: z.string().trim().max(500),
-  greetingMessage: z.string().trim().max(500),
-  profileImageUrl: z.string().nullable(),
-});
+export const storeEditSchema = z
+  .object({
+    storeName: maxChars(STORE_TEXT_MAX.storeName).refine(
+      (v) => v.length > 0,
+      '매장명은 필수입니다.',
+    ),
+    storePhone: maxChars(STORE_TEXT_MAX.storePhone).refine(
+      (v) => v.length > 0,
+      '매장 전화는 필수입니다.',
+    ),
+    ...storeLocationShape,
+    websiteUrl: maxChars(STORE_TEXT_MAX.websiteUrl).refine(
+      (v) => v === '' || /^https?:\/\//.test(v),
+      'http:// 또는 https://로 시작하는 주소를 입력해 주세요.',
+    ),
+    businessHoursText: maxChars(STORE_TEXT_MAX.businessHoursText),
+    greetingMessage: maxChars(STORE_TEXT_MAX.greetingMessage),
+    profileImageUrl: z.string().nullable(),
+  })
+  .superRefine(refineCoordPair);
 export type StoreEditValues = z.infer<typeof storeEditSchema>;
 
 export function toEditValues(s: StoreDetail): StoreEditValues {

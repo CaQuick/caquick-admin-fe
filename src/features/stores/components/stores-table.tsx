@@ -2,9 +2,11 @@ import { Link } from '@tanstack/react-router';
 import { type ColumnDef } from '@tanstack/react-table';
 
 import { type AdminStoresQuery } from '@/graphql/generated/graphql';
+import { RegionName } from '@/features/regions';
 import { formatKst } from '@/shared/lib/kst';
 import { DataTable } from '@/shared/ui/data-table';
-import { StatusPill } from '@/shared/ui/status-pill';
+
+import { StoreVisibilityPill } from './store-visibility-pill';
 
 type StoreRow = AdminStoresQuery['adminStores']['items'][number];
 
@@ -24,14 +26,10 @@ const columns: ColumnDef<StoreRow, unknown>[] = [
   },
   {
     accessorKey: 'isActive',
-    header: '상태',
-    cell: ({ row }) => (
-      <StatusPill tone={row.original.isActive ? 'positive' : 'neutral'}>
-        {row.original.isActive ? '활성' : '비활성'}
-      </StatusPill>
-    ),
+    header: '노출',
+    cell: ({ row }) => <StoreVisibilityPill isActive={row.original.isActive} />,
   },
-  { accessorKey: 'storePhone', header: '전화' },
+  { accessorKey: 'storePhone', header: '매장 전화' },
   {
     accessorKey: 'addressFull',
     header: '주소',
@@ -40,7 +38,8 @@ const columns: ColumnDef<StoreRow, unknown>[] = [
   {
     accessorKey: 'regionId',
     header: '지역',
-    cell: ({ row }) => (row.original.regionId ? `#${row.original.regionId}` : '—'),
+    cell: ({ row }) =>
+      row.original.regionId ? <RegionName regionId={row.original.regionId} /> : '—',
   },
   {
     accessorKey: 'sellerAccountId',
@@ -51,13 +50,13 @@ const columns: ColumnDef<StoreRow, unknown>[] = [
         params={{ accountId: row.original.sellerAccountId }}
         className="text-primary-soft-foreground hover:underline"
       >
-        #{row.original.sellerAccountId}
+        {row.original.sellerLabel ?? `#${row.original.sellerAccountId}`}
       </Link>
     ),
   },
   {
     accessorKey: 'createdAt',
-    header: '생성',
+    header: '등록일',
     cell: ({ row }) => formatKst(row.original.createdAt),
   },
 ];

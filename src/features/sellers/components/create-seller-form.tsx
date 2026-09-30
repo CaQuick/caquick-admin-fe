@@ -1,16 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { StoreLocationFields } from '@/features/stores';
 import { messageFor } from '@/shared/api';
 import { INITIAL_PASSWORD_HELP } from '@/shared/lib/initial-password';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { InitialPasswordActions } from '@/shared/ui/initial-password-actions';
 import { Input } from '@/shared/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
 import { createSeller } from '../api/queries';
 import {
@@ -58,13 +58,6 @@ const BIZ: typeof TEXT = [
 const STORE: typeof TEXT = [
   { name: 'storeName', label: '매장명', required: true },
   { name: 'storePhone', label: '매장 전화', required: true, type: 'tel' },
-  { name: 'addressFull', label: '주소', required: true },
-  { name: 'addressCity', label: '시/도' },
-  { name: 'addressDistrict', label: '시/군/구' },
-  { name: 'addressNeighborhood', label: '동/읍/면' },
-  { name: 'regionId', label: '지역 ID', help: '활성 2단계 지역의 ID. 지역 화면에서 확인' },
-  { name: 'latitude', label: '위도' },
-  { name: 'longitude', label: '경도' },
 ];
 
 export function CreateSellerForm({ onCreated }: Props) {
@@ -73,7 +66,6 @@ export function CreateSellerForm({ onCreated }: Props) {
   const form = useForm<CreateSellerValues>({
     resolver: zodResolver(createSellerSchema),
     defaultValues: {
-      mapProvider: 'NONE',
       username: '',
       password: '',
       businessName: '',
@@ -81,6 +73,14 @@ export function CreateSellerForm({ onCreated }: Props) {
       storeName: '',
       storePhone: '',
       addressFull: '',
+      addressCity: '',
+      addressDistrict: '',
+      addressNeighborhood: '',
+      regionId: '',
+      latitude: '',
+      longitude: '',
+      // 구매자 앱은 네이버일 때만 지도를 그린다
+      mapProvider: 'NAVER',
     },
   });
   const { errors, isSubmitting } = form.formState;
@@ -144,26 +144,9 @@ export function CreateSellerForm({ onCreated }: Props) {
           <CardHeader>
             <CardTitle className="text-sm">매장</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
-            {STORE.map(render)}
-            <Field id="cs-mapProvider" label="지도 제공자">
-              <Controller
-                control={form.control}
-                name="mapProvider"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="cs-mapProvider" aria-label="지도 제공자">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NONE">없음</SelectItem>
-                      <SelectItem value="NAVER">네이버</SelectItem>
-                      <SelectItem value="KAKAO">카카오</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+          <CardContent className="flex flex-col gap-5">
+            <div className="grid gap-3 md:grid-cols-2">{STORE.map(render)}</div>
+            <StoreLocationFields form={form} idPrefix="cs" />
           </CardContent>
         </Card>
       </div>

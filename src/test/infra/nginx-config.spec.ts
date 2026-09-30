@@ -3,6 +3,7 @@ import headersInc from '../../../infra/security-headers.inc?raw';
 import nginxConf from '../../../infra/nginx.conf?raw';
 
 import { POSTCODE_SCRIPT_URL } from '@/shared/lib/kakao-postcode';
+import { naverMapScriptUrl } from '@/shared/lib/naver-maps';
 
 const read = (f: 'security-headers.inc' | 'nginx.conf') =>
   f === 'nginx.conf' ? nginxConf : headersInc;
@@ -44,10 +45,25 @@ describe('nginx 설정', () => {
     );
   }
 
-  it('CSP는 카카오 우편번호 스크립트와 검색 iframe만 추가로 허용한다', () => {
+  it('CSP는 카카오 우편번호·네이버 지도에 필요한 출처만 추가로 허용한다', () => {
     const d = cspDirectives();
     // 앱이 실제로 넣는 스크립트 주소의 오리진이 허용돼 있어야 한다
-    expect(d.get('script-src')).toEqual(["'self'", new URL(POSTCODE_SCRIPT_URL).origin]);
+    expect(d.get('script-src')).toEqual([
+      "'self'",
+      new URL(POSTCODE_SCRIPT_URL).origin,
+      new URL(naverMapScriptUrl('k')).origin,
+      // maps.js가 스타일 메타데이터를 JSONP(<script>)로 받는다: nrbe.pstatic.net/styles/basic.json?callback=
+      'https://nrbe.pstatic.net',
+    ]);
+    // maps.js의 오류 수집 XHR. 막아도 지도는 뜨지만 콘솔 위반이 장애로 오인된다
+    expect(d.get('connect-src')).toEqual([
+      "'self'",
+      'https://api.caquick.site',
+      'https://*.amazonaws.com',
+      'https://kr-col-ext.nelo.navercorp.com',
+    ]);
+    // 지도 타일(nrbe.pstatic.net)·UI 이미지(ssl.pstatic.net)
+    expect(d.get('img-src')).toContain('https:');
     // postcode.v2.js가 만드는 iframe(https://postcode.map.kakao.com/search)
     expect(d.get('frame-src')).toEqual(['https://postcode.map.kakao.com']);
     expect(d.get('default-src')).toEqual(["'self'"]);
