@@ -59,8 +59,8 @@ export function CancelOrderDialog({
         <DialogHeader>
           <DialogTitle>주문을 취소할까요?</DialogTitle>
           <DialogDescription>
-            {orderNumber} — 구매자에게 취소 알림이 가고, 사유는 상태 이력에 "[관리자]" 접두로
-            남습니다. 되돌릴 수 없습니다.
+            {orderNumber} 주문을 취소하면 구매자에게 취소 알림을 보냅니다. 사유는 상태 이력에
+            "[관리자]"로 시작하는 메모로 남고, 취소한 주문은 되돌릴 수 없습니다.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-1.5">

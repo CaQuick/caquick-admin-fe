@@ -1,10 +1,14 @@
+import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
+
+import { AccountStatusPill } from '@/features/accounts';
 import { type AdminOrderQuery } from '@/graphql/generated/graphql';
 import { formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { cn } from '@/shared/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { StatusPill } from '@/shared/ui/status-pill';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 
+import { storeNameQueryOptions } from '../api/queries';
 import { ORDER_STATUS, orderStatusMeta } from '../status';
 
 export type OrderDetail = AdminOrderQuery['adminOrder'];
@@ -22,11 +26,11 @@ export function OrderProgress({ order }: { order: OrderDetail }) {
   const currentIdx = STEPS.findIndex((s) => s.value === order.status);
   return (
     <Card>
-      <CardHeader className="flex-row items-baseline gap-2">
+      <CardHeader>
         <CardTitle className="text-sm">진행 상태</CardTitle>
-        <span className="text-xs text-muted-foreground">
+        <CardDescription className="text-xs">
           픽업 예정 {formatKst(order.pickupAt, true)}
-        </span>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {canceled && (
@@ -70,14 +74,76 @@ export function OrderProgress({ order }: { order: OrderDetail }) {
   );
 }
 
+type FreeEdit = OrderDetail['items'][number]['freeEdits'][number];
+
+/** 품목에는 매장명 스냅샷이 없어 현재 매장 이름을 불러 보인다. 못 불러오면 #ID */
+function StoreLink({ storeId }: { storeId: string }) {
+  const name = useQuery(storeNameQueryOptions(storeId));
+  return (
+    <Link
+      to="/stores/$storeId"
+      params={{ storeId }}
+      className="text-primary-soft-foreground hover:underline"
+    >
+      매장 {name.data ?? `#${storeId}`}
+    </Link>
+  );
+}
+
+const bySortOrder = (a: { sortOrder: number }, b: { sortOrder: number }) =>
+  a.sortOrder - b.sortOrder;
+
+/** 자유 편집 1건: 편집 이미지, 요청 문구 전문, 첨부 이미지. 이미지는 새 탭에서 원본으로 연다 */
+function FreeEditRow({ edit }: { edit: FreeEdit }) {
+  const n = edit.sortOrder + 1;
+  const attachments = [...edit.attachments].sort(bySortOrder);
+  return (
+    <li className="flex gap-3 rounded-md border p-2 text-xs">
+      <a href={edit.cropImageUrl} target="_blank" rel="noreferrer" className="shrink-0">
+        <img
+          src={edit.cropImageUrl}
+          alt={`자유 편집 ${n} 이미지`}
+          className="size-16 rounded-md border object-cover"
+        />
+      </a>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div>
+          <div className="text-muted-foreground">요청 문구</div>
+          <p className="break-words whitespace-pre-wrap">
+            {edit.descriptionText.trim() ? edit.descriptionText : '요청 문구가 없습니다.'}
+          </p>
+        </div>
+        {attachments.length > 0 && (
+          <div>
+            <div className="text-muted-foreground">첨부 이미지 {attachments.length}장</div>
+            <ul aria-label={`자유 편집 ${n} 첨부 이미지`} className="mt-1 flex flex-wrap gap-1.5">
+              {attachments.map((a, i) => (
+                <li key={a.id}>
+                  <a href={a.imageUrl} target="_blank" rel="noreferrer" className="block">
+                    <img
+                      src={a.imageUrl}
+                      alt={`자유 편집 ${n} 첨부 ${i + 1}`}
+                      className="size-12 rounded-md border object-cover"
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
 export function OrderItems({ order }: { order: OrderDetail }) {
   return (
     <Card>
-      <CardHeader className="flex-row items-baseline gap-2">
+      <CardHeader>
         <CardTitle className="text-sm">주문 상품</CardTitle>
-        <span className="text-xs text-muted-foreground">
-          주문 시점 스냅샷 · {order.items.length}개
-        </span>
+        <CardDescription className="text-xs">
+          주문 당시 정보 · {order.items.length}개
+        </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
         <ul className="divide-y divide-divider">
@@ -85,11 +151,17 @@ export function OrderItems({ order }: { order: OrderDetail }) {
             <li key={it.id} className="grid grid-cols-[1fr_auto] gap-3 py-3">
               <div className="min-w-0">
                 <div className="font-semibold">
-                  {it.productName}{' '}
+                  <Link
+                    to="/products/$productId"
+                    params={{ productId: it.productId }}
+                    className="hover:underline"
+                  >
+                    {it.productName}
+                  </Link>{' '}
                   <span className="font-normal text-muted-foreground">× {it.quantity}</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  매장 #{it.storeId} · 상품 #{it.productId} · 정가 {formatKrw(it.regularPrice)}
+                  <StoreLink storeId={it.storeId} /> · 정가 {formatKrw(it.regularPrice)}
                   {it.salePrice !== null && ` · 판매가 ${formatKrw(it.salePrice)}`}
                 </div>
                 {it.optionItems.length > 0 && (
@@ -119,21 +191,9 @@ export function OrderItems({ order }: { order: OrderDetail }) {
                   </div>
                 )}
                 {it.freeEdits.length > 0 && (
-                  <ul className="mt-1.5 flex flex-wrap gap-2">
+                  <ul className="mt-2 flex flex-col gap-2">
                     {it.freeEdits.map((f) => (
-                      <li key={f.id} className="flex items-center gap-2 text-xs">
-                        <a href={f.cropImageUrl} target="_blank" rel="noreferrer" className="block">
-                          <img
-                            src={f.cropImageUrl}
-                            alt={`자유 편집 ${f.sortOrder + 1}`}
-                            className="size-12 rounded-md border object-cover"
-                          />
-                        </a>
-                        <span className="max-w-48 truncate">{f.descriptionText}</span>
-                        {f.attachments.length > 0 && (
-                          <span className="text-muted-foreground">첨부 {f.attachments.length}</span>
-                        )}
-                      </li>
+                      <FreeEditRow key={f.id} edit={f} />
                     ))}
                   </ul>
                 )}
@@ -172,23 +232,27 @@ export function OrderBuyer({ order }: { order: OrderDetail }) {
           </dd>
           <dt className="text-muted-foreground">계정</dt>
           <dd className="flex flex-wrap items-center gap-2">
-            <span>{b.nickname ?? '(탈퇴)'}</span>
-            <StatusPill
-              tone={
-                b.status === 'ACTIVE'
-                  ? 'positive'
-                  : b.status === 'SUSPENDED'
-                    ? 'negative'
-                    : 'neutral'
-              }
+            <Link
+              to="/users/$accountId"
+              params={{ accountId: b.accountId }}
+              className="text-primary-soft-foreground hover:underline"
             >
-              {b.status}
-            </StatusPill>
+              {b.nickname ?? '탈퇴 회원'}
+            </Link>
+            <AccountStatusPill status={b.status} />
           </dd>
           <dt className="text-muted-foreground">이메일</dt>
           <dd className="break-all">{b.email ?? '—'}</dd>
           <dt className="text-muted-foreground">계정 ID</dt>
-          <dd className="font-mono">{b.accountId}</dd>
+          <dd>
+            <Link
+              to="/users/$accountId"
+              params={{ accountId: b.accountId }}
+              className="font-mono text-primary-soft-foreground hover:underline"
+            >
+              {b.accountId}
+            </Link>
+          </dd>
         </dl>
       </CardContent>
     </Card>
@@ -198,9 +262,9 @@ export function OrderBuyer({ order }: { order: OrderDetail }) {
 export function OrderHistory({ order }: { order: OrderDetail }) {
   return (
     <Card>
-      <CardHeader className="flex-row items-baseline gap-2">
+      <CardHeader>
         <CardTitle className="text-sm">상태 이력</CardTitle>
-        <span className="text-xs text-muted-foreground">최신순</span>
+        <CardDescription className="text-xs">최신순</CardDescription>
       </CardHeader>
       <CardContent>
         <ol className="flex flex-col gap-2 text-xs">
