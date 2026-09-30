@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import { type AdminRegionsQuery, type AdminUpdateRegionInput } from '@/graphql/generated/graphql';
+import { type CoordRange, LATITUDE_RANGE, LONGITUDE_RANGE, parseCoord } from '@/shared/lib/coords';
+import { withJosa } from '@/shared/lib/josa';
 import { optionalBoolText, optionalText } from '@/shared/lib/list-search';
 
 export type Region = AdminRegionsQuery['adminRegions'][number];
@@ -8,27 +10,34 @@ export type Region = AdminRegionsQuery['adminRegions'][number];
 export const regionsSearchSchema = z.object({ parent: optionalText, inactive: optionalBoolText });
 export type RegionsSearch = z.infer<typeof regionsSearchSchema>;
 
-const coord = (min: number, max: number) =>
+const coord = (name: string, range: CoordRange) =>
   z
     .string()
     .trim()
     .refine(
-      (v) => v === '' || (!Number.isNaN(Number(v)) && Number(v) >= min && Number(v) <= max),
-      `${min}~${max} 사이 숫자`,
+      (v) => v === '' || parseCoord(v, range) !== null,
+      `${withJosa(name, '은/는')} ${range.min}~${range.max} 사이 숫자로 입력해 주세요.`,
     );
 
+// GraphQL Int는 32비트다. 넘으면 요청 전체가 거절된다
+const INT32 = { min: -2_147_483_648, max: 2_147_483_647 };
+
 export const regionFormSchema = z.object({
-  name: z.string().trim().min(1, '이름은 필수입니다.').max(80, '80자 이하'),
+  name: z.string().trim().min(1, '이름을 입력해 주세요.').max(80, '80자 이하로 입력해 주세요.'),
   slug: z
     .string()
     .trim()
-    .min(1, 'slug는 필수입니다.')
-    .max(120, '120자 이하')
-    .regex(/^[a-z0-9-]+$/, '소문자·숫자·- 만'),
-  sortOrder: z.number({ message: '숫자여야 합니다.' }).int('정수'),
+    .min(1, '영문 식별자를 입력해 주세요.')
+    .max(120, '120자 이하로 입력해 주세요.')
+    .regex(/^[a-z0-9-]+$/, '영문 소문자, 숫자, 하이픈(-)만 입력해 주세요.'),
+  sortOrder: z
+    .number({ message: '숫자를 입력해 주세요.' })
+    .int('정수를 입력해 주세요.')
+    .min(INT32.min, `${INT32.min.toLocaleString('ko-KR')} 이상으로 입력해 주세요.`)
+    .max(INT32.max, `${INT32.max.toLocaleString('ko-KR')} 이하로 입력해 주세요.`),
   isActive: z.boolean(),
-  centerLat: coord(-90, 90),
-  centerLng: coord(-180, 180),
+  centerLat: coord('중심 위도', LATITUDE_RANGE),
+  centerLng: coord('중심 경도', LONGITUDE_RANGE),
 });
 export type RegionFormValues = z.infer<typeof regionFormSchema>;
 

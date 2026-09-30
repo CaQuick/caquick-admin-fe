@@ -1,10 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
+import { SearchIcon } from 'lucide-react';
+import { type ReactNode, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { messageFor } from '@/shared/api';
+import { toCoordString } from '@/shared/lib/coords';
+import { withJosa } from '@/shared/lib/josa';
+import { AddressSearchDialog } from '@/shared/ui/address-search-dialog';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -19,7 +23,7 @@ import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Switch } from '@/shared/ui/switch';
 
-import { regionMutations } from '../api/queries';
+import { geocodeAddress, regionMutations } from '../api/queries';
 import {
   type Region,
   type RegionFormValues,
@@ -46,8 +50,30 @@ export function RegionDialog({ trigger, region, parent }: Props) {
     defaultValues: initial,
   });
   const { errors, isSubmitting } = form.formState;
-  const levelLabel =
-    (region ? region.level : parent ? 2 : 1) === 1 ? '1단계(권역)' : '2단계(시·군·구)';
+  const levelLabel = (region ? region.level : parent ? 2 : 1) === 1 ? '권역' : '시·군·구';
+  const [geocodeNote, setGeocodeNote] = useState<string | null>(null);
+  // 주소를 연달아 고르면 앞선 응답은 버린다
+  const request = useRef(0);
+
+  const fillCenter = async (address: string) => {
+    const ticket = ++request.current;
+    setGeocodeNote('주소로 좌표를 찾고 있습니다.');
+    try {
+      const result = await geocodeAddress(qc, address);
+      if (ticket !== request.current) return;
+      if (!result) {
+        setGeocodeNote('이 주소의 좌표를 찾지 못했습니다. 좌표를 직접 입력해 주세요.');
+        return;
+      }
+      const opts = { shouldDirty: true, shouldValidate: true };
+      form.setValue('centerLat', toCoordString(result.latitude), opts);
+      form.setValue('centerLng', toCoordString(result.longitude), opts);
+      setGeocodeNote(`${address}의 좌표로 채웠습니다.`);
+    } catch {
+      if (ticket !== request.current) return;
+      setGeocodeNote('좌표를 자동으로 채우지 못했습니다. 좌표를 직접 입력해 주세요.');
+    }
+  };
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
@@ -55,10 +81,10 @@ export function RegionDialog({ trigger, region, parent }: Props) {
       if (region) {
         const input = toUpdateInput(region.id, initial, v);
         if (input) await regionMutations.update(qc, input);
-        toast.success(`${v.name} 지역을 수정했습니다.`);
+        toast.success(`${withJosa(v.name, '을/를')} 수정했습니다.`);
       } else {
         await regionMutations.create(qc, toCreateInput(v, parent?.id ?? null));
-        toast.success(`${v.name} 지역을 만들었습니다.`);
+        toast.success(`${withJosa(v.name, '을/를')} 추가했습니다.`);
       }
       setOpen(false);
     } catch (e) {
@@ -73,6 +99,7 @@ export function RegionDialog({ trigger, region, parent }: Props) {
         setOpen(o);
         if (o) form.reset(initial);
         setError(null);
+        setGeocodeNote(null);
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -86,8 +113,8 @@ export function RegionDialog({ trigger, region, parent }: Props) {
             </DialogTitle>
             <DialogDescription>
               {region
-                ? '상위·단계는 바꿀 수 없습니다.'
-                : 'slug는 전체에서 유일합니다. 삭제된 같은 slug가 있으면 복구됩니다.'}
+                ? '상위 권역과 단계는 바꿀 수 없습니다.'
+                : '영문 식별자는 전체에서 하나만 쓸 수 있습니다. 삭제된 지역과 같으면 그 지역을 되살립니다.'}
             </DialogDescription>
           </DialogHeader>
           {error && (
@@ -107,16 +134,50 @@ export function RegionDialog({ trigger, region, parent }: Props) {
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="rg-slug">slug</Label>
-              <Input id="rg-slug" aria-invalid={!!errors.slug} {...form.register('slug')} />
-              {errors.slug && (
+              <Label htmlFor="rg-slug">영문 식별자</Label>
+              <Input
+                id="rg-slug"
+                placeholder="seoul-gangnam"
+                autoComplete="off"
+                aria-invalid={!!errors.slug}
+                {...form.register('slug')}
+              />
+              {errors.slug ? (
                 <p className="text-xs text-negative-foreground">{errors.slug.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  영문 소문자, 숫자, 하이픈(-)만 씁니다.
+                </p>
+              )}
+            </div>
+            <div className="col-span-2 flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium">중심 좌표</span>
+                <AddressSearchDialog
+                  onSelect={(r) => void fillCenter(r.roadAddress || r.jibunAddress)}
+                  trigger={
+                    <Button type="button" variant="outline" size="sm" className="h-7">
+                      <SearchIcon className="size-3.5" /> 주소로 채우기
+                    </Button>
+                  }
+                />
+              </div>
+              {geocodeNote ? (
+                <p role="status" className="text-xs text-muted-foreground">
+                  {geocodeNote}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  지역의 대표 위치입니다. 구청·시청 주소를 검색하면 좌표를 채웁니다.
+                </p>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="rg-lat">중심 위도</Label>
               <Input
                 id="rg-lat"
+                inputMode="decimal"
+                autoComplete="off"
                 aria-invalid={!!errors.centerLat}
                 {...form.register('centerLat')}
               />
@@ -128,6 +189,8 @@ export function RegionDialog({ trigger, region, parent }: Props) {
               <Label htmlFor="rg-lng">중심 경도</Label>
               <Input
                 id="rg-lng"
+                inputMode="decimal"
+                autoComplete="off"
                 aria-invalid={!!errors.centerLng}
                 {...form.register('centerLng')}
               />
@@ -147,7 +210,7 @@ export function RegionDialog({ trigger, region, parent }: Props) {
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="rg-active">활성</Label>
+              <Label htmlFor="rg-active">노출</Label>
               <Controller
                 control={form.control}
                 name="isActive"
