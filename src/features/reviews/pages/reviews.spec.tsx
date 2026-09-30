@@ -412,6 +412,32 @@ describe('신고', () => {
     );
   });
 
+  it('목록 필터: 상태·대상 선택을 요청에 싣는다', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    server.use(
+      graphql.query('AdminReviewReports', ({ variables }) => {
+        inputs.push((variables as { input: Record<string, unknown> }).input);
+        return HttpResponse.json({ data: { adminReviewReports: page([report('r1')]) } });
+      }),
+    );
+    boot('/reports');
+    await screen.findByRole('link', { name: '나쁜 말' });
+    expect(screen.getByRole('group', { name: '상태' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('combobox', { name: '상태' }));
+    await userEvent.click(await screen.findByRole('option', { name: '처리 완료(대상 삭제)' }));
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ status: 'RESOLVED' }));
+    await userEvent.click(screen.getByRole('combobox', { name: '상태' }));
+    await userEvent.click(await screen.findByRole('option', { name: '상태 전체' }));
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ status: null }));
+    await userEvent.click(screen.getByRole('combobox', { name: '대상 유형' }));
+    await userEvent.click(await screen.findByRole('option', { name: '댓글' }));
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ targetType: 'REVIEW_COMMENT' }));
+    await userEvent.click(screen.getByRole('combobox', { name: '대상 유형' }));
+    await userEvent.click(await screen.findByRole('option', { name: '대상 전체' }));
+    // 앞서 본 조건(전체 상태·전체 대상)과 같아 캐시로 그리므로 주소로 확인한다
+    await vi.waitFor(() => expect(window.location.search).toBe('?all=true'));
+  });
+
   it('목록 신고자: 닉네임·탈퇴 여부 조합별 표시', async () => {
     const cases = [
       { id: 'a', nickname: '신고왕', withdrawn: false, link: '신고왕', badge: false },
