@@ -6,6 +6,7 @@ import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { DataTable } from '@/shared/ui/data-table';
 
+import { identityProvidersLabel } from '../status';
 import { AccountStatusPill } from './account-status-pill';
 
 type UserRow = AdminUsersQuery['adminUsers']['items'][number];
@@ -33,8 +34,8 @@ const columns: ColumnDef<UserRow, unknown>[] = [
   { accessorKey: 'name', header: '이름', cell: ({ row }) => row.original.name ?? '—' },
   {
     accessorKey: 'identityProviders',
-    header: '로그인',
-    cell: ({ row }) => row.original.identityProviders.join(', ') || '—',
+    header: '로그인 수단',
+    cell: ({ row }) => identityProvidersLabel(row.original.identityProviders),
   },
   {
     accessorKey: 'orderCount',
@@ -50,7 +51,7 @@ const columns: ColumnDef<UserRow, unknown>[] = [
   },
   {
     accessorKey: 'createdAt',
-    header: '가입',
+    header: '가입일',
     cell: ({ row }) => formatKst(row.original.createdAt),
   },
 ];

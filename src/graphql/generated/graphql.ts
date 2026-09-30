@@ -281,6 +281,14 @@ export type AdminRegionListInput = {
   parentId?: string | number | null | undefined;
 };
 
+/** 관리자 비밀번호 초기화 입력. */
+export type AdminResetAdminPasswordInput = {
+  /** 대상 관리자 계정 ID. 본인이면 FORBIDDEN. */
+  accountId: string | number;
+  /** 새 임시 비밀번호. 8~64자(공백만으로는 불가). 다음 로그인 때 변경이 강제되므로 조합 규칙은 없다. */
+  newPassword: string;
+};
+
 /** 판매자 비밀번호 초기화 입력. */
 export type AdminResetSellerPasswordInput = {
   /** 대상 판매자 계정 ID. */
@@ -744,6 +752,13 @@ export type AdminCreateAdminMutationVariables = Exact<{
 
 export type AdminCreateAdminMutation = { adminCreateAdmin: { accountId: string, username: string | null } };
 
+export type AdminResetAdminPasswordMutationVariables = Exact<{
+  input: AdminResetAdminPasswordInput;
+}>;
+
+
+export type AdminResetAdminPasswordMutation = { adminResetAdminPassword: boolean };
+
 export type AdminMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1160,6 +1175,11 @@ export const AdminCreateAdminDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminCreateAdminMutation, AdminCreateAdminMutationVariables>;
+export const AdminResetAdminPasswordDocument = new TypedDocumentString(`
+    mutation AdminResetAdminPassword($input: AdminResetAdminPasswordInput!) {
+  adminResetAdminPassword(input: $input)
+}
+    `) as unknown as TypedDocumentString<AdminResetAdminPasswordMutation, AdminResetAdminPasswordMutationVariables>;
 export const AdminMeDocument = new TypedDocumentString(`
     query AdminMe {
   adminMe {

@@ -30,7 +30,7 @@ interface Props {
   onChanged: () => Promise<void> | void;
 }
 
-/** USER·SELLER 공용 정지/복구. 정지는 사유 필수(감사 로그), 복구는 확인만. */
+/** USER·SELLER 공용 정지/정지 해제. 정지는 사유 필수(감사 로그), 해제는 확인만. */
 export function AccountStatusActions({ accountId, status, label, onChanged }: Props) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
@@ -41,14 +41,14 @@ export function AccountStatusActions({ accountId, status, label, onChanged }: Pr
     return (
       <ConfirmDialog
         trigger={<Button variant="outline">정지 해제</Button>}
-        title={`${label} 계정을 복구할까요?`}
-        description="다시 로그인할 수 있게 됩니다."
-        confirmLabel="복구"
+        title={`${label} 계정의 정지를 해제할까요?`}
+        description="다시 로그인해 이용할 수 있게 됩니다."
+        confirmLabel="정지 해제"
         onConfirm={async () => {
           try {
             await reinstateAccount(accountId);
             await onChanged();
-            toast.success(`${label} 계정을 복구했습니다.`);
+            toast.success(`${label} 계정의 정지를 해제했습니다.`);
           } catch (e) {
             toast.error(messageFor(e));
             throw e;
@@ -83,7 +83,7 @@ export function AccountStatusActions({ accountId, status, label, onChanged }: Pr
         <DialogHeader>
           <DialogTitle>{label} 계정을 정지할까요?</DialogTitle>
           <DialogDescription>
-            모든 API가 거부되고 로그인 세션이 끊깁니다. 사유는 감사 로그에 남습니다.
+            즉시 로그아웃되고 앱·판매자 센터를 이용할 수 없게 됩니다. 사유는 감사 로그에 남습니다.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-1.5">

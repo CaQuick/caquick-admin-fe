@@ -17,6 +17,7 @@ import * as types from './graphql';
 type Documents = {
     "\n  query AdminAdmins($input: CursorInput) {\n    adminAdmins(input: $input) {\n      items {\n        accountId\n        username\n        email\n        name\n        status\n        mustChangePassword\n        lastLoginAt\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminAdminsDocument,
     "\n  mutation AdminCreateAdmin($input: AdminCreateAdminInput!) {\n    adminCreateAdmin(input: $input) {\n      accountId\n      username\n    }\n  }\n": typeof types.AdminCreateAdminDocument,
+    "\n  mutation AdminResetAdminPassword($input: AdminResetAdminPasswordInput!) {\n    adminResetAdminPassword(input: $input)\n  }\n": typeof types.AdminResetAdminPasswordDocument,
     "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n": typeof types.AdminMeDocument,
     "\n  query AdminUsers($input: AdminUserListInput) {\n    adminUsers(input: $input) {\n      items {\n        accountId\n        email\n        name\n        status\n        nickname\n        phoneNumber\n        onboardingCompleted\n        identityProviders\n        orderCount\n        reviewCount\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminUsersDocument,
     "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": typeof types.AdminUserDocument,
@@ -74,6 +75,7 @@ type Documents = {
 const documents: Documents = {
     "\n  query AdminAdmins($input: CursorInput) {\n    adminAdmins(input: $input) {\n      items {\n        accountId\n        username\n        email\n        name\n        status\n        mustChangePassword\n        lastLoginAt\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminAdminsDocument,
     "\n  mutation AdminCreateAdmin($input: AdminCreateAdminInput!) {\n    adminCreateAdmin(input: $input) {\n      accountId\n      username\n    }\n  }\n": types.AdminCreateAdminDocument,
+    "\n  mutation AdminResetAdminPassword($input: AdminResetAdminPasswordInput!) {\n    adminResetAdminPassword(input: $input)\n  }\n": types.AdminResetAdminPasswordDocument,
     "\n  query AdminMe {\n    adminMe {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      createdAt\n    }\n  }\n": types.AdminMeDocument,
     "\n  query AdminUsers($input: AdminUserListInput) {\n    adminUsers(input: $input) {\n      items {\n        accountId\n        email\n        name\n        status\n        nickname\n        phoneNumber\n        onboardingCompleted\n        identityProviders\n        orderCount\n        reviewCount\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminUsersDocument,
     "\n  query AdminUser($accountId: ID!) {\n    adminUser(accountId: $accountId) {\n      accountId\n      email\n      name\n      status\n      nickname\n      phoneNumber\n      onboardingCompleted\n      identityProviders\n      orderCount\n      reviewCount\n      createdAt\n    }\n  }\n": types.AdminUserDocument,
@@ -137,6 +139,10 @@ export function graphql(source: "\n  query AdminAdmins($input: CursorInput) {\n 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminCreateAdmin($input: AdminCreateAdminInput!) {\n    adminCreateAdmin(input: $input) {\n      accountId\n      username\n    }\n  }\n"): typeof import('./graphql').AdminCreateAdminDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminResetAdminPassword($input: AdminResetAdminPasswordInput!) {\n    adminResetAdminPassword(input: $input)\n  }\n"): typeof import('./graphql').AdminResetAdminPasswordDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -35,7 +35,13 @@ const coord = z
 
 /** 빈 문자열은 null로 보낸다. */
 export const createSellerSchema = z.object({
-  username: z.string().trim().regex(USERNAME, '4~80자, 소문자·숫자·. _ - 만'),
+  username: z
+    .string()
+    .trim()
+    .regex(
+      USERNAME,
+      '아이디는 4~80자의 영문 소문자, 숫자, 마침표(.), 밑줄(_), 하이픈(-)으로 입력해 주세요.',
+    ),
   password: initialPasswordSchema,
   email: maxChars(SELLER_FIELD_MAX.email)
     .email('이메일 형식이 아닙니다.')
@@ -60,14 +66,6 @@ export const createSellerSchema = z.object({
   mapProvider: z.enum(['NAVER', 'KAKAO', 'NONE']),
 });
 export type CreateSellerValues = z.infer<typeof createSellerSchema>;
-
-export const resetPasswordSchema = z
-  .object({ newPassword: initialPasswordSchema, confirmPassword: z.string() })
-  .refine((v) => v.newPassword === v.confirmPassword, {
-    path: ['confirmPassword'],
-    message: '비밀번호가 서로 다릅니다.',
-  });
-export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 const orNull = (v: string | undefined) => (v && v.length > 0 ? v : null);
 

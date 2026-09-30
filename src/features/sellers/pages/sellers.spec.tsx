@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, graphql } from 'msw';
+import { toast } from 'sonner';
 
 import { App } from '@/app/app';
 import { useAuthStore } from '@/features/auth';
@@ -58,6 +59,7 @@ describe('판매자', () => {
   beforeEach(() =>
     useAuthStore.setState({ status: 'unknown', accessToken: null, mustChangePassword: false }),
   );
+  afterEach(() => vi.restoreAllMocks());
 
   it('목록과 등록 링크', async () => {
     server.use(
@@ -67,7 +69,14 @@ describe('판매자', () => {
     );
     boot('/sellers');
     expect(await screen.findByText('seller20')).toBeInTheDocument();
-    expect(screen.getByText('비번 변경 필요')).toBeInTheDocument();
+    expect(screen.getByText('비밀번호 변경 필요')).toBeInTheDocument();
+    // 매장명은 매장 상세로, 공개 여부는 노출/숨김 배지로(원시 #ID는 두지 않는다)
+    expect(screen.getByRole('link', { name: '루미 케이크' })).toHaveAttribute('href', '/stores/17');
+    expect(screen.getByText('노출')).toBeInTheDocument();
+    expect(screen.queryByText(/#17/)).toBeNull();
+    for (const header of ['최근 로그인', '등록일']) {
+      expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
+    }
     expect(screen.getByRole('link', { name: '판매자 등록' })).toHaveAttribute(
       'href',
       '/sellers/new',
@@ -109,11 +118,19 @@ describe('판매자', () => {
         store: { storeName: '새 가게 본점', mapProvider: 'NONE', regionId: null },
       }),
     );
-    expect(await screen.findByRole('heading', { level: 2, name: 'seller30' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '박사장(seller30)' }),
+    ).toBeInTheDocument();
   });
 
-  it('등록 실패(중복 아이디)는 폼 상단에', async () => {
+  it('등록 실패(중복 아이디)는 저장 버튼 옆과 토스트로 알린다', async () => {
+    const error = vi.spyOn(toast, 'error');
+    let input: Record<string, unknown> | undefined;
     server.use(
+      graphql.mutation('AdminCreateSeller', ({ variables }) => {
+        input = (variables as { input: Record<string, unknown> }).input;
+        return undefined;
+      }),
       gqlError('AdminCreateSeller', {
         message: '이미 쓰는 아이디',
         code: 'USERNAME_TAKEN',
@@ -123,31 +140,64 @@ describe('판매자', () => {
     );
     boot('/sellers/new');
     await userEvent.type(await screen.findByLabelText(/^아이디/), 'dup.seller');
-    await userEvent.type(screen.getByLabelText(/^초기 비밀번호/), 'Passw0rd!');
+    await userEvent.click(screen.getByRole('button', { name: '임시 비밀번호 생성' }));
+    const generated = screen.getByLabelText<HTMLInputElement>(/^초기 비밀번호/).value;
+    expect(generated).toHaveLength(12);
     await userEvent.type(screen.getByLabelText(/^사업자명/), 'x');
     await userEvent.type(screen.getByLabelText(/^사업자 전화/), 'x');
     await userEvent.type(screen.getByLabelText(/^매장명/), 'x');
     await userEvent.type(screen.getByLabelText(/^매장 전화/), 'x');
     await userEvent.type(screen.getByLabelText(/^주소/), 'x');
-    await userEvent.click(screen.getByRole('button', { name: '판매자 등록' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('이미 쓰는 아이디');
+    const submit = screen.getByRole('button', { name: '판매자 등록' });
+    await userEvent.click(submit);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('이미 쓰는 아이디');
+    expect(alert.parentElement).toBe(submit.parentElement);
+    expect(error).toHaveBeenCalledWith('이미 쓰는 아이디');
+    expect(input).toMatchObject({ password: generated });
   });
 
-  it('상세: 비밀번호 초기화(확인 불일치 → 성공)와 정지 버튼', async () => {
+  it('상세: 라벨·링크, 비밀번호 초기화(확인 불일치 → 성공)와 정지 버튼', async () => {
     let resetInput: unknown;
+    let detailCalls = 0;
     server.use(
-      gqlOk('AdminSeller', { adminSeller: seller('20') }),
+      graphql.query('AdminSeller', () => {
+        detailCalls += 1;
+        return HttpResponse.json({ data: { adminSeller: seller('20') } });
+      }),
       graphql.mutation('AdminResetSellerPassword', ({ variables }) => {
         resetInput = (variables as { input: unknown }).input;
         return HttpResponse.json({ data: { adminResetSellerPassword: true } });
       }),
     );
     boot('/sellers/20');
-    expect(await screen.findAllByText('루미 케이크', { selector: 'dd' })).toHaveLength(2); // 사업자명 + 매장명
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '박사장(seller20)' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('루미 케이크', { selector: 'dd' })).toBeInTheDocument(); // 사업자명
+    expect(screen.getByRole('link', { name: '루미 케이크' })).toHaveAttribute('href', '/stores/17');
+    expect(screen.getByText('노출')).toBeInTheDocument();
+    expect(screen.getByText('비밀번호 변경 필요')).toBeInTheDocument();
+    expect(
+      decodeURIComponent(
+        screen.getByRole('link', { name: '감사 이력' }).getAttribute('href') ?? '',
+      ),
+    ).toBe('/audit-logs?targetType=ACCOUNT&targetId=20');
+    expect(screen.getByRole('link', { name: '목록으로' }).getAttribute('href')).toMatch(
+      /^\/sellers(\?|$)/,
+    );
     expect(screen.getByRole('button', { name: '계정 정지' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '비밀번호 초기화' }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('8~64자. 첫 로그인 때 변경이 강제됩니다.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading')).toHaveTextContent(
+      '박사장(seller20) 비밀번호 초기화',
+    );
+    expect(dialog).toHaveTextContent('판매자에게 전달해 주세요');
+    expect(
+      within(dialog).getByText(
+        '8~64자로 정해 주세요. 받은 사람은 다음 로그인 때 비밀번호를 바꿔야 합니다.',
+      ),
+    ).toBeInTheDocument();
     await userEvent.type(within(dialog).getByLabelText(/^새 비밀번호 \*/), '12345678');
     await userEvent.type(within(dialog).getByLabelText(/^새 비밀번호 확인/), 'nope');
     await userEvent.click(within(dialog).getByRole('button', { name: '초기화' }));
@@ -159,9 +209,24 @@ describe('판매자', () => {
       expect(resetInput).toEqual({ accountId: '20', newPassword: '12345678' }),
     );
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await vi.waitFor(() => expect(detailCalls).toBeGreaterThanOrEqual(2));
+
+    // 다시 열면 이전 입력은 비어 있고, 생성·아이디로 채우기는 확인 칸까지 채운다
+    await userEvent.click(screen.getByRole('button', { name: '비밀번호 초기화' }));
+    const again = await screen.findByRole('dialog');
+    expect(within(again).getByLabelText(/^새 비밀번호 \*/)).toHaveValue('');
+    await userEvent.click(within(again).getByRole('button', { name: '임시 비밀번호 생성' }));
+    const generated = within(again).getByLabelText<HTMLInputElement>(/^새 비밀번호 \*/).value;
+    expect(within(again).getByLabelText(/^새 비밀번호 확인/)).toHaveValue(generated);
+    await userEvent.click(within(again).getByRole('button', { name: '아이디로 채우기' }));
+    expect(within(again).getByLabelText(/^새 비밀번호 확인/)).toHaveValue('seller20');
+    await userEvent.click(within(again).getByRole('button', { name: '초기화' }));
+    await vi.waitFor(() =>
+      expect(resetInput).toEqual({ accountId: '20', newPassword: 'seller20' }),
+    );
   });
 
-  it('없는 판매자는 NOT_FOUND', async () => {
+  it('없는 판매자는 NOT_FOUND와 목록 링크', async () => {
     server.use(
       gqlError('AdminSeller', {
         message: '판매자 없음',
@@ -174,5 +239,6 @@ describe('판매자', () => {
     expect(await screen.findByRole('alert', {}, { timeout: 5000 })).toHaveTextContent(
       '판매자 없음',
     );
+    expect(screen.getByRole('link', { name: '목록으로' })).toBeInTheDocument();
   });
 });

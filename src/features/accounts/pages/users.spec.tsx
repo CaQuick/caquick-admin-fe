@@ -70,6 +70,9 @@ describe('구매자', () => {
     boot('/users?status=SUSPENDED');
     expect(await screen.findByText('seo10')).toBeInTheDocument();
     expect(screen.getByText('전체 2명')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '로그인 수단' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '가입일' })).toBeInTheDocument();
+    expect(screen.getAllByRole('cell', { name: '카카오' })).toHaveLength(2);
     expect(inputs[0]).toMatchObject({ status: 'SUSPENDED', keyword: null });
     await userEvent.type(screen.getByRole('textbox', { name: '검색어' }), 'seo{enter}');
     await vi.waitFor(() =>
@@ -77,7 +80,7 @@ describe('구매자', () => {
     );
   });
 
-  it('상세에서 정지(사유 필수) → 복구까지 왕복하고 캐시를 갱신한다', async () => {
+  it('상세에서 정지(사유 필수) → 정지 해제까지 왕복하고 캐시를 갱신한다', async () => {
     let status = 'ACTIVE';
     let suspendInput: unknown;
     let reinstateVars: unknown;
@@ -108,9 +111,23 @@ describe('구매자', () => {
         screen.getByRole('link', { name: '주문 보기' }).getAttribute('href') ?? '',
       ),
     ).toBe('/orders?accountId=10');
+    expect(
+      decodeURIComponent(
+        screen.getByRole('link', { name: '리뷰 보기' }).getAttribute('href') ?? '',
+      ),
+    ).toBe('/reviews?accountId=10');
+    expect(
+      decodeURIComponent(
+        screen.getByRole('link', { name: '감사 이력' }).getAttribute('href') ?? '',
+      ),
+    ).toBe('/audit-logs?targetType=ACCOUNT&targetId=10');
+    expect(screen.getByText('가입 정보 입력')).toBeInTheDocument();
+    expect(screen.getByText('카카오', { selector: 'dd' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: '계정 정지' }));
     const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('즉시 로그아웃되고 앱·판매자 센터를 이용할 수 없게 됩니다.');
+    expect(dialog).not.toHaveTextContent('API');
     expect(within(dialog).getByRole('button', { name: '계정 정지' })).toBeDisabled();
     await userEvent.type(within(dialog).getByLabelText('정지 사유 (필수)'), ' 욕설 신고 누적 ');
     await userEvent.click(within(dialog).getByRole('button', { name: '계정 정지' }));
@@ -120,7 +137,10 @@ describe('구매자', () => {
     expect(await screen.findByRole('button', { name: '정지 해제' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: '정지 해제' }));
-    await userEvent.click(await screen.findByRole('button', { name: '복구' }));
+    const confirm = await screen.findByRole('alertdialog');
+    expect(confirm).toHaveTextContent('seo10 계정의 정지를 해제할까요?');
+    expect(confirm).not.toHaveTextContent('복구');
+    await userEvent.click(within(confirm).getByRole('button', { name: '정지 해제' }));
     await vi.waitFor(() => expect(reinstateVars).toEqual({ accountId: '10' }));
     expect(await screen.findByRole('button', { name: '계정 정지' })).toBeInTheDocument();
   });
@@ -155,6 +175,8 @@ describe('구매자', () => {
     );
     boot('/users/999');
     expect(await screen.findByRole('alert', {}, { timeout: 5000 })).toHaveTextContent('계정 없음');
-    expect(screen.getByRole('link', { name: '목록으로' })).toHaveAttribute('href', '/users');
+    expect(screen.getByRole('link', { name: '목록으로' }).getAttribute('href')).toMatch(
+      /^\/users(\?|$)/,
+    );
   });
 });

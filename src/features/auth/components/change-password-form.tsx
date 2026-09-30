@@ -62,7 +62,7 @@ export function ChangePasswordForm({ onSuccess, onSessionLost }: Props) {
         </div>
       ))}
       <p className="text-xs text-muted-foreground">
-        8~64자, 알파벳·숫자·특수문자를 각각 1자 이상. 변경하면 다시 로그인합니다.
+        8~64자로, 알파벳·숫자·특수문자를 각각 1자 이상 넣어 주세요. 변경하면 다시 로그인해야 합니다.
       </p>
       <Button type="submit" className="mt-1 h-10 w-full" disabled={isSubmitting}>
         {isSubmitting ? '변경 중…' : '비밀번호 변경'}
