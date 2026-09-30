@@ -2,12 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { messageFor } from '@/shared/api';
 import { INITIAL_PASSWORD_HELP } from '@/shared/lib/initial-password';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { FillFromUsernameButton } from '@/shared/ui/fill-from-username-button';
+import { InitialPasswordActions } from '@/shared/ui/initial-password-actions';
 import { Input } from '@/shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 
@@ -36,7 +37,7 @@ const TEXT: {
     label: '아이디',
     required: true,
     autoComplete: 'off',
-    help: '4~80자, 소문자·숫자·. _ -',
+    help: '4~80자의 영문 소문자, 숫자, 마침표(.), 밑줄(_), 하이픈(-)을 쓸 수 있습니다.',
   },
   {
     name: 'password',
@@ -83,7 +84,7 @@ export function CreateSellerForm({ onCreated }: Props) {
     },
   });
   const { errors, isSubmitting } = form.formState;
-  const username = useWatch({ control: form.control, name: 'username' });
+  const [username, password] = useWatch({ control: form.control, name: ['username', 'password'] });
 
   const submit = form.handleSubmit(async (values) => {
     setError(null);
@@ -91,7 +92,10 @@ export function CreateSellerForm({ onCreated }: Props) {
       const created = await createSeller(queryClient, toCreateSellerInput(values));
       onCreated(created.accountId);
     } catch (e) {
-      setError(messageFor(e));
+      // 저장 버튼은 폼 맨 아래라 위쪽 알림은 화면 밖일 수 있다 — 토스트와 버튼 옆에 함께 알린다
+      const message = messageFor(e);
+      setError(message);
+      toast.error(message);
     }
   });
 
@@ -112,9 +116,10 @@ export function CreateSellerForm({ onCreated }: Props) {
         {...form.register(f.name)}
       />
       {f.name === 'password' && (
-        <FillFromUsernameButton
+        <InitialPasswordActions
+          value={password}
           username={username}
-          onFill={(v) => form.setValue('password', v, { shouldValidate: true })}
+          onChange={(v) => form.setValue('password', v, { shouldValidate: true })}
         />
       )}
     </Field>
@@ -122,14 +127,6 @@ export function CreateSellerForm({ onCreated }: Props) {
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-3">
-      {error && (
-        <p
-          role="alert"
-          className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
-        >
-          {error}
-        </p>
-      )}
       <div className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -170,7 +167,15 @@ export function CreateSellerForm({ onCreated }: Props) {
           </CardContent>
         </Card>
       </div>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {error && (
+          <p
+            role="alert"
+            className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
+          >
+            {error}
+          </p>
+        )}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? '등록 중…' : '판매자 등록'}
         </Button>

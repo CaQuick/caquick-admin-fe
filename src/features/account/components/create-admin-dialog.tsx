@@ -18,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/shared/ui/dialog';
-import { FillFromUsernameButton } from '@/shared/ui/fill-from-username-button';
+import { InitialPasswordActions } from '@/shared/ui/initial-password-actions';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 
@@ -34,7 +34,12 @@ const FIELDS: {
   autoComplete: string;
   help?: string;
 }[] = [
-  { name: 'username', label: '아이디', autoComplete: 'off', help: '4~80자, 소문자·숫자·. _ -' },
+  {
+    name: 'username',
+    label: '아이디',
+    autoComplete: 'off',
+    help: '4~80자의 영문 소문자, 숫자, 마침표(.), 밑줄(_), 하이픈(-)을 쓸 수 있습니다.',
+  },
   {
     name: 'password',
     label: '초기 비밀번호',
@@ -55,7 +60,7 @@ export function CreateAdminDialog() {
     defaultValues: { username: '', password: '', email: '', name: '' },
   });
   const { errors, isSubmitting } = form.formState;
-  const username = useWatch({ control: form.control, name: 'username' });
+  const [username, password] = useWatch({ control: form.control, name: ['username', 'password'] });
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
@@ -66,7 +71,8 @@ export function CreateAdminDialog() {
         email: v.email === '' ? null : v.email,
         name: v.name === '' ? null : v.name,
       });
-      toast.success(`관리자 ${created.username ?? created.accountId}을(를) 추가했습니다.`);
+      // 아이디는 영문이라 조사를 가릴 수 없다 — 조사가 '계정'에 붙게 쓴다
+      toast.success(`${created.username ?? `#${created.accountId}`} 관리자 계정을 추가했습니다.`);
       setOpen(false);
       form.reset();
     } catch (e) {
@@ -92,7 +98,7 @@ export function CreateAdminDialog() {
           <DialogHeader>
             <DialogTitle>관리자 추가</DialogTitle>
             <DialogDescription>
-              초기 비밀번호를 전달하세요. 첫 로그인 때 변경이 강제됩니다.
+              새 관리자 계정을 만듭니다. 정한 초기 비밀번호는 해당 관리자에게 따로 전달해 주세요.
             </DialogDescription>
           </DialogHeader>
           {error && (
@@ -114,9 +120,10 @@ export function CreateAdminDialog() {
                 {...form.register(f.name)}
               />
               {f.name === 'password' && (
-                <FillFromUsernameButton
+                <InitialPasswordActions
+                  value={password}
                   username={username}
-                  onFill={(v) => form.setValue('password', v, { shouldValidate: true })}
+                  onChange={(v) => form.setValue('password', v, { shouldValidate: true })}
                 />
               )}
               {errors[f.name] ? (

@@ -11,7 +11,7 @@ export function SellerCreatePage() {
     <>
       <PageHeader
         title="판매자 등록"
-        description="계정·사업자·매장을 한 번에 만듭니다. 초기 비밀번호는 첫 로그인 때 변경이 강제됩니다."
+        description="계정·사업자·매장을 한 번에 만듭니다. 정한 초기 비밀번호는 판매자에게 따로 전달해 주세요."
       />
       <CreateSellerForm
         onCreated={(accountId) => {

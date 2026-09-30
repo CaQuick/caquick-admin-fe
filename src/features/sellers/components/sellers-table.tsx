@@ -7,6 +7,8 @@ import { formatKst } from '@/shared/lib/kst';
 import { DataTable } from '@/shared/ui/data-table';
 import { StatusPill } from '@/shared/ui/status-pill';
 
+import { StoreVisibilityPill } from './store-visibility-pill';
+
 type SellerRow = AdminSellersQuery['adminSellers']['items'][number];
 
 const columns: ColumnDef<SellerRow, unknown>[] = [
@@ -29,7 +31,9 @@ const columns: ColumnDef<SellerRow, unknown>[] = [
     cell: ({ row }) => (
       <span className="flex items-center gap-1.5">
         <AccountStatusPill status={row.original.status} />
-        {row.original.mustChangePassword && <StatusPill tone="caution">비번 변경 필요</StatusPill>}
+        {row.original.mustChangePassword && (
+          <StatusPill tone="caution">비밀번호 변경 필요</StatusPill>
+        )}
       </span>
     ),
   },
@@ -43,11 +47,15 @@ const columns: ColumnDef<SellerRow, unknown>[] = [
     header: '매장',
     cell: ({ row }) =>
       row.original.store ? (
-        <span>
-          {row.original.store.storeName}
-          <span className="block text-[11.5px] text-muted-foreground">
-            #{row.original.store.id} · {row.original.store.isActive ? '활성' : '비활성'}
-          </span>
+        <span className="flex items-center gap-1.5">
+          <Link
+            to="/stores/$storeId"
+            params={{ storeId: row.original.store.id }}
+            className="text-primary-soft-foreground hover:underline"
+          >
+            {row.original.store.storeName}
+          </Link>
+          <StoreVisibilityPill isActive={row.original.store.isActive} />
         </span>
       ) : (
         '—'
@@ -56,12 +64,12 @@ const columns: ColumnDef<SellerRow, unknown>[] = [
   { accessorKey: 'email', header: '이메일', cell: ({ row }) => row.original.email ?? '—' },
   {
     accessorKey: 'lastLoginAt',
-    header: '마지막 로그인',
+    header: '최근 로그인',
     cell: ({ row }) => (row.original.lastLoginAt ? formatKst(row.original.lastLoginAt) : '—'),
   },
   {
     accessorKey: 'createdAt',
-    header: '생성',
+    header: '등록일',
     cell: ({ row }) => formatKst(row.original.createdAt),
   },
 ];
