@@ -8,12 +8,14 @@ import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { DataTable } from '@/shared/ui/data-table';
 import { FilterBar } from '@/shared/ui/filter-bar';
+import { FilterField } from '@/shared/ui/filter-field';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { StatusPill } from '@/shared/ui/status-pill';
 
 import { reportsQueryOptions } from '../api/queries';
 import { ListShell } from '../components/list-shell';
+import { Reporter } from '../components/reporter';
 import {
   REPORT_REASON,
   REPORT_STATUS,
@@ -40,7 +42,7 @@ const columns: ColumnDef<Row, unknown>[] = [
           params={{ reportId: row.original.id }}
           className="truncate font-medium text-primary-soft-foreground hover:underline"
         >
-          {row.original.contentSnapshot ?? '(스냅샷 없음)'}
+          {row.original.contentSnapshot ?? '(신고 당시 내용 없음)'}
         </Link>
       </span>
     ),
@@ -64,11 +66,17 @@ const columns: ColumnDef<Row, unknown>[] = [
   {
     accessorKey: 'reporterAccountId',
     header: '신고자',
-    cell: ({ row }) => `#${row.original.reporterAccountId}`,
+    cell: ({ row }) => (
+      <Reporter
+        accountId={row.original.reporterAccountId}
+        nickname={row.original.reporterNickname}
+        withdrawn={row.original.reporterWithdrawn}
+      />
+    ),
   },
   {
     accessorKey: 'createdAt',
-    header: '접수',
+    header: '접수일',
     cell: ({ row }) => formatKst(row.original.createdAt),
   },
 ];
@@ -107,43 +115,47 @@ export function ReportsPage({
             }
             onReset={() => onSearchChange({ limit: search.limit })}
           >
-            <Select
-              value={statusValue}
-              onValueChange={(v) =>
-                patch(
-                  v === ALL
-                    ? { all: 'true', status: undefined }
-                    : { all: undefined, status: v as ReportsSearch['status'] },
-                )
-              }
-            >
-              <SelectTrigger className="h-9 w-32" aria-label="상태">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>상태 전체</SelectItem>
-                {Object.entries(REPORT_STATUS).map(([v, m]) => (
-                  <SelectItem key={v} value={v}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={search.targetType ?? ALL}
-              onValueChange={(v) =>
-                patch({ targetType: v === ALL ? undefined : (v as ReportsSearch['targetType']) })
-              }
-            >
-              <SelectTrigger className="h-9 w-32" aria-label="대상 유형">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>대상 전체</SelectItem>
-                <SelectItem value="REVIEW">리뷰</SelectItem>
-                <SelectItem value="REVIEW_COMMENT">댓글</SelectItem>
-              </SelectContent>
-            </Select>
+            <FilterField label="상태">
+              <Select
+                value={statusValue}
+                onValueChange={(v) =>
+                  patch(
+                    v === ALL
+                      ? { all: 'true', status: undefined }
+                      : { all: undefined, status: v as ReportsSearch['status'] },
+                  )
+                }
+              >
+                <SelectTrigger className="h-9 w-44" aria-label="상태">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>상태 전체</SelectItem>
+                  {Object.entries(REPORT_STATUS).map(([v, m]) => (
+                    <SelectItem key={v} value={v}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
+            <FilterField label="대상">
+              <Select
+                value={search.targetType ?? ALL}
+                onValueChange={(v) =>
+                  patch({ targetType: v === ALL ? undefined : (v as ReportsSearch['targetType']) })
+                }
+              >
+                <SelectTrigger className="h-9 w-32" aria-label="대상 유형">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>대상 전체</SelectItem>
+                  <SelectItem value="REVIEW">리뷰</SelectItem>
+                  <SelectItem value="REVIEW_COMMENT">댓글</SelectItem>
+                </SelectContent>
+              </Select>
+            </FilterField>
           </FilterBar>
         }
       >

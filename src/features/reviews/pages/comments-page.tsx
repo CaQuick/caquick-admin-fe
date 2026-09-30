@@ -1,78 +1,93 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { type ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 
-import { type AdminReviewCommentsQuery } from '@/graphql/generated/graphql';
 import { messageFor } from '@/shared/api';
 import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { DataTable } from '@/shared/ui/data-table';
+import { EntityPicker } from '@/shared/ui/entity-picker';
 import { FilterBar } from '@/shared/ui/filter-bar';
+import { FilterField } from '@/shared/ui/filter-field';
 import { IdFilterInput } from '@/shared/ui/id-filter-input';
 import { Label } from '@/shared/ui/label';
 import { PageHeader } from '@/shared/ui/page-header';
 import { StatusPill } from '@/shared/ui/status-pill';
 import { Switch } from '@/shared/ui/switch';
 
-import { commentsQueryOptions } from '../api/queries';
+import { authorPickerQuery, commentsQueryOptions } from '../api/queries';
 import { DeleteWithReason } from '../components/delete-with-reason';
 import { ListShell } from '../components/list-shell';
+import { type CommentRow, CommentSheet, ReviewLink } from '../components/review-sheet';
+import { StopRowClick } from '../components/stop-row-click';
 import { type CommentsSearch, type CommentsSearchInput, toCommentListInput } from '../meta';
 
-type Row = AdminReviewCommentsQuery['adminReviewComments']['items'][number];
-
-const columns: ColumnDef<Row, unknown>[] = [
-  {
-    accessorKey: 'content',
-    header: '내용',
-    cell: ({ row }) => (
-      <span className="flex max-w-96 items-center gap-2">
-        {row.original.deleted && <StatusPill tone="negative">삭제됨</StatusPill>}
-        <span className="truncate">{row.original.content}</span>
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'authorNickname',
-    header: '작성자',
-    cell: ({ row }) => (
-      <Link
-        to="/users/$accountId"
-        params={{ accountId: row.original.authorAccountId }}
-        className="hover:underline"
-      >
-        {row.original.authorNickname ?? `#${row.original.authorAccountId}`}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: 'reviewId',
-    header: '리뷰',
-    cell: ({ row }) => (
-      <Link
-        to="/reviews"
-        search={{ q: undefined }}
-        className="text-muted-foreground hover:underline"
-      >
-        #{row.original.reviewId}
-      </Link>
-    ),
-  },
-  {
-    accessorKey: 'createdAt',
-    header: '작성',
-    cell: ({ row }) => formatKst(row.original.createdAt),
-  },
-  {
-    id: 'actions',
-    header: '',
-    cell: ({ row }) => (
-      <div className="flex justify-end">
-        <DeleteWithReason kind="comment" id={row.original.id} deleted={row.original.deleted} />
-      </div>
-    ),
-  },
-];
+function commentColumns(open: (id: string) => void): ColumnDef<CommentRow, unknown>[] {
+  return [
+    {
+      accessorKey: 'content',
+      header: '내용',
+      cell: ({ row }) => (
+        <span className="flex max-w-96 items-center gap-2">
+          {row.original.deleted && <StatusPill tone="negative">삭제됨</StatusPill>}
+          <button
+            type="button"
+            className="truncate text-left hover:underline"
+            aria-label={`댓글 ${row.original.id} 전문 보기`}
+            onClick={(e) => {
+              e.stopPropagation();
+              open(row.original.id);
+            }}
+          >
+            {row.original.content}
+          </button>
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'authorNickname',
+      header: '작성자',
+      cell: ({ row }) => (
+        <StopRowClick>
+          <Link
+            to="/users/$accountId"
+            params={{ accountId: row.original.authorAccountId }}
+            className="hover:underline"
+          >
+            {row.original.authorNickname ?? `#${row.original.authorAccountId}`}
+          </Link>
+        </StopRowClick>
+      ),
+    },
+    {
+      accessorKey: 'reviewId',
+      header: '리뷰',
+      cell: ({ row }) => (
+        <StopRowClick>
+          <ReviewLink
+            reviewId={row.original.reviewId}
+            className="text-muted-foreground hover:underline"
+          />
+        </StopRowClick>
+      ),
+    },
+    {
+      accessorKey: 'createdAt',
+      header: '작성일',
+      cell: ({ row }) => formatKst(row.original.createdAt),
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <StopRowClick className="flex justify-end">
+          <DeleteWithReason kind="comment" id={row.original.id} deleted={row.original.deleted} />
+        </StopRowClick>
+      ),
+    },
+  ];
+}
 
 export function CommentsPage({
   search,
@@ -82,13 +97,19 @@ export function CommentsPage({
   onSearchChange: (next: CommentsSearchInput) => void;
 }) {
   const list = useQuery(commentsQueryOptions(toCommentListInput(search)));
+  const [openId, setOpenId] = useState<string>();
+  const columns = useMemo(() => commentColumns(setOpenId), []);
   const patch = (p: Partial<CommentsSearchInput>) =>
     onSearchChange({ ...search, ...p, cursor: undefined });
+  const items = list.data?.items ?? [];
+  const authorName =
+    items.find((r) => r.authorAccountId === search.accountId)?.authorNickname ?? undefined;
   return (
     <>
       <PageHeader
         title="리뷰 댓글"
         meta={list.data ? `전체 ${formatCount(list.data.totalCount)}건` : undefined}
+        description="행을 누르면 댓글 전체를 볼 수 있습니다."
       />
       <ListShell
         data={list.data}
@@ -104,18 +125,24 @@ export function CommentsPage({
             )}
             onReset={() => onSearchChange({ limit: search.limit })}
           >
-            <IdFilterInput
-              label="리뷰 ID"
-              value={search.reviewId}
-              onCommit={(v) => patch({ reviewId: v })}
-            />
-            <IdFilterInput
-              label="작성자 계정 ID"
-              placeholder="계정 ID"
-              value={search.accountId}
-              onCommit={(v) => patch({ accountId: v })}
-            />
-            <span className="flex items-center gap-1.5">
+            <FilterField label="리뷰 번호">
+              <IdFilterInput
+                label="리뷰 번호"
+                placeholder="숫자"
+                value={search.reviewId}
+                onCommit={(v) => patch({ reviewId: v })}
+              />
+            </FilterField>
+            <FilterField label="작성자">
+              <EntityPicker
+                label="작성자"
+                value={search.accountId}
+                selectedLabel={authorName}
+                onChange={(id) => patch({ accountId: id })}
+                searchQuery={authorPickerQuery}
+              />
+            </FilterField>
+            <span className="ml-auto flex items-center gap-1.5">
               <Switch
                 id="rc-deleted"
                 checked={search.deleted === 'true'}
@@ -130,12 +157,17 @@ export function CommentsPage({
       >
         <DataTable
           columns={columns}
-          data={list.data?.items ?? []}
+          data={items}
           getRowId={(r) => r.id}
           isLoading={list.isPending}
           emptyMessage="댓글이 없습니다."
+          onRowClick={(r) => setOpenId(r.id)}
         />
       </ListShell>
+      <CommentSheet
+        comment={openId === undefined ? undefined : items.find((r) => r.id === openId)}
+        onClose={() => setOpenId(undefined)}
+      />
     </>
   );
 }
