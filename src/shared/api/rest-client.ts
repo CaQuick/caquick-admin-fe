@@ -15,8 +15,11 @@ export interface RestOptions {
   auth?: boolean;
 }
 
-/** 액세스 토큰 만료·부재만 refresh 대상. CURRENT_PASSWORD_INVALID도 401이라 status만으로는 가를 수 없다. */
-const EXPIRED_TOKEN_CODES = new Set(['INVALID_ACCESS_TOKEN', 'AUTHENTICATION_REQUIRED']);
+/**
+ * 401이지만 입력 오류라 refresh 대상이 아닌 코드. 그 밖의 401(토큰 만료, 계정 소멸 등)은 GraphQL과 같이 refresh를 1회 시도한다 —
+ * 세션이 끝났으면 refresh 실패로 auth가 스토어를 비워 로그인 화면으로 보낸다.
+ */
+const INPUT_ERROR_CODES = new Set(['CURRENT_PASSWORD_INVALID']);
 
 async function send(
   path: string,
@@ -44,14 +47,14 @@ async function send(
 
 /**
  * `/auth/*` REST 호출. 쿠키(refresh)는 항상 포함.
- * `auth: true` 요청이 토큰 만료로 401이면 refresh 1회 뒤 재시도한다. 로그인·refresh 자체는 결과를 auth feature가 해석한다.
+ * `auth: true` 요청이 입력 오류가 아닌 401이면 refresh 1회 뒤 재시도한다. 로그인·refresh 자체는 결과를 auth feature가 해석한다.
  */
 export async function authRequest<T>(path: string, options: RestOptions = {}): Promise<T> {
   let { status, body } = await send(path, options);
   if (
     options.auth &&
     status === 401 &&
-    EXPIRED_TOKEN_CODES.has(body?.errorCode ?? '') &&
+    !INPUT_ERROR_CODES.has(body?.errorCode ?? '') &&
     (await refreshOnce())
   ) {
     ({ status, body } = await send(path, options));
