@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { type EntityOption, EntityPicker } from './entity-picker';
@@ -14,6 +14,7 @@ interface SetupProps {
   label?: string;
   value?: string;
   selectedLabel?: string;
+  idEntry?: boolean;
 }
 
 function setup(
@@ -159,5 +160,43 @@ describe('EntityPicker', () => {
     await userEvent.click(trigger);
     await userEvent.click(await screen.findByRole('option', { name: /루미 케이크/ }));
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('EntityPicker ID 직접 선택', () => {
+  async function typeIn(
+    text: string,
+    props: SetupProps = {},
+    search?: (keyword: string) => Promise<EntityOption[]>,
+  ) {
+    const ctx = setup(props, search);
+    await userEvent.click(ctx.trigger);
+    await userEvent.type(screen.getByRole('combobox', { name: '매장 검색' }), text);
+    return ctx;
+  }
+
+  it('숫자를 입력하면 그 ID를 고르는 항목을 맨 위에 두고, 고르면 ID를 넘긴다', async () => {
+    const { onChange } = await typeIn('17');
+    const idOption = await screen.findByRole('option', { name: /#17.*ID로 선택/ });
+    expect(options()[0]).toBe(idOption);
+    await userEvent.click(idOption);
+    expect(onChange).toHaveBeenCalledWith('17', expect.objectContaining({ id: '17' }));
+  });
+
+  it.each([
+    ['숫자가 아닌 검색어', '루미', {}],
+    ['ID 상한(2^64-1)을 넘는 숫자', '18446744073709551616', {}],
+    ['idEntry=false', '17', { idEntry: false }],
+  ] as const)('%s면 ID 항목을 두지 않는다', async (_case, text, props) => {
+    await typeIn(text, props);
+    await waitFor(() => expect(screen.queryByText('검색하고 있습니다.')).not.toBeInTheDocument());
+    expect(screen.queryByRole('option', { name: /ID로 선택/ })).not.toBeInTheDocument();
+  });
+
+  it('검색 결과에 같은 ID가 있으면 ID 항목을 겹쳐 두지 않는다', async () => {
+    await typeIn('2', {}, (k) => Promise.resolve(STORES.filter((store) => store.id === k)));
+    expect(await screen.findByRole('option', { name: /달빛 베이커리/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /ID로 선택/ })).not.toBeInTheDocument();
+    expect(options()).toHaveLength(1);
   });
 });

@@ -8,6 +8,7 @@ import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent, useEffect, useId, useState } from 'react';
 
 import { withJosa } from '@/shared/lib/josa';
+import { isIdText } from '@/shared/lib/list-search';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/shared/ui/command';
@@ -36,6 +37,11 @@ interface Props<TQueryFnData, TKey extends QueryKey> {
   placeholder?: string;
   /** false면 선택 해제 버튼을 두지 않는다 */
   clearable?: boolean;
+  /**
+   * 숫자를 입력하면 그 ID를 바로 고르는 항목을 둔다(기본 켬). 검색에 나오지 않는 삭제·숨김 대상도
+   * ID로 거를 수 있어야 해서 — 필터가 아니라 새 값을 고르는 곳이면 끈다
+   */
+  idEntry?: boolean;
   disabled?: boolean;
   className?: string;
 }
@@ -63,6 +69,7 @@ export function EntityPicker<TQueryFnData, TKey extends QueryKey>({
   selectedLabel,
   placeholder = `${label} 선택`,
   clearable = true,
+  idEntry = true,
   disabled = false,
   className,
 }: Props<TQueryFnData, TKey>) {
@@ -79,6 +86,11 @@ export function EntityPicker<TQueryFnData, TKey extends QueryKey>({
     placeholderData: keepPreviousData,
   });
   const options = results.data ?? [];
+  const typedId = keyword.trim();
+  const idOption: EntityOption | undefined =
+    idEntry && isIdText(typedId) && !options.some((o) => o.id === typedId)
+      ? { id: typedId, label: `#${typedId}`, description: 'ID로 선택' }
+      : undefined;
 
   const display =
     value === undefined
@@ -137,10 +149,14 @@ export function EntityPicker<TQueryFnData, TKey extends QueryKey>({
         <PopoverContent className="w-72 p-0" align="start">
           {/* cmdk는 Command의 label을 검색칸 이름으로, List의 label을 결과 목록 이름으로 쓴다 */}
           <Command shouldFilter={false} label={`${label} 검색`}>
-            <CommandInput placeholder="이름으로 검색" value={keyword} onValueChange={setKeyword} />
+            <CommandInput
+              placeholder={idEntry ? '이름 또는 ID로 검색' : '이름으로 검색'}
+              value={keyword}
+              onValueChange={setKeyword}
+            />
             <CommandList label={`${label} 검색 결과`}>
               <CommandEmpty>{emptyMessage}</CommandEmpty>
-              {options.map((option) => (
+              {[...(idOption ? [idOption] : []), ...options].map((option) => (
                 <CommandItem key={option.id} value={option.id} onSelect={() => select(option)}>
                   <CheckIcon
                     className={cn('size-4', option.id === value ? 'opacity-100' : 'opacity-0')}

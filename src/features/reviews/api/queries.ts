@@ -8,9 +8,12 @@ import {
   type AdminReviewReportListInput,
 } from '@/graphql/generated/graphql';
 import { gqlRequest } from '@/shared/api';
+import { type EntityOption } from '@/shared/ui/entity-picker';
 
 const keys = {
   reviews: (input: AdminReviewListInput) => ['reviews', 'list', input] as const,
+  storePicker: (keyword: string) => ['review-pickers', 'store', keyword] as const,
+  authorPicker: (keyword: string) => ['review-pickers', 'author', keyword] as const,
   comments: (input: AdminReviewCommentListInput) => ['review-comments', 'list', input] as const,
   reports: (input: AdminReviewReportListInput) => ['review-reports', 'list', input] as const,
   report: (reportId: string) => ['review-reports', 'detail', reportId] as const,
@@ -24,6 +27,7 @@ const AdminReviewsDocument = graphql(/* GraphQL */ `
         storeId
         storeName
         productId
+        productName
         authorAccountId
         authorNickname
         rating
@@ -31,6 +35,12 @@ const AdminReviewsDocument = graphql(/* GraphQL */ `
         commentCount
         likeCount
         deleted
+        media {
+          mediaType
+          mediaUrl
+          thumbnailUrl
+          sortOrder
+        }
         createdAt
       }
       totalCount
@@ -65,11 +75,14 @@ const AdminReviewReportsDocument = graphql(/* GraphQL */ `
         targetType
         targetId
         reporterAccountId
+        reporterNickname
+        reporterWithdrawn
         reason
         detail
         contentSnapshot
         status
         resolvedByAccountId
+        resolvedByLabel
         resolvedAt
         resolutionNote
         createdAt
@@ -88,11 +101,14 @@ const AdminReviewReportDocument = graphql(/* GraphQL */ `
         targetType
         targetId
         reporterAccountId
+        reporterNickname
+        reporterWithdrawn
         reason
         detail
         contentSnapshot
         status
         resolvedByAccountId
+        resolvedByLabel
         resolvedAt
         resolutionNote
         createdAt
@@ -104,7 +120,37 @@ const AdminReviewReportDocument = graphql(/* GraphQL */ `
         authorNickname
         content
         storeId
+        storeName
         deleted
+        media {
+          mediaType
+          mediaUrl
+          thumbnailUrl
+          sortOrder
+        }
+      }
+    }
+  }
+`);
+const AdminReviewStorePickerDocument = graphql(/* GraphQL */ `
+  query AdminReviewStorePicker($input: AdminStoreListInput) {
+    adminStores(input: $input) {
+      items {
+        id
+        storeName
+        isActive
+      }
+    }
+  }
+`);
+const AdminReviewAuthorPickerDocument = graphql(/* GraphQL */ `
+  query AdminReviewAuthorPicker($input: AdminUserListInput) {
+    adminUsers(input: $input) {
+      items {
+        accountId
+        nickname
+        name
+        email
       }
     }
   }
@@ -156,6 +202,46 @@ export function reportDetailQueryOptions(reportId: string) {
     queryKey: keys.report(reportId),
     queryFn: async () =>
       (await gqlRequest(AdminReviewReportDocument, { reportId })).adminReviewReport,
+  });
+}
+
+const PICKER_LIMIT = 20;
+
+/** 필터의 매장 선택기. 숨긴 매장의 리뷰도 거를 수 있어야 해서 노출 여부로 거르지 않는다 */
+export function storePickerQuery(keyword: string) {
+  return queryOptions({
+    queryKey: keys.storePicker(keyword),
+    queryFn: async () =>
+      (
+        await gqlRequest(AdminReviewStorePickerDocument, {
+          input: { keyword: keyword || null, limit: PICKER_LIMIT },
+        })
+      ).adminStores.items,
+    select: (items): EntityOption[] =>
+      items.map((s) => ({
+        id: s.id,
+        label: s.storeName,
+        description: s.isActive ? `#${s.id}` : `#${s.id} · 숨김`,
+      })),
+  });
+}
+
+/** 필터의 작성자(구매자) 선택기 */
+export function authorPickerQuery(keyword: string) {
+  return queryOptions({
+    queryKey: keys.authorPicker(keyword),
+    queryFn: async () =>
+      (
+        await gqlRequest(AdminReviewAuthorPickerDocument, {
+          input: { keyword: keyword || null, limit: PICKER_LIMIT },
+        })
+      ).adminUsers.items,
+    select: (items): EntityOption[] =>
+      items.map((u) => ({
+        id: u.accountId,
+        label: u.nickname ?? u.name ?? u.email ?? `#${u.accountId}`,
+        description: `#${u.accountId}`,
+      })),
   });
 }
 

@@ -682,6 +682,13 @@ export type OrderStatusType =
   /** 구매자가 주문을 넣은 직후의 초기 상태. 판매자 확인 대기. */
   | 'SUBMITTED';
 
+/** 리뷰 첨부 미디어 종류. */
+export type ReviewMediaType =
+  /** 이미지. */
+  | 'IMAGE'
+  /** 동영상. thumbnailUrl이 있으면 대표 프레임으로 쓰지만 필수가 아니라 없을 수 있다. */
+  | 'VIDEO';
+
 /** 신고 사유. */
 export type ReviewReportReason =
   /** 욕설·비방. */
@@ -775,7 +782,22 @@ export type AdminAuditLogsQueryVariables = Exact<{
 }>;
 
 
-export type AdminAuditLogsQuery = { adminAuditLogs: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, actorAccountId: string, actorAccountType: AccountType | null, storeId: string | null, targetType: AuditTargetType, targetId: string, action: AuditActionType, beforeJson: string | null, afterJson: string | null, ipAddress: string | null, userAgent: string | null, createdAt: string }> } };
+export type AdminAuditLogsQuery = { adminAuditLogs: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, actorAccountId: string, actorAccountType: AccountType | null, actorLabel: string | null, storeId: string | null, targetType: AuditTargetType, targetId: string, action: AuditActionType, beforeJson: string | null, afterJson: string | null, ipAddress: string | null, userAgent: string | null, createdAt: string }> } };
+
+export type AdminAuditStorePickerQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminAuditStorePickerQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminAuditActorPickerQueryVariables = Exact<{
+  sellers?: AdminSellerListInput | null | undefined;
+  admins?: CursorInput | null | undefined;
+}>;
+
+
+export type AdminAuditActorPickerQuery = { adminSellers: { items: Array<{ accountId: string, username: string | null, name: string | null }> }, adminAdmins: { items: Array<{ accountId: string, username: string | null, name: string | null }> } };
 
 export type AdminBannersQueryVariables = Exact<{
   input?: AdminBannerListInput | null | undefined;
@@ -915,7 +937,7 @@ export type AdminReviewsQueryVariables = Exact<{
 }>;
 
 
-export type AdminReviewsQuery = { adminReviews: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, productId: string, authorAccountId: string, authorNickname: string | null, rating: number, content: string | null, commentCount: number, likeCount: number, deleted: boolean, createdAt: string }> } };
+export type AdminReviewsQuery = { adminReviews: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, productId: string, productName: string, authorAccountId: string, authorNickname: string | null, rating: number, content: string | null, commentCount: number, likeCount: number, deleted: boolean, createdAt: string, media: Array<{ mediaType: ReviewMediaType, mediaUrl: string, thumbnailUrl: string | null, sortOrder: number }> }> } };
 
 export type AdminReviewCommentsQueryVariables = Exact<{
   input?: AdminReviewCommentListInput | null | undefined;
@@ -929,14 +951,28 @@ export type AdminReviewReportsQueryVariables = Exact<{
 }>;
 
 
-export type AdminReviewReportsQuery = { adminReviewReports: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }> } };
+export type AdminReviewReportsQuery = { adminReviewReports: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reporterNickname: string | null, reporterWithdrawn: boolean, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedByLabel: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }> } };
 
 export type AdminReviewReportQueryVariables = Exact<{
   reportId: string | number;
 }>;
 
 
-export type AdminReviewReportQuery = { adminReviewReport: { report: { id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }, target: { id: string, reviewId: string | null, authorAccountId: string, authorNickname: string | null, content: string | null, storeId: string, deleted: boolean } } };
+export type AdminReviewReportQuery = { adminReviewReport: { report: { id: string, targetType: AdminReviewReportTargetType, targetId: string, reporterAccountId: string, reporterNickname: string | null, reporterWithdrawn: boolean, reason: ReviewReportReason, detail: string | null, contentSnapshot: string | null, status: ReviewReportStatus, resolvedByAccountId: string | null, resolvedByLabel: string | null, resolvedAt: string | null, resolutionNote: string | null, createdAt: string }, target: { id: string, reviewId: string | null, authorAccountId: string, authorNickname: string | null, content: string | null, storeId: string, storeName: string, deleted: boolean, media: Array<{ mediaType: ReviewMediaType, mediaUrl: string, thumbnailUrl: string | null, sortOrder: number }> } } };
+
+export type AdminReviewStorePickerQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminReviewStorePickerQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminReviewAuthorPickerQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminReviewAuthorPickerQuery = { adminUsers: { items: Array<{ accountId: string, nickname: string | null, name: string | null, email: string | null }> } };
 
 export type AdminDeleteReviewMutationVariables = Exact<{
   input: AdminDeleteReviewInput;
@@ -1202,6 +1238,7 @@ export const AdminAuditLogsDocument = new TypedDocumentString(`
       id
       actorAccountId
       actorAccountType
+      actorLabel
       storeId
       targetType
       targetId
@@ -1218,6 +1255,35 @@ export const AdminAuditLogsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminAuditLogsQuery, AdminAuditLogsQueryVariables>;
+export const AdminAuditStorePickerDocument = new TypedDocumentString(`
+    query AdminAuditStorePicker($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminAuditStorePickerQuery, AdminAuditStorePickerQueryVariables>;
+export const AdminAuditActorPickerDocument = new TypedDocumentString(`
+    query AdminAuditActorPicker($sellers: AdminSellerListInput, $admins: CursorInput) {
+  adminSellers(input: $sellers) {
+    items {
+      accountId
+      username
+      name
+    }
+  }
+  adminAdmins(input: $admins) {
+    items {
+      accountId
+      username
+      name
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminAuditActorPickerQuery, AdminAuditActorPickerQueryVariables>;
 export const AdminBannersDocument = new TypedDocumentString(`
     query AdminBanners($input: AdminBannerListInput) {
   adminBanners(input: $input) {
@@ -1581,6 +1647,7 @@ export const AdminReviewsDocument = new TypedDocumentString(`
       storeId
       storeName
       productId
+      productName
       authorAccountId
       authorNickname
       rating
@@ -1588,6 +1655,12 @@ export const AdminReviewsDocument = new TypedDocumentString(`
       commentCount
       likeCount
       deleted
+      media {
+        mediaType
+        mediaUrl
+        thumbnailUrl
+        sortOrder
+      }
       createdAt
     }
     totalCount
@@ -1622,11 +1695,14 @@ export const AdminReviewReportsDocument = new TypedDocumentString(`
       targetType
       targetId
       reporterAccountId
+      reporterNickname
+      reporterWithdrawn
       reason
       detail
       contentSnapshot
       status
       resolvedByAccountId
+      resolvedByLabel
       resolvedAt
       resolutionNote
       createdAt
@@ -1645,11 +1721,14 @@ export const AdminReviewReportDocument = new TypedDocumentString(`
       targetType
       targetId
       reporterAccountId
+      reporterNickname
+      reporterWithdrawn
       reason
       detail
       contentSnapshot
       status
       resolvedByAccountId
+      resolvedByLabel
       resolvedAt
       resolutionNote
       createdAt
@@ -1661,11 +1740,41 @@ export const AdminReviewReportDocument = new TypedDocumentString(`
       authorNickname
       content
       storeId
+      storeName
       deleted
+      media {
+        mediaType
+        mediaUrl
+        thumbnailUrl
+        sortOrder
+      }
     }
   }
 }
     `) as unknown as TypedDocumentString<AdminReviewReportQuery, AdminReviewReportQueryVariables>;
+export const AdminReviewStorePickerDocument = new TypedDocumentString(`
+    query AdminReviewStorePicker($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewStorePickerQuery, AdminReviewStorePickerQueryVariables>;
+export const AdminReviewAuthorPickerDocument = new TypedDocumentString(`
+    query AdminReviewAuthorPicker($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      nickname
+      name
+      email
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReviewAuthorPickerQuery, AdminReviewAuthorPickerQueryVariables>;
 export const AdminDeleteReviewDocument = new TypedDocumentString(`
     mutation AdminDeleteReview($input: AdminDeleteReviewInput!) {
   adminDeleteReview(input: $input)

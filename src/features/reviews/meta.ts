@@ -4,6 +4,7 @@ import {
   type AdminReviewCommentListInput,
   type AdminReviewListInput,
   type AdminReviewReportListInput,
+  type ReviewMediaType,
 } from '@/graphql/generated/graphql';
 import {
   DEFAULT_LIMIT,
@@ -22,7 +23,7 @@ export const REPORT_REASON: Record<string, string> = {
 };
 export const REPORT_STATUS: Record<string, { label: string; tone: PillTone }> = {
   PENDING: { label: '대기', tone: 'caution' },
-  RESOLVED: { label: '삭제됨', tone: 'negative' },
+  RESOLVED: { label: '처리 완료(대상 삭제)', tone: 'negative' },
   REJECTED: { label: '반려', tone: 'neutral' },
 };
 export const TARGET_TYPE: Record<string, string> = { REVIEW: '리뷰', REVIEW_COMMENT: '댓글' };
@@ -30,6 +31,7 @@ export const TARGET_TYPE: Record<string, string> = { REVIEW: '리뷰', REVIEW_CO
 export const reviewsSearchSchema = z.object({
   ...listSearchBase,
   q: keywordText,
+  reviewId: optionalIdText,
   storeId: optionalIdText,
   accountId: optionalIdText,
   deleted: optionalBoolText,
@@ -41,6 +43,7 @@ export function toReviewListInput(s: ReviewsSearch): AdminReviewListInput {
     limit: s.limit ?? DEFAULT_LIMIT,
     cursor: s.cursor ?? null,
     keyword: s.q ?? null,
+    reviewId: s.reviewId ?? null,
     storeId: s.storeId ?? null,
     accountId: s.accountId ?? null,
     includeDeleted: s.deleted === 'true',
@@ -81,4 +84,12 @@ export function toReportListInput(s: ReportsSearch): AdminReviewReportListInput 
     status: s.all === 'true' ? null : (s.status ?? 'PENDING'),
     targetType: s.targetType ?? null,
   };
+}
+
+/** 목록 행의 첨부 개수 요약(예: '사진 3 · 동영상 1'). 없으면 null */
+export function mediaSummary(media: readonly { mediaType: ReviewMediaType }[]): string | null {
+  const videos = media.filter((m) => m.mediaType === 'VIDEO').length;
+  const photos = media.length - videos;
+  const parts = [photos > 0 && `사진 ${photos}`, videos > 0 && `동영상 ${videos}`].filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
