@@ -219,6 +219,32 @@ describe('배너', () => {
     expect(await screen.findByRole('heading', { level: 2, name: '신규' })).toBeInTheDocument();
   });
 
+  it('링크 대상: 매장이 숨김인 상품은 후보에서 빼고, 숫자를 입력해도 ID로 고르는 항목을 두지 않는다', async () => {
+    server.use(
+      gqlOk('AdminBannerProductOptions', {
+        adminProducts: {
+          items: [
+            { id: '3', name: '딸기 생크림 케이크', storeName: '루미 케이크', storeIsActive: true },
+            { id: '4', name: '초코 타르트', storeName: '닫은 가게', storeIsActive: false },
+          ],
+        },
+      }),
+    );
+    boot('/banners/new');
+    const linkGroup = await screen.findByRole('radiogroup', { name: '링크 유형' });
+    await userEvent.click(within(linkGroup).getByRole('radio', { name: '상품' }));
+    await userEvent.click(screen.getByRole('combobox', { name: /^상품/ }));
+    expect(await screen.findByRole('option', { name: /딸기 생크림 케이크/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /초코 타르트/ })).toBeNull();
+
+    const searchBox = screen.getByRole('combobox', { name: '상품 검색' });
+    expect(searchBox).toHaveAttribute('placeholder', '이름으로 검색');
+    // 'ID로 선택' 항목은 입력 즉시 생기므로 검색 응답을 기다리지 않고 본다
+    await userEvent.type(searchBox, '4');
+    expect(screen.queryByRole('option', { name: /ID로 선택/ })).toBeNull();
+    expect(screen.queryByRole('option', { name: /#4/ })).toBeNull();
+  });
+
   it('수정: 저장된 링크 대상은 이름으로 보이고, 바뀐 것만 보낸다 / 저장 실패는 버튼 곁 오류와 토스트', async () => {
     let updated: unknown;
     const storeKeywords: unknown[] = [];

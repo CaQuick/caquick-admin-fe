@@ -119,6 +119,7 @@ const AdminBannerProductOptionsDocument = graphql(/* GraphQL */ `
         id
         name
         storeName
+        storeIsActive
       }
     }
   }
@@ -204,7 +205,10 @@ export function visibleBannersQueryOptions() {
 const keywordInput = (keyword: string) =>
   keyword === '' ? null : [...keyword].slice(0, MAX_KEYWORD_LENGTH).join('');
 
-/** 링크 대상 검색. 숨김·삭제 대상은 저장이 거절되므로 노출 중인 것만 찾는다 */
+/**
+ * 링크 대상 검색. 숨김·삭제 대상은 저장이 거절되므로 노출 중인 것만 찾는다.
+ * 상품은 매장이 숨김이어도 구매자에게 보이지 않아 함께 뺀다
+ */
 export function linkOptionsQueryOptions(kind: LinkTargetKind, keyword: string) {
   return queryOptions({
     queryKey: bannersKeys.linkOptions(kind, keyword),
@@ -213,11 +217,13 @@ export function linkOptionsQueryOptions(kind: LinkTargetKind, keyword: string) {
         const r = await gqlRequest(AdminBannerProductOptionsDocument, {
           input: { keyword: keywordInput(keyword), isActive: true, limit: 20 },
         });
-        return r.adminProducts.items.map((p) => ({
-          id: p.id,
-          label: p.name,
-          description: `${p.storeName} · ID ${p.id}`,
-        }));
+        return r.adminProducts.items
+          .filter((p) => p.storeIsActive)
+          .map((p) => ({
+            id: p.id,
+            label: p.name,
+            description: `${p.storeName} · ID ${p.id}`,
+          }));
       }
       if (kind === 'STORE') {
         const r = await gqlRequest(AdminBannerStoreOptionsDocument, {

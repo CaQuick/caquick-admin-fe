@@ -65,6 +65,7 @@ function LinkTargetPicker({
       onChange={(id) => onChange(id ?? '')}
       searchQuery={(keyword) => linkOptionsQueryOptions(kind, keyword)}
       selectedLabel={isSaved ? (saved.data ?? undefined) : undefined}
+      idEntry={false}
       className="[&>button[role=combobox]]:w-72"
     />
   );

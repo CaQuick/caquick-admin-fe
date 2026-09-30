@@ -882,7 +882,7 @@ export type AdminBannerProductOptionsQueryVariables = Exact<{
 }>;
 
 
-export type AdminBannerProductOptionsQuery = { adminProducts: { items: Array<{ id: string, name: string, storeName: string }> } };
+export type AdminBannerProductOptionsQuery = { adminProducts: { items: Array<{ id: string, name: string, storeName: string, storeIsActive: boolean }> } };
 
 export type AdminBannerStoreOptionsQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
@@ -1519,6 +1519,7 @@ export const AdminBannerProductOptionsDocument = new TypedDocumentString(`
       id
       name
       storeName
+      storeIsActive
     }
   }
 }
