@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TrashIcon } from 'lucide-react';
 
@@ -37,9 +37,12 @@ describe('IconButton', () => {
 
     await userEvent.tab();
     expect(button).toHaveFocus();
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      '매장 3곳이 연결되어 있어 삭제할 수 없습니다.',
-    );
+    // 마우스 사용자도 무슨 버튼인지 알 수 있게 라벨과 사유를 함께 보인다
+    const tooltip = await screen.findByRole('tooltip');
+    expect(within(tooltip).getByText('삭제')).toBeInTheDocument();
+    expect(
+      within(tooltip).getByText('매장 3곳이 연결되어 있어 삭제할 수 없습니다.'),
+    ).toBeInTheDocument();
     await userEvent.click(button);
     await userEvent.keyboard('{Enter}');
     expect(onClick).not.toHaveBeenCalled();

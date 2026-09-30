@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shar
 type Props = Omit<ComponentProps<typeof Button>, 'aria-label' | 'asChild'> & {
   /** 접근 이름이자 툴팁 문구. 아이콘만 있는 버튼이라 필수다 */
   label: string;
-  /** 있으면 버튼을 비활성으로 두고 툴팁·설명으로 이유를 알린다 */
+  /** 있으면 버튼을 비활성으로 두고 툴팁(라벨 아래)·설명으로 이유를 알린다 */
   disabledReason?: string;
 };
 
@@ -53,7 +53,16 @@ export function IconButton({
             {children}
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{disabledReason ?? label}</TooltipContent>
+        <TooltipContent>
+          {blocked ? (
+            <>
+              <p className="font-medium">{label}</p>
+              <p>{disabledReason}</p>
+            </>
+          ) : (
+            label
+          )}
+        </TooltipContent>
       </Tooltip>
       {blocked && (
         <span id={reasonId} className="sr-only">

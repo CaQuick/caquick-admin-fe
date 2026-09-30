@@ -68,6 +68,9 @@ export function toPostcodeResult(data: RawPostcodeData): PostcodeResult {
   };
 }
 
+/** CDN이 멈추면 load·error가 오지 않는다. 이만큼 기다린 뒤 실패로 보고 다시 시도하게 한다 */
+export const POSTCODE_TIMEOUT_MS = 10_000;
+
 let loading: Promise<PostcodeConstructor> | null = null;
 
 /** 스크립트를 처음 쓸 때 한 번만 받는다. 실패하면 다음 호출에서 다시 시도한다. */
@@ -78,15 +81,24 @@ export function loadPostcode(): Promise<PostcodeConstructor> {
     const script = document.createElement('script');
     script.src = POSTCODE_SCRIPT_URL;
     script.async = true;
+    const timer = setTimeout(
+      () => fail(new Error('우편번호 스크립트가 응답하지 않습니다.')),
+      POSTCODE_TIMEOUT_MS,
+    );
     script.onload = () => {
       const ctor = window.kakao?.Postcode;
       if (!ctor) return fail(new Error('우편번호 스크립트에 Postcode가 없습니다.'));
+      clearTimeout(timer);
       // 이후 호출은 window.kakao를 바로 쓴다
       loading = null;
       resolve(ctor);
     };
     script.onerror = () => fail(new Error('우편번호 스크립트를 불러오지 못했습니다.'));
     function fail(error: Error) {
+      clearTimeout(timer);
+      // 시간 초과 뒤 늦게 오는 load가 다음 시도의 loading을 지우지 않게 끊는다
+      script.onload = null;
+      script.onerror = null;
       script.remove();
       loading = null;
       reject(error);

@@ -83,7 +83,7 @@ export function EntityPicker<TQueryFnData, TKey extends QueryKey>({
   const display =
     value === undefined
       ? undefined
-      : (selectedLabel ?? (picked?.id === value ? picked.label : `ID ${value}`));
+      : (selectedLabel ?? (picked?.id === value ? picked.label : `#${value}`));
 
   const changeOpen = (next: boolean) => {
     setOpen(next);

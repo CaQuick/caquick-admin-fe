@@ -1,5 +1,6 @@
 import {
   POSTCODE_SCRIPT_URL,
+  POSTCODE_TIMEOUT_MS,
   type PostcodeConstructor,
   type RawPostcodeData,
   loadPostcode,
@@ -86,6 +87,42 @@ describe('loadPostcode', () => {
     window.kakao = { Postcode: Fake };
     scripts()[0]!.dispatchEvent(new Event('load'));
     await expect(retry).resolves.toBe(Fake);
+  });
+
+  it('응답 없이 멈추면 시간 초과로 실패하고, 늦게 온 load는 다음 시도에 끼어들지 않는다', async () => {
+    vi.useFakeTimers();
+    try {
+      const stalled = loadPostcode();
+      const late = scripts()[0]!;
+      vi.advanceTimersByTime(POSTCODE_TIMEOUT_MS - 1);
+      expect(scripts()).toHaveLength(1);
+      vi.advanceTimersByTime(1);
+      await expect(stalled).rejects.toThrow('우편번호 스크립트가 응답하지 않습니다.');
+      expect(scripts()).toHaveLength(0);
+
+      const retry = loadPostcode();
+      late.dispatchEvent(new Event('load'));
+      expect(scripts()).toHaveLength(1);
+      expect(loadPostcode()).toBe(retry);
+      window.kakao = { Postcode: Fake };
+      scripts()[0]!.dispatchEvent(new Event('load'));
+      await expect(retry).resolves.toBe(Fake);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('불러오면 시간 초과 타이머를 끈다', async () => {
+    vi.useFakeTimers();
+    try {
+      const p = loadPostcode();
+      window.kakao = { Postcode: Fake };
+      scripts()[0]!.dispatchEvent(new Event('load'));
+      await expect(p).resolves.toBe(Fake);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('스크립트가 Postcode를 내놓지 않으면 실패로 본다', async () => {

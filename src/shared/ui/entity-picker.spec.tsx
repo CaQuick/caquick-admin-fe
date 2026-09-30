@@ -134,9 +134,9 @@ describe('EntityPicker', () => {
   });
 
   it.each([
-    [{ value: '17' }, 'ID 17'],
+    [{ value: '17' }, '#17'],
     [{ value: '17', selectedLabel: '별빛 케이크' }, '별빛 케이크'],
-    [{ value: '0' }, 'ID 0'],
+    [{ value: '0' }, '#0'],
   ])('선택값 %j 는 버튼에 %s 로 보인다', (props, text) => {
     const { trigger } = setup(props);
     expect(trigger).toHaveTextContent(text);
