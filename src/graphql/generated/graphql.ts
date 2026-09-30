@@ -866,7 +866,14 @@ export type AdminProductQueryVariables = Exact<{
 }>;
 
 
-export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string } } };
+export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }, categories: Array<{ id: string, categoryType: CategoryType, name: string, isActive: boolean }>, tags: Array<{ id: string, name: string }>, optionGroups: Array<{ id: string, name: string, description: string | null, isRequired: boolean, minSelect: number, maxSelect: number, optionRequiresDescription: boolean, optionRequiresImage: boolean, sortOrder: number, isActive: boolean, optionItems: Array<{ id: string, title: string, description: string | null, imageUrl: string | null, priceDelta: number, sortOrder: number, isActive: boolean }> }>, customTemplate: { id: string, baseImageUrl: string, isActive: boolean, textTokens: Array<{ id: string, tokenKey: string, defaultText: string, maxLength: number, sortOrder: number, isRequired: boolean }> } | null } };
+
+export type AdminProductStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminProductStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
 
 export type AdminSetProductActiveMutationVariables = Exact<{
   input: AdminSetProductActiveInput;
@@ -1462,9 +1469,64 @@ export const AdminProductDocument = new TypedDocumentString(`
     imageUrls
     reviewCount
     orderItemCount
+    categories {
+      id
+      categoryType
+      name
+      isActive
+    }
+    tags {
+      id
+      name
+    }
+    optionGroups {
+      id
+      name
+      description
+      isRequired
+      minSelect
+      maxSelect
+      optionRequiresDescription
+      optionRequiresImage
+      sortOrder
+      isActive
+      optionItems {
+        id
+        title
+        description
+        imageUrl
+        priceDelta
+        sortOrder
+        isActive
+      }
+    }
+    customTemplate {
+      id
+      baseImageUrl
+      isActive
+      textTokens {
+        id
+        tokenKey
+        defaultText
+        maxLength
+        sortOrder
+        isRequired
+      }
+    }
   }
 }
     `) as unknown as TypedDocumentString<AdminProductQuery, AdminProductQueryVariables>;
+export const AdminProductStoreOptionsDocument = new TypedDocumentString(`
+    query AdminProductStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminProductStoreOptionsQuery, AdminProductStoreOptionsQueryVariables>;
 export const AdminSetProductActiveDocument = new TypedDocumentString(`
     mutation AdminSetProductActive($input: AdminSetProductActiveInput!) {
   adminSetProductActive(input: $input) {
