@@ -441,7 +441,8 @@ describe('신고', () => {
   it('목록 신고자: 닉네임·탈퇴 여부 조합별 표시', async () => {
     const cases = [
       { id: 'a', nickname: '신고왕', withdrawn: false, link: '신고왕', badge: false },
-      { id: 'b', nickname: '떠난이', withdrawn: true, link: '떠난이', badge: true },
+      // 탈퇴 계정은 상세를 열 수 없어 신고 시점 닉네임을 링크 없이 보인다
+      { id: 'b', nickname: '떠난이', withdrawn: true, link: null, badge: true },
       { id: 'c', nickname: null, withdrawn: true, link: null, badge: true },
       { id: 'd', nickname: null, withdrawn: false, link: '#20', badge: false },
     ];
@@ -471,6 +472,7 @@ describe('신고', () => {
         expect(link).toHaveTextContent(c.link);
         expect(link).toHaveAttribute('href', '/users/20');
       }
+      if (c.nickname !== null) expect(reporter).toHaveTextContent(c.nickname);
       expect(within(reporter).queryByText('탈퇴 회원') !== null).toBe(c.badge);
       expect(within(row).getByText('처리 완료(대상 삭제)')).toBeInTheDocument();
     }

@@ -11,12 +11,15 @@ interface Props {
   className?: string;
 }
 
-/** 신고자 표시. 탈퇴했으면 신고 시점 닉네임 옆에 '탈퇴 회원'을 붙이고, 닉네임이 없으면 '탈퇴 회원'만 보인다 */
+/**
+ * 신고자 표시. 탈퇴했으면 신고 시점 닉네임 옆에 '탈퇴 회원'을 붙이고(탈퇴 계정은 상세를 열 수 없어 링크 없이), 닉네임이 없으면 '탈퇴 회원'만 보인다
+ */
 export function Reporter({ accountId, nickname, withdrawn, className }: Props) {
   const name = nickname ?? (withdrawn ? null : `#${accountId}`);
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
-      {name !== null && (
+      {name !== null && withdrawn && <span className={className}>{name}</span>}
+      {name !== null && !withdrawn && (
         <Link
           to="/users/$accountId"
           params={{ accountId }}
