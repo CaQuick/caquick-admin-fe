@@ -241,6 +241,29 @@ describe('리뷰·댓글', () => {
     expect(screen.getByRole('textbox', { name: '리뷰 번호' })).toHaveValue('7');
   });
 
+  it('리뷰 번호를 입력해 Enter로 거르고, 시트는 Esc로 닫고, 초기화로 필터를 모두 푼다', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    server.use(
+      graphql.query('AdminReviews', ({ variables }) => {
+        inputs.push((variables as { input: Record<string, unknown> }).input);
+        return HttpResponse.json({ data: { adminReviews: page([review('7')]) } });
+      }),
+    );
+    boot('/reviews?q=맛');
+    await userEvent.click(await screen.findByRole('button', { name: '리뷰 7 전문 보기' }));
+    await screen.findByRole('dialog', { name: /리뷰 #7/ });
+    await userEvent.keyboard('{Escape}');
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.type(screen.getByRole('textbox', { name: '리뷰 번호' }), '0{Enter}');
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ reviewId: '0', keyword: '맛' }));
+    await userEvent.click(screen.getByRole('button', { name: '초기화' }));
+    await vi.waitFor(() =>
+      expect(inputs.at(-1)).toMatchObject({ reviewId: null, keyword: null, storeId: null }),
+    );
+    expect(screen.getByRole('textbox', { name: '리뷰 번호' })).toHaveValue('');
+  });
+
   it('작성자 선택기에서 구매자를 고르면 accountId로 거른다', async () => {
     const inputs: Record<string, unknown>[] = [];
     let userInput: unknown;
@@ -329,6 +352,37 @@ describe('리뷰·댓글', () => {
     await userEvent.type(within(dialog).getByLabelText(/^사유/), '도배');
     await userEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
     await vi.waitFor(() => expect(deleted).toEqual({ commentId: 'c1', reason: '도배' }));
+  });
+
+  it('댓글 목록: 리뷰 번호·삭제 포함 필터를 요청에 싣고 초기화로 푼다', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    server.use(
+      graphql.query('AdminReviewComments', ({ variables }) => {
+        inputs.push((variables as { input: Record<string, unknown> }).input);
+        return HttpResponse.json({ data: { adminReviewComments: page([comment('c1', '7')]) } });
+      }),
+      gqlOk('AdminReviewAuthorPicker', {
+        adminUsers: { items: [{ accountId: '11', nickname: '댓글러', name: null, email: null }] },
+      }),
+    );
+    boot('/review-comments');
+    await userEvent.click(await screen.findByRole('button', { name: '댓글 c1 전문 보기' }));
+    await screen.findByRole('dialog', { name: /댓글 #c1/ });
+    await userEvent.keyboard('{Escape}');
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.type(screen.getByRole('textbox', { name: '리뷰 번호' }), '7{Enter}');
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ reviewId: '7' }));
+    await userEvent.click(screen.getByRole('switch', { name: '삭제 포함' }));
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ includeDeleted: true }));
+    await userEvent.click(screen.getByRole('combobox', { name: /^작성자/ }));
+    await userEvent.click(await screen.findByRole('option', { name: /댓글러/ }));
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ accountId: '11' }));
+    // 초기 조건과 같은 입력은 캐시에서 다시 그리므로 요청 대신 주소로 확인한다
+    await userEvent.click(screen.getByRole('button', { name: '초기화' }));
+    await vi.waitFor(() => expect(window.location.search).toBe(''));
+    expect(screen.getByRole('switch', { name: '삭제 포함' })).not.toBeChecked();
+    expect(screen.getByRole('textbox', { name: '리뷰 번호' })).toHaveValue('');
   });
 });
 

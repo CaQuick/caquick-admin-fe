@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, graphql } from 'msw';
 
@@ -229,6 +229,51 @@ describe('감사 로그', () => {
     );
     await userEvent.click(screen.getByRole('option', { name: /김판매/ }));
     await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ actorAccountId: '30' }));
+  });
+
+  it('매장 선택기·기간·대상 번호를 요청에 싣고 초기화로 푼다', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    server.use(
+      graphql.query('AdminAuditLogs', ({ variables }) => {
+        inputs.push((variables as { input: Record<string, unknown> }).input);
+        return HttpResponse.json({
+          data: {
+            adminAuditLogs: { items: [log], totalCount: 1, hasMore: false, nextCursor: null },
+          },
+        });
+      }),
+      gqlOk('AdminAuditStorePicker', {
+        adminStores: {
+          items: [
+            { id: '17', storeName: '루미', isActive: true },
+            { id: '18', storeName: '달빛', isActive: false },
+          ],
+        },
+      }),
+    );
+    boot('/audit-logs');
+    await screen.findByRole('link', { name: '주문 #99' });
+    await userEvent.click(screen.getByRole('combobox', { name: /^매장/ }));
+    expect(await screen.findByRole('option', { name: /달빛.*#18 · 숨김/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('option', { name: /루미/ }));
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ storeId: '17' }));
+
+    fireEvent.change(screen.getByLabelText('시작일'), { target: { value: '2026-09-01' } });
+    await vi.waitFor(() =>
+      expect(inputs.at(-1)).toMatchObject({ fromCreatedAt: '2026-08-31T15:00:00.000Z' }),
+    );
+    fireEvent.change(screen.getByLabelText('종료일'), { target: { value: '2026-09-01' } });
+    await vi.waitFor(() =>
+      expect(inputs.at(-1)).toMatchObject({ toCreatedAt: '2026-09-01T14:59:59.999Z' }),
+    );
+    await userEvent.type(screen.getByRole('textbox', { name: '대상 번호' }), '99{Enter}');
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ targetId: '99' }));
+
+    // 초기 조건과 같은 입력은 캐시에서 다시 그리므로 요청 대신 주소로 확인한다
+    await userEvent.click(screen.getByRole('button', { name: '초기화' }));
+    await vi.waitFor(() => expect(window.location.search).toBe(''));
+    expect(screen.getByLabelText('시작일')).toHaveValue('');
+    expect(screen.getByRole('textbox', { name: '대상 번호' })).toHaveValue('');
   });
 
   it('URL의 숫자가 아닌 ID 필터는 요청에 싣지 않는다', async () => {
