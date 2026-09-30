@@ -205,6 +205,30 @@ describe('리뷰·댓글', () => {
     expect(within(sheet).getByRole('button', { name: '리뷰 7 삭제' })).toBeInTheDocument();
   });
 
+  it('작성자는 구매자 상세로 잇고, 탈퇴 작성자는 목록·시트 모두 링크 없이 #ID와 탈퇴 회원으로 보인다', async () => {
+    server.use(
+      gqlOk('AdminReviews', {
+        adminReviews: page([
+          review('7'),
+          { ...review('8'), authorAccountId: '12', authorNickname: null },
+        ]),
+      }),
+    );
+    boot('/reviews');
+    const active = (await screen.findByRole('button', { name: '리뷰 7 전문 보기' })).closest('tr')!;
+    expect(within(active).getByRole('link', { name: 'seo' })).toHaveAttribute('href', '/users/10');
+    const withdrawn = screen.getByRole('button', { name: '리뷰 8 전문 보기' }).closest('tr')!;
+    expect(within(withdrawn).getByText('#12')).toBeInTheDocument();
+    expect(within(withdrawn).getByText('탈퇴 회원')).toBeInTheDocument();
+    expect(within(withdrawn).queryByRole('link', { name: '#12' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 8 전문 보기' }));
+    const sheet = await screen.findByRole('dialog', { name: /리뷰 #8/ });
+    expect(within(sheet).getByText('#12')).toBeInTheDocument();
+    expect(within(sheet).getByText('탈퇴 회원')).toBeInTheDocument();
+    expect(within(sheet).queryByRole('link', { name: '#12' })).not.toBeInTheDocument();
+  });
+
   it('첨부가 없거나 삭제된 리뷰의 시트는 첨부 없음 문구를 보이고 삭제 버튼을 두지 않는다', async () => {
     server.use(gqlOk('AdminReviews', { adminReviews: page([review('8', true)]) }));
     boot('/reviews?deleted=true');
@@ -335,6 +359,10 @@ describe('리뷰·댓글', () => {
     boot('/review-comments?reviewId=7');
     const open = await screen.findByRole('button', { name: '댓글 c1 전문 보기' });
     expect(input).toMatchObject({ reviewId: '7' });
+    const row = open.closest('tr')!;
+    expect(within(row).getByText('#11')).toBeInTheDocument();
+    expect(within(row).getByText('탈퇴 회원')).toBeInTheDocument();
+    expect(within(row).queryByRole('link', { name: '#11' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '리뷰 #7' })).toHaveAttribute(
       'href',
       '/reviews?reviewId=7&deleted=true',
@@ -342,7 +370,10 @@ describe('리뷰·댓글', () => {
     await userEvent.click(open);
     const sheet = await screen.findByRole('dialog', { name: /댓글 #c1/ });
     expect(sheet).toHaveTextContent('동의 c1 둘째 줄');
-    expect(within(sheet).getByRole('link', { name: '#11' })).toHaveAttribute('href', '/users/11');
+    // 탈퇴 작성자(닉네임 null)는 구매자 상세가 NOT_FOUND라 잇지 않는다
+    expect(within(sheet).getByText('#11')).toBeInTheDocument();
+    expect(within(sheet).getByText('탈퇴 회원')).toBeInTheDocument();
+    expect(within(sheet).queryByRole('link', { name: '#11' })).not.toBeInTheDocument();
     expect(within(sheet).getByRole('link', { name: '리뷰 #7' })).toHaveAttribute(
       'href',
       '/reviews?reviewId=7&deleted=true',
@@ -592,6 +623,24 @@ describe('신고', () => {
     expect(screen.queryByRole('link', { name: '#20' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '대상 삭제' }));
     expect(await screen.findByRole('dialog', { name: '댓글을 삭제할까요?' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['활동 중인 작성자는 닉네임을 구매자 상세 링크로', 'seo', 'seo', true],
+    ['탈퇴 작성자는 링크 없이 #ID와 탈퇴 회원으로', null, '#10탈퇴 회원', false],
+  ] as const)('상세: %s 보인다', async (_case, authorNickname, shown, linked) => {
+    server.use(
+      gqlOk('AdminReviewReport', {
+        adminReviewReport: { report: report('r1'), target: target({ authorNickname }) },
+      }),
+    );
+    boot('/reports/r1');
+    expect(await screen.findByText('나쁜 말(수정됨)')).toBeInTheDocument();
+    const dd = screen.getByText('작성자').nextElementSibling as HTMLElement;
+    expect(dd).toHaveTextContent(shown);
+    const link = within(dd).queryByRole('link');
+    if (linked) expect(link).toHaveAttribute('href', '/users/10');
+    else expect(link).toBeNull();
   });
 
   it('반려 실패는 토스트', async () => {

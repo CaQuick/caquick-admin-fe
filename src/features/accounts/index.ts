@@ -1,6 +1,7 @@
 export { accountLabel } from './account-label';
 export { AccountStatusActions } from './components/account-status-actions';
 export { AccountStatusPill } from './components/account-status-pill';
+export { BuyerRef } from './components/buyer-ref';
 export { ResetPasswordDialog } from './components/reset-password-dialog';
 export { UserDetailPage } from './pages/user-detail-page';
 export { UsersListPage } from './pages/users-list-page';

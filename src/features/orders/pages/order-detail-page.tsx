@@ -23,13 +23,10 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
   if (q.isError) {
     return (
       <>
-        <PageHeader title="주문" />
+        <PageHeader title="주문" back={{ to: '/orders' }} />
         <p role="alert" className="text-sm text-negative-foreground">
           {messageFor(q.error)}
         </p>
-        <Button asChild variant="link" className="px-0">
-          <Link to="/orders">목록으로</Link>
-        </Button>
       </>
     );
   }
@@ -46,6 +43,7 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
   return (
     <>
       <PageHeader
+        back={{ to: '/orders' }}
         title={<span className="font-mono">{order.orderNumber}</span>}
         meta={<OrderStatusPill status={order.status} />}
         actions={

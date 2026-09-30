@@ -40,9 +40,22 @@ const columns: ColumnDef<OrderRow, unknown>[] = [
     ),
   },
   {
-    accessorKey: 'storeId',
+    accessorKey: 'storeName',
     header: '매장',
-    cell: ({ row }) => (row.original.storeId ? `#${row.original.storeId}` : '—'),
+    cell: ({ row }) => {
+      const { storeId, storeName } = row.original;
+      // 품목이 없는 주문만 매장이 없다. ID "0"도 매장으로 본다
+      if (storeId === null) return '—';
+      return (
+        <Link
+          to="/stores/$storeId"
+          params={{ storeId }}
+          className="text-primary-soft-foreground hover:underline"
+        >
+          {storeName ?? `#${storeId}`}
+        </Link>
+      );
+    },
   },
   {
     accessorKey: 'pickupAt',
@@ -57,7 +70,7 @@ const columns: ColumnDef<OrderRow, unknown>[] = [
   },
   {
     accessorKey: 'createdAt',
-    header: '생성',
+    header: '주문일',
     cell: ({ row }) => formatKst(row.original.createdAt),
   },
 ];

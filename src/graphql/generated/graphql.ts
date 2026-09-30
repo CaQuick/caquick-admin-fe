@@ -875,7 +875,7 @@ export type AdminOrdersQueryVariables = Exact<{
 }>;
 
 
-export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string }> } };
+export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, storeName: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string }> } };
 
 export type AdminOrderQueryVariables = Exact<{
   orderId: string | number;
@@ -883,6 +883,34 @@ export type AdminOrderQueryVariables = Exact<{
 
 
 export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customTexts: Array<{ id: string, tokenKey: string, defaultText: string, valueText: string, sortOrder: number }>, freeEdits: Array<{ id: string, cropImageUrl: string, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null }> } };
+
+export type AdminOrdersStoreOptionsQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminOrdersStoreOptionsQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminOrdersBuyerOptionsQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminOrdersBuyerOptionsQuery = { adminUsers: { items: Array<{ accountId: string, nickname: string | null, name: string | null, email: string | null }> } };
+
+export type AdminOrdersStoreNameQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminOrdersStoreNameQuery = { adminStore: { store: { id: string, storeName: string } } };
+
+export type AdminOrdersBuyerNameQueryVariables = Exact<{
+  accountId: string | number;
+}>;
+
+
+export type AdminOrdersBuyerNameQuery = { adminUser: { accountId: string, nickname: string | null, name: string | null, email: string | null } };
 
 export type AdminCancelOrderMutationVariables = Exact<{
   input: AdminCancelOrderInput;
@@ -1420,6 +1448,7 @@ export const AdminOrdersDocument = new TypedDocumentString(`
       orderNumber
       accountId
       storeId
+      storeName
       status
       pickupAt
       buyerName
@@ -1502,6 +1531,49 @@ export const AdminOrderDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminOrderQuery, AdminOrderQueryVariables>;
+export const AdminOrdersStoreOptionsDocument = new TypedDocumentString(`
+    query AdminOrdersStoreOptions($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersStoreOptionsQuery, AdminOrdersStoreOptionsQueryVariables>;
+export const AdminOrdersBuyerOptionsDocument = new TypedDocumentString(`
+    query AdminOrdersBuyerOptions($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      nickname
+      name
+      email
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersBuyerOptionsQuery, AdminOrdersBuyerOptionsQueryVariables>;
+export const AdminOrdersStoreNameDocument = new TypedDocumentString(`
+    query AdminOrdersStoreName($storeId: ID!) {
+  adminStore(storeId: $storeId) {
+    store {
+      id
+      storeName
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersStoreNameQuery, AdminOrdersStoreNameQueryVariables>;
+export const AdminOrdersBuyerNameDocument = new TypedDocumentString(`
+    query AdminOrdersBuyerName($accountId: ID!) {
+  adminUser(accountId: $accountId) {
+    accountId
+    nickname
+    name
+    email
+  }
+}
+    `) as unknown as TypedDocumentString<AdminOrdersBuyerNameQuery, AdminOrdersBuyerNameQueryVariables>;
 export const AdminCancelOrderDocument = new TypedDocumentString(`
     mutation AdminCancelOrder($input: AdminCancelOrderInput!) {
   adminCancelOrder(input: $input) {
