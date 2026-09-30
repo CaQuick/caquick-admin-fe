@@ -175,7 +175,7 @@ export function RegionsPage({ search, onSearchChange }: Props) {
               <CardTitle className="text-sm">
                 {parent ? `${parent.name} › 2단계` : '2단계 시·군·구'}
               </CardTitle>
-              {parent && (
+              {parent?.isActive ? (
                 <RegionDialog
                   parent={parent}
                   trigger={
@@ -184,6 +184,13 @@ export function RegionsPage({ search, onSearchChange }: Props) {
                     </Button>
                   }
                 />
+              ) : (
+                // BE가 비활성 부모 아래 생성을 거절한다(PARENT_REGION_INVALID)
+                parent && (
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    비활성 권역에는 하위를 추가할 수 없습니다.
+                  </span>
+                )
               )}
             </CardHeader>
             <CardContent className="p-0">

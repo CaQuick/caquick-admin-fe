@@ -8,6 +8,8 @@ describe('password rules', () => {
     ['12345678!', false], // 알파벳 없음
     ['Abcdefg!', false], // 숫자 없음
     ['Abcdefg1', false], // 특수문자 없음
+    ['12345678', false], // 초기 비밀번호로는 되지만 변경 때는 안 됨
+    ['testadmin', false],
     ['Ab1!', false], // 8자 미만
     [`${'A'.repeat(62)}b1!`, false], // 65자
   ])('강한 비밀번호 %s → %s', (pw, ok) => {

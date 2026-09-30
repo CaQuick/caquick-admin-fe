@@ -140,6 +140,17 @@ describe('지역', () => {
     await vi.waitFor(() => expect(deleted).toEqual({ regionId: '2' }));
   });
 
+  it.each([
+    { title: '선택한 권역이 활성이면 하위 추가 버튼을 보여준다', isActive: true, canAdd: true },
+    { title: '선택한 권역이 비활성이면 버튼 대신 안내를 보여준다', isActive: false, canAdd: false },
+  ])('$title', async ({ isActive, canAdd }) => {
+    server.use(gqlOk('AdminRegions', { adminRegions: [{ ...seoul, isActive }] }));
+    boot('/regions?parent=1&inactive=true');
+    expect(await screen.findByText('서울 › 2단계')).toBeInTheDocument();
+    expect(!!screen.queryByRole('button', { name: '하위 추가' })).toBe(canAdd);
+    expect(!!screen.queryByText('비활성 권역에는 하위를 추가할 수 없습니다.')).toBe(!canAdd);
+  });
+
   it('비활성 포함 스위치는 요청에 반영된다', async () => {
     const inputs: Record<string, unknown>[] = [];
     server.use(

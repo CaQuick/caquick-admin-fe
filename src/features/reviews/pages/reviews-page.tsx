@@ -9,7 +9,7 @@ import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { DataTable } from '@/shared/ui/data-table';
 import { FilterBar } from '@/shared/ui/filter-bar';
-import { Input } from '@/shared/ui/input';
+import { IdFilterInput } from '@/shared/ui/id-filter-input';
 import { Label } from '@/shared/ui/label';
 import { PageHeader } from '@/shared/ui/page-header';
 import { StatusPill } from '@/shared/ui/status-pill';
@@ -135,21 +135,16 @@ export function ReviewsPage({
             )}
             onReset={() => onSearchChange({ limit: search.limit })}
           >
-            <Input
-              aria-label="매장 ID"
-              placeholder="매장 ID"
-              className="h-9 w-24"
-              key={`s-${search.storeId ?? ''}`}
-              defaultValue={search.storeId ?? ''}
-              onBlur={(e) => patch({ storeId: e.target.value.trim() || undefined })}
+            <IdFilterInput
+              label="매장 ID"
+              value={search.storeId}
+              onCommit={(v) => patch({ storeId: v })}
             />
-            <Input
-              aria-label="작성자 계정 ID"
+            <IdFilterInput
+              label="작성자 계정 ID"
               placeholder="계정 ID"
-              className="h-9 w-24"
-              key={`a-${search.accountId ?? ''}`}
-              defaultValue={search.accountId ?? ''}
-              onBlur={(e) => patch({ accountId: e.target.value.trim() || undefined })}
+              value={search.accountId}
+              onCommit={(v) => patch({ accountId: v })}
             />
             <span className="flex items-center gap-1.5">
               <Switch

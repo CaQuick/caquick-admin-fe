@@ -59,7 +59,7 @@ export function KpiTiles({ summary }: { summary: DashboardSummary }) {
         label="대기 중 신고"
         value={`${formatCount(summary.pendingReportCount)}건`}
         alert={summary.pendingReportCount > 0}
-        note={summary.pendingReportCount > 0 ? <Link to="/">처리 필요</Link> : '없음'}
+        note={summary.pendingReportCount > 0 ? <Link to="/reports">처리 필요</Link> : '없음'}
       />
     </div>
   );

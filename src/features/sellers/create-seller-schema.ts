@@ -1,37 +1,59 @@
 import { z } from 'zod';
 
-const USERNAME = /^[a-z0-9._-]{4,80}$/;
-const strongPassword = z
-  .string()
-  .min(8, '8자 이상')
-  .max(64, '64자 이하')
-  .refine(
-    (v) => /[A-Za-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v),
-    '알파벳·숫자·특수문자를 각각 1자 이상',
-  );
+import { initialPasswordSchema } from '@/shared/lib/initial-password';
 
-const optionalTrimmed = z.string().trim().max(500).optional();
+const USERNAME = /^[a-z0-9._-]{4,80}$/;
+
+/** BE 상한(auth-admin.constants·store-field-limits). BE는 trim 뒤 코드 포인트로 센다. */
+const SELLER_FIELD_MAX = {
+  email: 320,
+  name: 100,
+  businessName: 200,
+  businessPhone: 30,
+  websiteUrl: 2048,
+  storeName: 200,
+  storePhone: 30,
+  addressFull: 500,
+  addressCity: 50,
+  addressDistrict: 80,
+  addressNeighborhood: 80,
+} as const;
+
+const maxChars = (max: number) =>
+  z
+    .string()
+    .trim()
+    .refine((v) => [...v].length <= max, `${max}자 이하로 입력해 주세요.`);
+const required = (max: number, message: string) =>
+  maxChars(max).refine((v) => v.length > 0, message);
+const optional = (max: number) => maxChars(max).optional();
 const coord = z
   .string()
   .trim()
   .optional()
   .refine((v) => !v || !Number.isNaN(Number(v)), '숫자여야 합니다.');
 
-/** BE AdminCreateSellerInput과 같은 규칙. 빈 문자열은 null로 보낸다. */
+/** 빈 문자열은 null로 보낸다. */
 export const createSellerSchema = z.object({
   username: z.string().trim().regex(USERNAME, '4~80자, 소문자·숫자·. _ - 만'),
-  password: strongPassword,
-  email: z.string().trim().email('이메일 형식이 아닙니다.').optional().or(z.literal('')),
-  name: optionalTrimmed,
-  businessName: z.string().trim().min(1, '사업자명은 필수입니다.').max(200),
-  businessPhone: z.string().trim().min(1, '사업자 전화는 필수입니다.').max(50),
-  websiteUrl: z.string().trim().url('URL 형식이 아닙니다.').optional().or(z.literal('')),
-  storeName: z.string().trim().min(1, '매장명은 필수입니다.').max(200),
-  storePhone: z.string().trim().min(1, '매장 전화는 필수입니다.').max(50),
-  addressFull: z.string().trim().min(1, '주소는 필수입니다.').max(500),
-  addressCity: optionalTrimmed,
-  addressDistrict: optionalTrimmed,
-  addressNeighborhood: optionalTrimmed,
+  password: initialPasswordSchema,
+  email: maxChars(SELLER_FIELD_MAX.email)
+    .email('이메일 형식이 아닙니다.')
+    .optional()
+    .or(z.literal('')),
+  name: optional(SELLER_FIELD_MAX.name),
+  businessName: required(SELLER_FIELD_MAX.businessName, '사업자명은 필수입니다.'),
+  businessPhone: required(SELLER_FIELD_MAX.businessPhone, '사업자 전화는 필수입니다.'),
+  websiteUrl: maxChars(SELLER_FIELD_MAX.websiteUrl)
+    .url('URL 형식이 아닙니다.')
+    .optional()
+    .or(z.literal('')),
+  storeName: required(SELLER_FIELD_MAX.storeName, '매장명은 필수입니다.'),
+  storePhone: required(SELLER_FIELD_MAX.storePhone, '매장 전화는 필수입니다.'),
+  addressFull: required(SELLER_FIELD_MAX.addressFull, '주소는 필수입니다.'),
+  addressCity: optional(SELLER_FIELD_MAX.addressCity),
+  addressDistrict: optional(SELLER_FIELD_MAX.addressDistrict),
+  addressNeighborhood: optional(SELLER_FIELD_MAX.addressNeighborhood),
   regionId: z.string().trim().optional(),
   latitude: coord,
   longitude: coord,
@@ -40,7 +62,7 @@ export const createSellerSchema = z.object({
 export type CreateSellerValues = z.infer<typeof createSellerSchema>;
 
 export const resetPasswordSchema = z
-  .object({ newPassword: strongPassword, confirmPassword: z.string() })
+  .object({ newPassword: initialPasswordSchema, confirmPassword: z.string() })
   .refine((v) => v.newPassword === v.confirmPassword, {
     path: ['confirmPassword'],
     message: '비밀번호가 서로 다릅니다.',

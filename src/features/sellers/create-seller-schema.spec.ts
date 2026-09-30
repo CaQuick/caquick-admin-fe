@@ -50,13 +50,76 @@ describe('createSellerSchema', () => {
   it.each([
     ['username', 'Lumi'], // 대문자
     ['username', 'ab'], // 짧음
-    ['password', 'weakweak'],
+    ['password', '1234567'], // 7자
+    ['password', 'a'.repeat(65)],
     ['email', 'not-mail'],
     ['websiteUrl', 'not a url'],
     ['latitude', 'abc'],
     ['storeName', ''],
   ])('%s=%s 는 거절', (key, value) => {
     expect(createSellerSchema.safeParse({ ...base, [key]: value }).success).toBe(false);
+  });
+
+  // BE 상한: auth-admin.constants(name·email), store-field-limits(나머지)
+  it.each([
+    ['name', 100],
+    ['businessName', 200],
+    ['businessPhone', 30],
+    ['storeName', 200],
+    ['storePhone', 30],
+    ['addressFull', 500],
+    ['addressCity', 50],
+    ['addressDistrict', 80],
+    ['addressNeighborhood', 80],
+  ])('%s 는 %i자까지 받고 한 자 더는 그 필드에서 거절', (key, max) => {
+    expect(createSellerSchema.safeParse({ ...base, [key]: '가'.repeat(max) }).success).toBe(true);
+    const over = createSellerSchema.safeParse({ ...base, [key]: '가'.repeat(max + 1) });
+    expect(over.error?.issues).toEqual([
+      expect.objectContaining({ path: [key], message: `${max}자 이하로 입력해 주세요.` }),
+    ]);
+  });
+
+  it('길이는 trim 뒤 코드 포인트로 센다', () => {
+    expect(
+      createSellerSchema.safeParse({ ...base, storePhone: ` ${'1'.repeat(30)} ` }).success,
+    ).toBe(true);
+    // 이모지는 UTF-16 2칸이지만 BE처럼 1자로 센다
+    expect(createSellerSchema.safeParse({ ...base, addressCity: '🎂'.repeat(50) }).success).toBe(
+      true,
+    );
+    expect(createSellerSchema.safeParse({ ...base, addressCity: '🎂'.repeat(51) }).success).toBe(
+      false,
+    );
+  });
+
+  it('websiteUrl은 2048자까지 받고 한 자 더는 거절', () => {
+    const url = (n: number) => `https://a.com/${'p'.repeat(n - 'https://a.com/'.length)}`;
+    expect(createSellerSchema.safeParse({ ...base, websiteUrl: url(2048) }).success).toBe(true);
+    const over = createSellerSchema.safeParse({ ...base, websiteUrl: url(2049) });
+    expect(over.error?.issues).toEqual([
+      expect.objectContaining({ path: ['websiteUrl'], message: '2048자 이하로 입력해 주세요.' }),
+    ]);
+  });
+
+  it('email은 320자를 넘으면 거절', () => {
+    const email = `${'a'.repeat(64)}@${'b'.repeat(252)}.com`;
+    expect(email.length).toBe(321);
+    const r = createSellerSchema.safeParse({ ...base, email });
+    expect(r.error?.issues).toContainEqual(
+      expect.objectContaining({ path: ['email'], message: '320자 이하로 입력해 주세요.' }),
+    );
+  });
+
+  it.each([
+    ['12345678', true],
+    ['testadmin', true],
+    ['1234567', false],
+    ['a'.repeat(65), false],
+  ])('초기 비밀번호 %s → %s (조합 규칙 없이 8~64자)', (pw, ok) => {
+    expect(createSellerSchema.safeParse({ ...base, password: pw }).success).toBe(ok);
+    expect(resetPasswordSchema.safeParse({ newPassword: pw, confirmPassword: pw }).success).toBe(
+      ok,
+    );
   });
 
   it('resetPasswordSchema는 확인 불일치를 거절', () => {

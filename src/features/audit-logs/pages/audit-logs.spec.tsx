@@ -74,6 +74,23 @@ describe('감사 로그', () => {
     expect(dialog).toHaveTextContent('IP 1.2.3.4');
   });
 
+  it('URL의 숫자가 아닌 ID 필터는 요청에 싣지 않는다', async () => {
+    let input: Record<string, unknown> | undefined;
+    server.use(
+      graphql.query('AdminAuditLogs', ({ variables }) => {
+        input = (variables as { input: Record<string, unknown> }).input;
+        return HttpResponse.json({
+          data: {
+            adminAuditLogs: { items: [log], totalCount: 1, hasMore: false, nextCursor: null },
+          },
+        });
+      }),
+    );
+    boot('/audit-logs?targetId=abc&actorId=1.5&storeId=17');
+    await screen.findByText('주문 #99');
+    expect(input).toMatchObject({ targetId: null, actorAccountId: null, storeId: '17' });
+  });
+
   it('주문 상세의 감사 이력 링크는 대상 필터를 넘긴다', async () => {
     server.use(
       gqlOk('AdminOrder', {

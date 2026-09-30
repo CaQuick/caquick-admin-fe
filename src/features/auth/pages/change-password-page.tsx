@@ -20,6 +20,10 @@ export function ChangePasswordPage() {
           toast.success('비밀번호를 변경했습니다. 다시 로그인해 주세요.');
           void navigate({ to: '/login', replace: true });
         }}
+        onSessionLost={(message) => {
+          toast.error(message);
+          void navigate({ to: '/login', replace: true });
+        }}
       />
     </AuthCard>
   );

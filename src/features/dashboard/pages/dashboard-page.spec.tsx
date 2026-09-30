@@ -68,7 +68,7 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('4,812,000원')).toBeInTheDocument();
     expect(screen.getByText('주문 163건')).toBeInTheDocument();
     expect(screen.getByText('7건')).toBeInTheDocument();
-    expect(screen.getByText('처리 필요')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '처리 필요' })).toHaveAttribute('href', '/reports');
     const table = screen.getByRole('table', { name: '주문 상태별 건수' });
     expect(within(table).getByText('78건')).toBeInTheDocument();
     expect(screen.getByText('생일 케이크')).toBeInTheDocument();
@@ -134,7 +134,10 @@ describe('DashboardPage', () => {
     // QueryClient 기본 retry 1회(지수 지연) 뒤에 에러 상태가 된다
     const alerts = await screen.findAllByRole('alert', {}, { timeout: 5000 });
     expect(alerts.map((a) => a.textContent)).toEqual(
-      expect.arrayContaining(['기간이 잘못됨', '실패']),
+      expect.arrayContaining([
+        '기간이 잘못됨',
+        '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+      ]),
     );
   });
 });

@@ -3,16 +3,17 @@ import { z } from 'zod';
 import { type AdminStoreListInput } from '@/graphql/generated/graphql';
 import {
   DEFAULT_LIMIT,
+  keywordText,
   listSearchBase,
   optionalBoolText,
-  optionalText,
+  optionalIdText,
 } from '@/shared/lib/list-search';
 
 export const storesSearchSchema = z.object({
   ...listSearchBase,
-  q: optionalText,
+  q: keywordText,
   active: optionalBoolText,
-  regionId: optionalText,
+  regionId: optionalIdText,
 });
 export type StoresSearch = z.infer<typeof storesSearchSchema>;
 export type StoresSearchInput = z.input<typeof storesSearchSchema>;

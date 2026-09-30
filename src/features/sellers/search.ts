@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { type AdminSellerListInput } from '@/graphql/generated/graphql';
-import { DEFAULT_LIMIT, listSearchBase, optionalText } from '@/shared/lib/list-search';
+import { DEFAULT_LIMIT, keywordText, listSearchBase } from '@/shared/lib/list-search';
 
 export const sellersSearchSchema = z.object({
   ...listSearchBase,
-  q: optionalText,
+  q: keywordText,
   status: z.enum(['ACTIVE', 'SUSPENDED', 'PENDING']).optional().catch(undefined),
 });
 export type SellersSearch = z.infer<typeof sellersSearchSchema>;

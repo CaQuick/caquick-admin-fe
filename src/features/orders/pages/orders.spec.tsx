@@ -179,6 +179,56 @@ describe('주문 목록', () => {
     expect(window.location.search).not.toContain('cursor');
   });
 
+  it('URL의 잘못된 ID는 버리고 긴 검색어는 100자로 잘라 보낸다', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    server.use(
+      graphql.query('AdminOrders', ({ variables }) => {
+        inputs.push((variables as { input: Record<string, unknown> }).input);
+        return HttpResponse.json({
+          data: {
+            adminOrders: { items: [row('1')], totalCount: 1, hasMore: false, nextCursor: null },
+          },
+        });
+      }),
+    );
+    boot(`/orders?storeId=abc&accountId=17&q=${'a'.repeat(101)}`);
+    await screen.findByText('CQ-2609-1');
+    expect(inputs[0]).toMatchObject({ storeId: null, accountId: '17', keyword: 'a'.repeat(100) });
+    // 입력칸 상한은 FilterBar가 코드 포인트로 자른다(filter-bar.spec) — URL 값은 잘린 채 보인다
+    expect(screen.getByRole('textbox', { name: '검색어' })).toHaveValue('a'.repeat(100));
+  });
+
+  it('숫자가 아닌 ID 입력은 커밋하지 않고 알린다', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    server.use(
+      graphql.query('AdminOrders', ({ variables }) => {
+        inputs.push((variables as { input: Record<string, unknown> }).input);
+        return HttpResponse.json({
+          data: {
+            adminOrders: { items: [row('1')], totalCount: 1, hasMore: false, nextCursor: null },
+          },
+        });
+      }),
+    );
+    boot('/orders');
+    await screen.findByText('CQ-2609-1');
+    const storeInput = screen.getByRole('textbox', { name: '매장 ID' });
+    expect(storeInput).toHaveAttribute('inputMode', 'numeric');
+
+    await userEvent.type(storeInput, '17a');
+    await userEvent.tab();
+    expect(screen.getByRole('alert')).toHaveTextContent('숫자만 입력해 주세요.');
+    expect(storeInput).toHaveValue('17a');
+    expect(storeInput).toHaveAttribute('aria-invalid', 'true');
+    expect(window.location.search).not.toContain('storeId');
+
+    await userEvent.type(storeInput, '{backspace}');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await userEvent.tab();
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ storeId: '17' }));
+    expect(inputs.every((i) => i.storeId === null || i.storeId === '17')).toBe(true);
+  });
+
   it('조회 실패는 오류 문구', async () => {
     server.use(
       gqlError('AdminOrders', {

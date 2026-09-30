@@ -77,19 +77,57 @@ describe('auth session', () => {
     expect(useAuthStore.getState().status).toBe('anonymous');
   });
 
-  it('changePassword 실패는 세션을 유지한다', async () => {
+  it('changePassword의 현재 비밀번호 오류 401은 refresh 없이 세션을 유지한다', async () => {
     useAuthStore.getState().setSession(session());
+    let refreshed = 0;
     server.use(
       restError(
         '/admin/change-password',
-        400,
+        401,
         '현재 비밀번호가 올바르지 않습니다.',
         'CURRENT_PASSWORD_INVALID',
       ),
+      http.post(`${AUTH_URL}/admin/refresh`, () => {
+        refreshed += 1;
+        return HttpResponse.json(session());
+      }),
     );
     await expect(changePassword('bad', 'New1!new')).rejects.toMatchObject({
       code: 'CURRENT_PASSWORD_INVALID',
     });
+    expect(refreshed).toBe(0);
     expect(useAuthStore.getState().status).toBe('authenticated');
+  });
+
+  it('changePassword는 토큰 만료 401이면 갱신한 토큰으로 재시도해 성공한다', async () => {
+    useAuthStore.getState().setSession(session(true));
+    const auths: (string | null)[] = [];
+    server.use(
+      restOk('/admin/refresh', { ...session(true), accessToken: 'at2' }),
+      http.post(`${AUTH_URL}/admin/change-password`, ({ request }) => {
+        auths.push(request.headers.get('authorization'));
+        return auths.length === 1
+          ? HttpResponse.json(
+              { message: '만료', code: 401, data: null, errorCode: 'INVALID_ACCESS_TOKEN' },
+              { status: 401 },
+            )
+          : HttpResponse.json({ ok: true });
+      }),
+    );
+    await changePassword('Old1!old', 'New1!new');
+    expect(auths).toEqual(['Bearer at', 'Bearer at2']);
+    expect(useAuthStore.getState().status).toBe('anonymous');
+  });
+
+  it('changePassword 중 refresh가 실패하면 anonymous가 된다', async () => {
+    useAuthStore.getState().setSession(session(true));
+    server.use(
+      restError('/admin/change-password', 401, '만료', 'INVALID_ACCESS_TOKEN'),
+      restError('/admin/refresh', 401, '만료', 'INVALID_REFRESH_TOKEN'),
+    );
+    await expect(changePassword('Old1!old', 'New1!new')).rejects.toMatchObject({
+      code: 'INVALID_ACCESS_TOKEN',
+    });
+    expect(useAuthStore.getState()).toMatchObject({ status: 'anonymous', accessToken: null });
   });
 });

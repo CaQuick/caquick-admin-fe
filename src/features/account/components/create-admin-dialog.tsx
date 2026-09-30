@@ -2,11 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { type z } from 'zod';
 
 import { messageFor } from '@/shared/api';
+import { INITIAL_PASSWORD_HELP } from '@/shared/lib/initial-password';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -17,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/shared/ui/dialog';
+import { FillFromUsernameButton } from '@/shared/ui/fill-from-username-button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 
@@ -38,7 +40,7 @@ const FIELDS: {
     label: '초기 비밀번호',
     type: 'password',
     autoComplete: 'new-password',
-    help: '첫 로그인 때 변경이 강제됩니다',
+    help: INITIAL_PASSWORD_HELP,
   },
   { name: 'email', label: '이메일', type: 'email', autoComplete: 'off' },
   { name: 'name', label: '이름', autoComplete: 'off' },
@@ -53,6 +55,7 @@ export function CreateAdminDialog() {
     defaultValues: { username: '', password: '', email: '', name: '' },
   });
   const { errors, isSubmitting } = form.formState;
+  const username = useWatch({ control: form.control, name: 'username' });
 
   const submit = form.handleSubmit(async (v) => {
     setError(null);
@@ -110,6 +113,12 @@ export function CreateAdminDialog() {
                 aria-invalid={!!errors[f.name]}
                 {...form.register(f.name)}
               />
+              {f.name === 'password' && (
+                <FillFromUsernameButton
+                  username={username}
+                  onFill={(v) => form.setValue('password', v, { shouldValidate: true })}
+                />
+              )}
               {errors[f.name] ? (
                 <p className="text-xs text-negative-foreground">{errors[f.name]?.message}</p>
               ) : f.help ? (

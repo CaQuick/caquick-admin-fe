@@ -6,7 +6,12 @@ import {
   type AuditTargetType,
 } from '@/graphql/generated/graphql';
 import { kstDayEndIso, kstDayStartIso, parseYmd } from '@/shared/lib/kst';
-import { DEFAULT_LIMIT, listSearchBase, optionalText } from '@/shared/lib/list-search';
+import {
+  DEFAULT_LIMIT,
+  listSearchBase,
+  optionalIdText,
+  optionalText,
+} from '@/shared/lib/list-search';
 import { type PillTone } from '@/shared/ui/status-pill';
 
 export const TARGET_TYPES: { value: AuditTargetType; label: string }[] = [
@@ -40,10 +45,10 @@ const ACTION_VALUES = ACTIONS.map((a) => a.value) as [AuditActionType, ...AuditA
 
 export const auditSearchSchema = z.object({
   ...listSearchBase,
-  actorId: optionalText,
-  storeId: optionalText,
+  actorId: optionalIdText,
+  storeId: optionalIdText,
   targetType: z.enum(TARGET_VALUES).optional().catch(undefined),
-  targetId: optionalText,
+  targetId: optionalIdText,
   action: z.enum(ACTION_VALUES).optional().catch(undefined),
   from: optionalText,
   to: optionalText,
