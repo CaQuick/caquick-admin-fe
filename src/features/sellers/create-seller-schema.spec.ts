@@ -8,6 +8,12 @@ const base = {
   storeName: '루미 케이크 강남점',
   storePhone: '02-555-0118',
   addressFull: '서울 강남구 테헤란로 1',
+  addressCity: '',
+  addressDistrict: '',
+  addressNeighborhood: '',
+  regionId: '',
+  latitude: '',
+  longitude: '',
   mapProvider: 'NONE' as const,
 };
 
@@ -51,6 +57,7 @@ describe('createSellerSchema', () => {
     ['email', 'not-mail'],
     ['websiteUrl', 'not a url'],
     ['latitude', 'abc'],
+    ['latitude', '91'], // 범위 밖(BE도 거절)
     ['storeName', ''],
   ])('%s=%s 는 거절', (key, value) => {
     expect(createSellerSchema.safeParse({ ...base, [key]: value }).success).toBe(false);

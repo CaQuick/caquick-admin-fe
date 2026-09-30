@@ -10,7 +10,6 @@ import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 
 import { updateStoreBasicInfo } from '../api/queries';
@@ -21,26 +20,23 @@ import {
   storeEditSchema,
   toEditValues,
 } from '../edit-schema';
+import { StoreLocationFields } from './store-location-fields';
 
-const FIELDS: {
-  name: Exclude<
-    keyof StoreEditValues,
-    'mapProvider' | 'profileImageUrl' | 'greetingMessage' | 'businessHoursText'
-  >;
+const CONTACT: {
+  name: 'storeName' | 'storePhone' | 'websiteUrl';
   label: string;
   required?: boolean;
+  type?: string;
   help?: string;
 }[] = [
   { name: 'storeName', label: '매장명', required: true },
-  { name: 'storePhone', label: '전화', required: true },
-  { name: 'addressFull', label: '주소', required: true },
-  { name: 'addressCity', label: '시/도' },
-  { name: 'addressDistrict', label: '시/군/구' },
-  { name: 'addressNeighborhood', label: '동/읍/면' },
-  { name: 'regionId', label: '지역 ID', help: '활성 2단계 지역. 비우면 연결 해제' },
-  { name: 'latitude', label: '위도' },
-  { name: 'longitude', label: '경도' },
-  { name: 'websiteUrl', label: '웹사이트' },
+  { name: 'storePhone', label: '매장 전화', required: true, type: 'tel' },
+  {
+    name: 'websiteUrl',
+    label: '웹사이트',
+    type: 'url',
+    help: '매장 홈페이지나 SNS 주소입니다. 비우면 지웁니다.',
+  },
 ];
 
 export function StoreEditForm({ store, onSaved }: { store: StoreDetail; onSaved: () => void }) {
@@ -65,26 +61,20 @@ export function StoreEditForm({ store, onSaved }: { store: StoreDetail; onSaved:
       toast.success('매장 정보를 저장했습니다.');
       onSaved();
     } catch (e) {
-      setError(messageFor(e));
+      const message = messageFor(e);
+      setError(message);
+      toast.error(message);
     }
   });
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-3">
-      {error && (
-        <p
-          role="alert"
-          className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
-        >
-          {error}
-        </p>
-      )}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">기본 정보</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
-          {FIELDS.map((f) => (
+          {CONTACT.map((f) => (
             <div key={f.name} className="flex flex-col gap-1.5">
               <Label htmlFor={`se-${f.name}`}>
                 {f.label}
@@ -92,6 +82,8 @@ export function StoreEditForm({ store, onSaved }: { store: StoreDetail; onSaved:
               </Label>
               <Input
                 id={`se-${f.name}`}
+                type={f.type ?? 'text'}
+                autoComplete="off"
                 aria-invalid={!!errors[f.name]}
                 {...form.register(f.name)}
               />
@@ -102,34 +94,30 @@ export function StoreEditForm({ store, onSaved }: { store: StoreDetail; onSaved:
               ) : null}
             </div>
           ))}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="se-mapProvider">지도 제공자</Label>
-            <Controller
-              control={form.control}
-              name="mapProvider"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="se-mapProvider" aria-label="지도 제공자">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">없음</SelectItem>
-                    <SelectItem value="NAVER">네이버</SelectItem>
-                    <SelectItem value="KAKAO">카카오</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
             <Label htmlFor="se-businessHoursText">영업시간 안내</Label>
             <Textarea id="se-businessHoursText" rows={2} {...form.register('businessHoursText')} />
+            {errors.businessHoursText && (
+              <p className="text-xs text-negative-foreground">{errors.businessHoursText.message}</p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
             <Label htmlFor="se-greetingMessage">인사말</Label>
             <Textarea id="se-greetingMessage" rows={2} {...form.register('greetingMessage')} />
-            <p className="text-xs text-muted-foreground">비우면 기본 문구로 돌아갑니다.</p>
+            {errors.greetingMessage ? (
+              <p className="text-xs text-negative-foreground">{errors.greetingMessage.message}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">비우면 기본 문구로 돌아갑니다.</p>
+            )}
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">주소와 위치</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <StoreLocationFields form={form} idPrefix="se" />
         </CardContent>
       </Card>
       <Card>
@@ -151,6 +139,15 @@ export function StoreEditForm({ store, onSaved }: { store: StoreDetail; onSaved:
           />
         </CardContent>
       </Card>
+      {/* 저장 버튼이 아래에 있어 오류도 버튼 바로 위에 둔다(토스트와 함께) */}
+      {error && (
+        <p
+          role="alert"
+          className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
+        >
+          {error}
+        </p>
+      )}
       <div className="flex justify-end gap-2">
         <Button
           type="button"

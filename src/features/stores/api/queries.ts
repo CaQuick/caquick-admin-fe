@@ -20,6 +20,7 @@ const AdminStoresDocument = graphql(/* GraphQL */ `
       items {
         id
         sellerAccountId
+        sellerLabel
         storeName
         storePhone
         addressFull
@@ -41,6 +42,7 @@ const AdminStoreDocument = graphql(/* GraphQL */ `
       store {
         id
         sellerAccountId
+        sellerLabel
         storeName
         storePhone
         addressFull

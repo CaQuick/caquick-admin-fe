@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { App } from '@/app/app';
 import { useAuthStore } from '@/features/auth';
+import { installFakePostcode, postcodeResult } from '@/test/fakes';
 import { gqlError, gqlOk, restOk } from '@/test/msw/graphql';
 import { server } from '@/test/msw/server';
 
@@ -41,6 +42,21 @@ const seller = (accountId: string, status = 'ACTIVE') => ({
   createdAt: '2026-09-01T00:00:00.000Z',
 });
 
+const regionBase = {
+  sortOrder: 0,
+  isActive: true,
+  centerLat: null,
+  centerLng: null,
+  storeCount: 0,
+  childCount: 0,
+  createdAt: 'x',
+  updatedAt: 'y',
+};
+const regions = [
+  { ...regionBase, id: '1', parentId: null, level: 1, name: '서울', slug: 'seoul' },
+  { ...regionBase, id: '5', parentId: '1', level: 2, name: '강남구', slug: 'sgg-11680' },
+];
+
 function boot(path: string) {
   server.use(
     restOk('/admin/refresh', {
@@ -50,6 +66,8 @@ function boot(path: string) {
       mustChangePassword: false,
     }),
     gqlOk('AdminMe', { adminMe: me }),
+    // 판매자 등록 폼의 지역 선택기
+    gqlOk('AdminRegions', { adminRegions: regions }),
   );
   window.history.pushState({}, '', path);
   render(<App />);
@@ -115,12 +133,63 @@ describe('판매자', () => {
       expect(input).toMatchObject({
         username: 'seller7s',
         password: 'seller7s',
-        store: { storeName: '새 가게 본점', mapProvider: 'NONE', regionId: null },
+        // 지도 제공자 기본은 네이버(구매자 앱은 네이버일 때만 지도를 그린다)
+        store: { storeName: '새 가게 본점', mapProvider: 'NAVER', regionId: null },
       }),
     );
     expect(
       await screen.findByRole('heading', { level: 2, name: '박사장(seller30)' }),
     ).toBeInTheDocument();
+  });
+
+  it('등록 폼의 매장 위치는 매장 수정과 같은 칸이다: 주소 검색으로 지역·좌표까지 채워 보낸다', async () => {
+    let input: Record<string, unknown> | undefined;
+    installFakePostcode(postcodeResult());
+    server.use(
+      gqlOk('AdminGeocodeAddress', {
+        adminGeocodeAddress: {
+          latitude: 37.5000242,
+          longitude: 127.0365717,
+          sigunguCode: '11680',
+          regionId: '5',
+        },
+      }),
+      graphql.mutation('AdminCreateSeller', ({ variables }) => {
+        input = (variables as { input: Record<string, unknown> }).input;
+        return HttpResponse.json({
+          data: { adminCreateSeller: { accountId: '30', username: 'new.seller' } },
+        });
+      }),
+      gqlOk('AdminSeller', { adminSeller: seller('30') }),
+    );
+    boot('/sellers/new');
+    expect(await screen.findByRole('radio', { name: /^네이버 지도/ })).toBeChecked();
+    await userEvent.type(screen.getByLabelText(/^아이디/), 'new.seller');
+    await userEvent.type(screen.getByLabelText(/^초기 비밀번호/), '12345678');
+    await userEvent.type(screen.getByLabelText(/^사업자명/), '새 가게');
+    await userEvent.type(screen.getByLabelText(/^사업자 전화/), '02-1');
+    await userEvent.type(screen.getByLabelText(/^매장명/), '새 가게 본점');
+    await userEvent.type(screen.getByLabelText(/^매장 전화/), '02-2');
+    await userEvent.click(screen.getByRole('button', { name: '주소 검색' }));
+    const search = await screen.findByRole('dialog', { name: '주소 검색' });
+    await userEvent.click(await within(search).findByRole('button', { name: /테헤란로/ }));
+    await screen.findByText('주소로 좌표를 채웠습니다. 지도에서 핀 위치를 확인해 주세요.');
+    await userEvent.click(screen.getByRole('button', { name: '판매자 등록' }));
+    await vi.waitFor(() =>
+      expect(input?.store).toEqual({
+        storeName: '새 가게 본점',
+        storePhone: '02-2',
+        addressFull: '서울 강남구 테헤란로 152',
+        addressCity: '서울',
+        addressDistrict: '강남구',
+        addressNeighborhood: '역삼동',
+        regionId: '5',
+        latitude: '37.5000242',
+        longitude: '127.0365717',
+        mapProvider: 'NAVER',
+      }),
+    );
+    delete window.kakao;
   });
 
   it('등록 실패(중복 아이디)는 저장 버튼 옆과 토스트로 알린다', async () => {
