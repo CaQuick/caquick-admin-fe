@@ -175,6 +175,18 @@ export function ReviewsPage({
               search.deleted,
             ].some((v) => v !== undefined)}
             onReset={() => onSearchChange({ limit: search.limit })}
+            trailing={
+              <>
+                <Switch
+                  id="rv-deleted"
+                  checked={search.deleted === 'true'}
+                  onCheckedChange={(v) => patch({ deleted: v ? 'true' : undefined })}
+                />
+                <Label htmlFor="rv-deleted" className="text-xs">
+                  삭제 포함
+                </Label>
+              </>
+            }
           >
             <FilterField label="매장">
               <EntityPicker
@@ -202,16 +214,6 @@ export function ReviewsPage({
                 onCommit={(v) => patch({ reviewId: v })}
               />
             </FilterField>
-            <span className="ml-auto flex items-center gap-1.5">
-              <Switch
-                id="rv-deleted"
-                checked={search.deleted === 'true'}
-                onCheckedChange={(v) => patch({ deleted: v ? 'true' : undefined })}
-              />
-              <Label htmlFor="rv-deleted" className="text-xs">
-                삭제 포함
-              </Label>
-            </span>
           </FilterBar>
         }
       >
