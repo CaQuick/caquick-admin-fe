@@ -96,8 +96,9 @@ describe('authRequest', () => {
       [true, 401, 'INVALID_ACCESS_TOKEN', 1],
       [true, 401, 'AUTHENTICATION_REQUIRED', 1],
       [true, 401, 'CURRENT_PASSWORD_INVALID', 0],
-      [true, 401, 'SESSION_ACCOUNT_MISSING', 0],
-      [true, 401, null, 0],
+      [true, 401, 'SESSION_ACCOUNT_MISSING', 1],
+      [true, 401, 'ACCOUNT_DELETED', 1],
+      [true, 401, null, 1],
       [true, 403, 'INVALID_ACCESS_TOKEN', 0],
       [false, 401, 'INVALID_ACCESS_TOKEN', 0],
     ] as const)('auth=%s·%d·%s면 refresh %d회', async (auth, status, errorCode, calls) => {
@@ -122,6 +123,16 @@ describe('authRequest', () => {
       await expect(
         authRequest('/admin/change-password', { auth: true, body: {} }),
       ).rejects.toMatchObject({ code: 'CURRENT_PASSWORD_INVALID', status: 401 });
+      expect(auths).toHaveLength(1);
+    });
+
+    it('계정이 사라진 401은 refresh를 시도하고, 실패하면 재시도 없이 원래 오류를 던진다', async () => {
+      const refresh = hooks(false);
+      const auths = changePasswordOnce(401, 'SESSION_ACCOUNT_MISSING');
+      await expect(
+        authRequest('/admin/change-password', { auth: true, body: {} }),
+      ).rejects.toMatchObject({ code: 'SESSION_ACCOUNT_MISSING', status: 401 });
+      expect(refresh).toHaveBeenCalledTimes(1);
       expect(auths).toHaveLength(1);
     });
 
