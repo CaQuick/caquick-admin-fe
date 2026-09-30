@@ -225,6 +225,27 @@ export type AdminDeleteReviewInput = {
   reviewId: string | number;
 };
 
+/** 알림 발송 이력 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminNotificationBroadcastListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 대상 지정 방식 필터. */
+  targetKind?: AdminNotificationTargetKind | null | undefined;
+  /** 알림 분류 필터. */
+  type?: AdminNotificationType | null | undefined;
+};
+
+/** 발송 진행 상태. 조회 시각 기준으로 계산한다. */
+export type AdminNotificationBroadcastStatus =
+  /** 대상 전원에 대한 저장을 마쳤다. */
+  | 'COMPLETED'
+  /** 요청 뒤 30분이 지나도 완료 기록이 없다(처리 실패 가능성, 운영 확인 필요). */
+  | 'DELAYED'
+  /** 저장 중. 요청 뒤 30분이 지나지 않았고 완료 기록이 없다. */
+  | 'IN_PROGRESS';
+
 /** 발송 대상 지정 방식. */
 export type AdminNotificationTargetKind =
   /** accountIds로 지정한 계정. */
@@ -863,12 +884,31 @@ export type AdminSearchKeywordSnapshotQueryVariables = Exact<{
 
 export type AdminSearchKeywordSnapshotQuery = { adminSearchKeywordSnapshot: { rankedAt: string | null, items: Array<{ rank: number, keyword: string, searchCount: number }> } };
 
+export type AdminNotificationBroadcastsQueryVariables = Exact<{
+  input?: AdminNotificationBroadcastListInput | null | undefined;
+}>;
+
+
+export type AdminNotificationBroadcastsQuery = { adminNotificationBroadcasts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, type: AdminNotificationType, title: string, body: string, targetKind: AdminNotificationTargetKind, targetCount: number, skippedCount: number, deliveredCount: number, status: AdminNotificationBroadcastStatus, actorAccountId: string, actorLabel: string | null, requestedAt: string, completedAt: string | null, targetAccountIds: Array<string>, skippedAccountIds: Array<string> }> } };
+
 export type AdminSendNotificationMutationVariables = Exact<{
   input: AdminSendNotificationInput;
 }>;
 
 
-export type AdminSendNotificationMutation = { adminSendNotification: { sentCount: number, skippedAccountIds: Array<string> } };
+export type AdminSendNotificationMutation = { adminSendNotification: { sentCount: number, skippedAccountIds: Array<string>, broadcastId: string } };
+
+export type AdminNotificationActiveUserCountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminNotificationActiveUserCountQuery = { adminUsers: { totalCount: number } };
+
+export type AdminNotificationUserOptionsQueryVariables = Exact<{
+  input?: AdminUserListInput | null | undefined;
+}>;
+
+
+export type AdminNotificationUserOptionsQuery = { adminUsers: { items: Array<{ accountId: string, nickname: string | null, name: string | null, email: string | null }> } };
 
 export type AdminOrdersQueryVariables = Exact<{
   input?: AdminOrderListInput | null | undefined;
@@ -1439,14 +1479,60 @@ export const AdminSearchKeywordSnapshotDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminSearchKeywordSnapshotQuery, AdminSearchKeywordSnapshotQueryVariables>;
+export const AdminNotificationBroadcastsDocument = new TypedDocumentString(`
+    query AdminNotificationBroadcasts($input: AdminNotificationBroadcastListInput) {
+  adminNotificationBroadcasts(input: $input) {
+    items {
+      id
+      type
+      title
+      body
+      targetKind
+      targetCount
+      skippedCount
+      deliveredCount
+      status
+      actorAccountId
+      actorLabel
+      requestedAt
+      completedAt
+      targetAccountIds
+      skippedAccountIds
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationBroadcastsQuery, AdminNotificationBroadcastsQueryVariables>;
 export const AdminSendNotificationDocument = new TypedDocumentString(`
     mutation AdminSendNotification($input: AdminSendNotificationInput!) {
   adminSendNotification(input: $input) {
     sentCount
     skippedAccountIds
+    broadcastId
   }
 }
     `) as unknown as TypedDocumentString<AdminSendNotificationMutation, AdminSendNotificationMutationVariables>;
+export const AdminNotificationActiveUserCountDocument = new TypedDocumentString(`
+    query AdminNotificationActiveUserCount {
+  adminUsers(input: { status: ACTIVE, limit: 1 }) {
+    totalCount
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationActiveUserCountQuery, AdminNotificationActiveUserCountQueryVariables>;
+export const AdminNotificationUserOptionsDocument = new TypedDocumentString(`
+    query AdminNotificationUserOptions($input: AdminUserListInput) {
+  adminUsers(input: $input) {
+    items {
+      accountId
+      nickname
+      name
+      email
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminNotificationUserOptionsQuery, AdminNotificationUserOptionsQueryVariables>;
 export const AdminOrdersDocument = new TypedDocumentString(`
     query AdminOrders($input: AdminOrderListInput) {
   adminOrders(input: $input) {

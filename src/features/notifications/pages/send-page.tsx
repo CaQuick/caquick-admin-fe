@@ -1,4 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -13,19 +15,15 @@ import { Label } from '@/shared/ui/label';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Textarea } from '@/shared/ui/textarea';
 
-import { sendNotification } from '../api/queries';
-import {
-  NOTIFICATION_TYPES,
-  type SendValues,
-  newIdempotencyKey,
-  parseAccountIds,
-  sendSchema,
-  toSendInput,
-} from '../schema';
+import { activeUserCountQueryOptions, sendNotification } from '../api/queries';
+import { RecipientField } from '../components/recipient-field';
+import { NOTIFICATION_TYPES, TARGET_KINDS, confirmMessage } from '../meta';
+import { type SendValues, newIdempotencyKey, sendSchema, toSendInput } from '../schema';
 
 interface Result {
   sentCount: number;
   skippedAccountIds: string[];
+  broadcastId: string;
   title: string;
 }
 
@@ -59,6 +57,7 @@ function Radios<T extends string>({
 }
 
 export function SendNotificationPage() {
+  const qc = useQueryClient();
   const [key, setKey] = useState(newIdempotencyKey);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -69,12 +68,17 @@ export function SendNotificationPage() {
       title: '',
       body: '',
       targetKind: 'ALL_USERS',
-      accountIdsRaw: '',
+      accountIds: [],
     },
   });
   const { errors, isSubmitting } = form.formState;
+  const type = form.watch('type');
   const targetKind = form.watch('targetKind');
-  const idCount = parseAccountIds(form.watch('accountIdsRaw')).length;
+  const pickedCount = form.watch('accountIds').length;
+  const activeUsers = useQuery({
+    ...activeUserCountQueryOptions(),
+    enabled: targetKind === 'ALL_USERS',
+  });
 
   const send = async () => {
     const valid = await form.trigger();
@@ -82,7 +86,7 @@ export function SendNotificationPage() {
     const values = form.getValues();
     setError(null);
     try {
-      const r = await sendNotification(toSendInput(values, key));
+      const r = await sendNotification(qc, toSendInput(values, key));
       setResult({ ...r, title: values.title });
       form.reset();
       setKey(newIdempotencyKey());
@@ -99,8 +103,9 @@ export function SendNotificationPage() {
   return (
     <>
       <PageHeader
-        title="알림 발송"
-        description="대상은 요청 시점에 고정되고, 저장은 1,000명씩 백그라운드에서 진행됩니다. 발송 이력 조회 API는 없습니다."
+        title="새 알림 보내기"
+        back={{ to: '/notifications', label: '발송 이력으로' }}
+        description="대상이 많으면 모두 도착하기까지 몇 분 걸릴 수 있습니다. 보낸 알림은 발송 이력에서 다시 볼 수 있습니다."
       />
       <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
         <form noValidate onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-3">
@@ -131,6 +136,9 @@ export function SendNotificationPage() {
                     />
                   )}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {NOTIFICATION_TYPES.find((t) => t.value === type)?.help}
+                </p>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="nt-title">제목</Label>
@@ -171,33 +179,27 @@ export function SendNotificationPage() {
                   <Radios
                     name="대상"
                     value={field.value}
-                    options={[
-                      { value: 'ALL_USERS', label: '활성 구매자 전체' },
-                      { value: 'ACCOUNT_IDS', label: '계정 ID 목록' },
-                    ]}
+                    options={TARGET_KINDS}
                     onChange={field.onChange}
                   />
                 )}
               />
-              {targetKind === 'ACCOUNT_IDS' && (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="nt-ids">계정 ID (쉼표·줄바꿈 구분, 최대 500)</Label>
-                  <Textarea
-                    id="nt-ids"
-                    rows={4}
-                    aria-invalid={!!errors.accountIdsRaw}
-                    {...form.register('accountIdsRaw')}
-                  />
-                  <p
-                    className={
-                      errors.accountIdsRaw
-                        ? 'text-xs text-negative-foreground'
-                        : 'text-xs text-muted-foreground'
-                    }
-                  >
-                    {errors.accountIdsRaw?.message ?? `${formatCount(idCount)}개 (중복 제거)`}
-                  </p>
-                </div>
+              {targetKind === 'ALL_USERS' ? (
+                <p className="text-xs text-muted-foreground">
+                  보내는 시점에 이용 중인 구매자 전체가 받습니다. 정지·탈퇴한 계정은 받지 않습니다.
+                </p>
+              ) : (
+                <Controller
+                  control={form.control}
+                  name="accountIds"
+                  render={({ field }) => (
+                    <RecipientField
+                      value={field.value}
+                      onChange={field.onChange}
+                      error={errors.accountIds?.message}
+                    />
+                  )}
+                />
               )}
             </CardContent>
           </Card>
@@ -205,46 +207,54 @@ export function SendNotificationPage() {
             <ConfirmDialog
               trigger={
                 <Button type="button" disabled={isSubmitting}>
-                  발송
+                  보내기
                 </Button>
               }
               title="알림을 보낼까요?"
-              description={
-                targetKind === 'ALL_USERS'
-                  ? '활성 구매자 전체에게 갑니다. 되돌릴 수 없습니다.'
-                  : `계정 ${formatCount(idCount)}개에 갑니다. 되돌릴 수 없습니다.`
-              }
-              confirmLabel="발송"
+              description={confirmMessage(targetKind, pickedCount, activeUsers.data)}
+              confirmLabel="보내기"
               onConfirm={send}
             />
           </div>
         </form>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">최근 발송 결과</CardTitle>
+            <CardTitle className="text-sm">방금 보낸 알림</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-3">
             {result ? (
-              <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums">
-                <dt className="text-muted-foreground">제목</dt>
-                <dd className="truncate">{result.title}</dd>
-                <dt className="text-muted-foreground">대상 수</dt>
-                <dd>{formatCount(result.sentCount)}명</dd>
-                <dt className="text-muted-foreground">제외됨</dt>
-                <dd>
-                  {result.skippedAccountIds.length === 0
-                    ? '없음'
-                    : `${result.skippedAccountIds.length}개 — ${result.skippedAccountIds.slice(0, 20).join(', ')}${result.skippedAccountIds.length > 20 ? ' …' : ''}`}
-                </dd>
-              </dl>
+              <>
+                <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums">
+                  <dt className="text-muted-foreground">제목</dt>
+                  <dd className="truncate">{result.title}</dd>
+                  <dt className="text-muted-foreground">대상 수</dt>
+                  <dd>{formatCount(result.sentCount)}명</dd>
+                  <dt className="text-muted-foreground">받지 못한 계정</dt>
+                  <dd>
+                    {result.skippedAccountIds.length === 0
+                      ? '없음'
+                      : `${formatCount(result.skippedAccountIds.length)}개(탈퇴·정지 등): ${result.skippedAccountIds.slice(0, 20).join(', ')}${result.skippedAccountIds.length > 20 ? ' 외' : ''}`}
+                  </dd>
+                </dl>
+                <Button asChild variant="outline" size="sm" className="self-start">
+                  <Link to="/notifications" search={{ broadcastId: result.broadcastId }}>
+                    발송 이력에서 보기
+                  </Link>
+                </Button>
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                이 세션에서 보낸 결과가 여기에 표시됩니다.
+                이 화면에서 보낸 알림의 결과가 여기에 표시됩니다.
               </p>
             )}
-            <p className="mt-3 text-xs text-muted-foreground">
-              멱등 키: <span className="font-mono">{key}</span>
-            </p>
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer">요청 번호</summary>
+              <p className="mt-1">
+                같은 요청 번호로 다시 보내면 한 번만 발송됩니다. 보내기에 실패해 다시 시도할 때
+                중복으로 보내지 않도록 쓰입니다.
+              </p>
+              <p className="mt-1 font-mono break-all">{key}</p>
+            </details>
           </CardContent>
         </Card>
       </div>
