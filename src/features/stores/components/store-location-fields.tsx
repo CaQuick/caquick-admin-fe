@@ -80,8 +80,11 @@ export function StoreLocationFields<T extends StoreLocationValues>({ form, idPre
     setAutoFilled(true);
 
     const ticket = ++request.current;
+    // 기다리는 사이 주소를 다시 골랐거나 폼을 되돌렸으면 응답을 버린다(상세 주소를 이어 쓴 것은 그대로 반영)
+    const stale = () =>
+      ticket !== request.current || !f.getValues('addressFull').startsWith(address.addressFull);
     const regions = await qc.fetchQuery(allRegionsQueryOptions()).catch(() => []);
-    if (ticket !== request.current) return;
+    if (stale()) return;
     const matched = matchRegionBySigunguCode(regions, r.sigunguCode);
     set('regionId', matched?.id ?? '');
     setRegionNote(matched ? null : NOT_SERVICE_AREA);
@@ -89,7 +92,10 @@ export function StoreLocationFields<T extends StoreLocationValues>({ form, idPre
     setGeocode('loading');
     try {
       const result = await geocodeAddress(qc, address.addressFull);
-      if (ticket !== request.current) return;
+      if (stale()) {
+        if (ticket === request.current) setGeocode('idle');
+        return;
+      }
       if (!result) {
         setGeocode('not-found');
         setCoordsOpen(true);
@@ -104,7 +110,10 @@ export function StoreLocationFields<T extends StoreLocationValues>({ form, idPre
       }
       setGeocode('done');
     } catch {
-      if (ticket !== request.current) return;
+      if (stale()) {
+        if (ticket === request.current) setGeocode('idle');
+        return;
+      }
       setGeocode('failed');
       setCoordsOpen(true);
     }

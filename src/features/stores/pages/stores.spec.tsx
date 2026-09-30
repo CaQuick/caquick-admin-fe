@@ -328,6 +328,64 @@ describe('매장', () => {
     );
   });
 
+  /** 좌표 변환 응답을 테스트가 풀어 줄 때까지 붙잡는다 */
+  function geocodeHeld() {
+    let release = () => undefined as void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      graphql.query('AdminGeocodeAddress', async () => {
+        await held;
+        return HttpResponse.json({
+          data: {
+            adminGeocodeAddress: {
+              latitude: 37.5000242,
+              longitude: 127.0365717,
+              sigunguCode: '11680',
+              regionId: '5',
+            },
+          },
+        });
+      }),
+    );
+    return () => release();
+  }
+
+  it('주소 검색 뒤 좌표를 기다리는 사이 되돌리면 늦게 온 좌표를 버린다', async () => {
+    installFakePostcode(postcodeResult({ roadAddress: '서울 강남구 테헤란로 152' }));
+    const release = geocodeHeld();
+    await openEdit();
+    const address = screen.getByLabelText(/^주소/);
+    const original = (address as HTMLInputElement).value;
+    await searchAddress();
+    await vi.waitFor(() => expect(address).toHaveValue('서울 강남구 테헤란로 152'));
+    await userEvent.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(address).toHaveValue(original);
+
+    release();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(address).toHaveValue(original);
+    expect(screen.queryByText(GEOCODED)).not.toBeInTheDocument();
+    expect(screen.queryByText(/37\.5000242/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '되돌리기' })).toBeDisabled();
+  });
+
+  it('좌표를 기다리는 사이 상세 주소를 이어 쓰면 좌표는 그대로 채운다', async () => {
+    installFakePostcode(postcodeResult({ roadAddress: '서울 강남구 테헤란로 152' }));
+    const release = geocodeHeld();
+    await openEdit();
+    await searchAddress();
+    const address = screen.getByLabelText(/^주소/);
+    await vi.waitFor(() => expect(address).toHaveValue('서울 강남구 테헤란로 152'));
+    await userEvent.type(address, ' 3층');
+
+    release();
+    expect(await screen.findByText(GEOCODED)).toBeInTheDocument();
+    expect(address).toHaveValue('서울 강남구 테헤란로 152 3층');
+    expect(screen.getByText('위도 37.5000242 · 경도 127.0365717')).toBeInTheDocument();
+  });
+
   it('주소 검색: 주소·시도·시군구·동을 채우고, 지역을 고르고, 좌표를 채워 저장한다', async () => {
     installFakePostcode(
       postcodeResult({
