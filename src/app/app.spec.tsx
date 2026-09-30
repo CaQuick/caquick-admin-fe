@@ -250,6 +250,37 @@ describe('App 검색 파라미터', () => {
       expect(inputs.at(-1)).toMatchObject({ isActive: false, regionId: '7', keyword: '루미' }),
     );
   });
+
+  it.each([
+    [
+      '/stores?regionId=18446744073709551615',
+      'AdminStores',
+      'adminStores',
+      { regionId: '18446744073709551615' },
+    ],
+    [
+      '/orders?storeId=9007199254740993&accountId=18446744073709551615',
+      'AdminOrders',
+      'adminOrders',
+      { storeId: '9007199254740993', accountId: '18446744073709551615' },
+    ],
+  ])(
+    '%s 의 2^53을 넘는 ID를 그대로 GraphQL 변수로 보낸다',
+    async (url, operation, field, expected) => {
+      const inputs: Record<string, unknown>[] = [];
+      server.use(
+        graphql.query(operation, ({ variables }) => {
+          inputs.push((variables as { input: Record<string, unknown> }).input);
+          return HttpResponse.json({
+            data: { [field]: { items: [], totalCount: 0, hasMore: false, nextCursor: null } },
+          });
+        }),
+      );
+      window.history.pushState({}, '', url);
+      render(<App />);
+      await vi.waitFor(() => expect(inputs[0]).toMatchObject(expected));
+    },
+  );
 });
 
 describe('App 토스트', () => {

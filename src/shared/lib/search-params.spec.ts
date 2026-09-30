@@ -32,6 +32,9 @@ describe('search-params', () => {
     ['?q=%22broken', { q: '"broken' }],
     ['?q=%221%22x%22', { q: '"1"x"' }],
     ['?a=1&a=2', { a: '1' }],
+    // 2^53을 넘는 ID도 숫자로 바꾸지 않는다(JSON 파싱이면 자릿수를 잃는다)
+    ['?storeId=9007199254740993', { storeId: '9007199254740993' }],
+    ['?regionId=18446744073709551615', { regionId: '18446744073709551615' }],
     ['', {}],
   ])('%s → %j', (searchStr, expected) => {
     expect(parseSearch(searchStr)).toEqual(expected);
