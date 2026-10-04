@@ -619,6 +619,8 @@ export type AuditTargetType =
   | 'REVIEW_COMMENT'
   /** 신고 처리. */
   | 'REVIEW_REPORT'
+  /** 검색 진입 화면 키워드 바로가기 칩. 순서 변경은 순서가 바뀐 칩마다 1건씩 남는다. */
+  | 'SEARCH_KEYWORD_CHIP'
   /** 매장 설정·콘텐츠. */
   | 'STORE'
   /** 태그 마스터. */

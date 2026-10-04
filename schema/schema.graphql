@@ -1,4 +1,4 @@
-# 생성 파일 — 수정하지 않는다. caquick-be local@67609d852ffee4f990f770de395d4e3c93860d99 의 src/features/**/*.graphql 63개를 경로순으로 합쳤다.
+# 생성 파일 — 수정하지 않는다. caquick-be main@3483e3420a134e2b00259c99307b5b9b40e09fc3 의 src/features/**/*.graphql 64개를 경로순으로 합쳤다.
 # 갱신: pnpm schema:pull [ref]
 
 # ---- src/features/audit-log/audit-log.types.graphql ----
@@ -62,6 +62,10 @@ enum AuditTargetType {
   관리자 알림 발송.
   """
   NOTIFICATION
+  """
+  검색 진입 화면 키워드 바로가기 칩. 순서 변경은 순서가 바뀐 칩마다 1건씩 남는다.
+  """
+  SEARCH_KEYWORD_CHIP
 }
 
 """
@@ -4168,7 +4172,9 @@ type ReviewCommentItem {
 
 # ---- src/features/product/product-search.graphql ----
 extend type Query {
-  """키워드 상품 검색(검색 결과 상품 탭). 상품명·태그명에 단어별 AND 부분일치. 비로그인 접근 가능."""
+  """
+  상품 검색(검색 결과 상품 탭). 상품명·태그명에 단어별 AND 부분일치. keyword를 생략하면 필터만으로 조회한다(카테고리 더보기 진입). 비로그인 접근 가능.
+  """
   searchProducts(input: SearchProductsInput!): SearchProductConnection!
 }
 
@@ -4188,8 +4194,8 @@ enum ProductSearchSort {
 
 """상품 검색 조건. 필터 그룹 간에는 AND, 그룹 안에서는 OR로 결합된다."""
 input SearchProductsInput {
-  """검색어(정규화: trim·공백 축약, 빈값/200자 초과 400)."""
-  keyword: String!
+  """검색어(정규화: trim·공백 축약, 200자 초과 400). 생략·null이면 검색어 조건 없이 필터만 적용하고, 빈 문자열·공백만 넘기면 400."""
+  keyword: String
   """상황별(EVENT) 카테고리 ID 다중 선택(그룹 내 OR). 비우면 '전체'."""
   eventCategoryIds: [ID!]
   """스타일별(STYLE) 카테고리 ID 다중 선택(그룹 내 OR, 상황별과는 AND). 비우면 '전체'."""
@@ -4225,8 +4231,8 @@ extend type Query {
 
 """가격 분포 조회 조건. 가격 필터만 빼고 상품 검색과 같은 조건을 받는다."""
 input SearchProductFacetsInput {
-  """검색어(정규화: trim·공백 축약, 빈값/200자 초과 400)."""
-  keyword: String!
+  """검색어. 규칙은 SearchProductsInput.keyword와 같다(생략·null이면 검색어 조건 없음)."""
+  keyword: String
   """상황별(EVENT) 카테고리 ID 다중 선택(그룹 내 OR)."""
   eventCategoryIds: [ID!]
   """스타일별(STYLE) 카테고리 ID 다중 선택(그룹 내 OR, 상황별과는 AND)."""
@@ -5440,6 +5446,27 @@ extend type Query {
   regions(parentId: ID!): [Region!]!
   """지역명 자동검색 (1·2차 모두 대상)"""
   searchRegions(input: SearchRegionsInput!): [RegionSearchResult!]!
+  """
+  현재 위치가 속한 2차 지역과 그 상위 1차 지역. 비로그인 허용. 선택 가능한 지역이 없으면 null(서비스 지역 밖·바다·해외 포함).
+  위치 변환(카카오)이 실패하면 LOCATION_LOOKUP_UNAVAILABLE, IP당 분당 30회를 넘으면 RATE_LIMITED. 좌표는 저장하지 않고 이용 사실만 기록한다.
+  """
+  regionByLocation(input: RegionByLocationInput!): RegionByLocation
+}
+
+"""현재 위치(WGS84)."""
+input RegionByLocationInput {
+  """위도. -90~90."""
+  latitude: Float!
+  """경도. -180~180."""
+  longitude: Float!
+}
+
+"""현재 위치가 속한 지역."""
+type RegionByLocation {
+  """상위 1차 지역."""
+  group: RegionGroup!
+  """현재 위치가 속한 2차 시군구."""
+  region: Region!
 }
 
 """지역 자동검색 입력."""
@@ -6366,6 +6393,134 @@ enum ReviewSort {
   LIKES
 }
 
+# ---- src/features/search/search-admin.graphql ----
+extend type Query {
+  """
+  검색 키워드 바로가기 칩 전체(삭제 제외, 비활성·노출 기간 밖 포함)를 노출 순서(sortOrder·id)대로 조회한다.
+  adminReorderSearchKeywordChips는 이 목록 전체를 받는다. 관리자 로그인 필수. ADMIN 계정이 아니면 FORBIDDEN.
+  """
+  adminSearchKeywordChips: [AdminSearchKeywordChip!]!
+}
+
+extend type Mutation {
+  """
+  검색 키워드 바로가기 칩을 만든다. 새 칩은 맨 뒤에 붙는다. keyword는 검색과 같은 규칙(앞뒤 공백 제거,
+  연속 공백 1칸)으로 정규화하며 비면 KEYWORD_EMPTY, 200자를 넘으면 KEYWORD_TOO_LONG. 삭제되지 않은 칩과
+  키워드가 같으면(대소문자 무시) SEARCH_KEYWORD_CHIP_TAKEN, startsAt이 endsAt보다 늦거나 같으면
+  INVALID_EXPOSURE_WINDOW(모두 BAD_USER_INPUT). 관리자 로그인 필수. ADMIN 계정이 아니면 FORBIDDEN.
+  """
+  adminCreateSearchKeywordChip(
+    input: AdminCreateSearchKeywordChipInput!
+  ): AdminSearchKeywordChip!
+  """
+  검색 키워드 바로가기 칩을 수정한다. 전달한 필드만 바뀌며, 노출 기간은 현재 값과 병합한 최종 상태로 검증한다.
+  키워드·기간 규칙은 adminCreateSearchKeywordChip과 같다. 없거나 삭제됐으면 NOT_FOUND. 관리자 로그인 필수.
+  ADMIN 계정이 아니면 FORBIDDEN.
+  """
+  adminUpdateSearchKeywordChip(
+    input: AdminUpdateSearchKeywordChipInput!
+  ): AdminSearchKeywordChip!
+  """
+  검색 키워드 바로가기 칩을 삭제(soft-delete)한다. 삭제한 키워드는 새 칩으로 다시 만들 수 있다. 없거나 이미
+  삭제됐으면 NOT_FOUND. 관리자 로그인 필수. ADMIN 계정이 아니면 FORBIDDEN.
+  """
+  adminDeleteSearchKeywordChip(chipId: ID!): Boolean!
+  """
+  검색 키워드 바로가기 칩의 노출 순서를 바꾼다. chipIds 배열 순서가 곧 새 순서이며, 삭제되지 않은 칩
+  전부(adminSearchKeywordChips 결과)를 빠짐없이 보내야 한다. 중복 ID는 DUPLICATE_IDS, 개수가 다르면
+  IDS_LENGTH_MISMATCH, 없는 ID가 섞이면 INVALID_IDS(모두 BAD_USER_INPUT) — 화면을 연 사이 다른 관리자가
+  칩을 추가·삭제했으면 목록을 다시 불러와야 한다. 바뀐 순서의 전체 목록을 반환한다. 관리자 로그인 필수.
+  ADMIN 계정이 아니면 FORBIDDEN.
+  """
+  adminReorderSearchKeywordChips(
+    input: AdminReorderSearchKeywordChipsInput!
+  ): [AdminSearchKeywordChip!]!
+}
+
+"""
+검색 키워드 바로가기 칩 1건(관리자용).
+"""
+type AdminSearchKeywordChip {
+  id: ID!
+  """
+  칩 문구이자 누르면 실행되는 검색어(정규화된 값).
+  """
+  keyword: String!
+  """
+  노출 순서. 오름차순.
+  """
+  sortOrder: Int!
+  """
+  노출 여부. false면 기간과 무관하게 노출하지 않는다.
+  """
+  isActive: Boolean!
+  """
+  노출 시작 시각(포함). null이면 시작 제한 없음.
+  """
+  startsAt: DateTime
+  """
+  노출 종료 시각(제외). null이면 종료 제한 없음.
+  """
+  endsAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+검색 키워드 바로가기 칩 생성 입력.
+"""
+input AdminCreateSearchKeywordChipInput {
+  """
+  칩 문구이자 검색어. 정규화 후 1~200자(코드 포인트 기준).
+  """
+  keyword: String!
+  """
+  노출 여부. 기본 true.
+  """
+  isActive: Boolean = true
+  """
+  노출 시작 시각(포함, ISO 8601 오프셋 포함). 생략하면 시작 제한 없음.
+  """
+  startsAt: DateTime
+  """
+  노출 종료 시각(제외, ISO 8601 오프셋 포함). 생략하면 종료 제한 없음.
+  """
+  endsAt: DateTime
+}
+
+"""
+검색 키워드 바로가기 칩 수정 입력. 전달한 필드만 변경된다.
+"""
+input AdminUpdateSearchKeywordChipInput {
+  chipId: ID!
+  """
+  칩 문구이자 검색어. null은 허용하지 않는다.
+  """
+  keyword: String
+  """
+  노출 여부. null은 허용하지 않는다.
+  """
+  isActive: Boolean
+  """
+  노출 시작 시각(포함). null이면 시작 제한을 없앤다.
+  """
+  startsAt: DateTime
+  """
+  노출 종료 시각(제외). null이면 종료 제한을 없앤다.
+  """
+  endsAt: DateTime
+}
+
+"""
+검색 키워드 바로가기 칩 순서 변경 입력.
+"""
+input AdminReorderSearchKeywordChipsInput {
+  """
+  새 노출 순서대로 나열한 칩 ID 전체(삭제되지 않은 칩 전부).
+  """
+  chipIds: [ID!]!
+}
+
 # ---- src/features/search/search-entry.graphql ----
 extend type Query {
   """
@@ -6384,6 +6539,12 @@ extend type Query {
   검색 진입 화면 배너(placement=SEARCH) 1건. 등록된 배너가 없으면 null(FE placeholder 처리). 비로그인 접근 가능.
   """
   searchBanner: HomeBanner
+
+  """
+  검색 진입 화면 키워드 바로가기 칩(누르면 그 키워드로 검색). 노출 중인 칩의 키워드를 노출 순서대로 준다.
+  노출 여부가 켜져 있고 노출 기간(시작 포함, 종료 제외) 안인 칩만 포함하며, 없으면 빈 목록. 비로그인 접근 가능.
+  """
+  searchKeywordChips: [String!]!
 }
 
 extend type Mutation {
@@ -6563,7 +6724,7 @@ type SearchHistoryItem {
 # ---- src/features/search/search-result.graphql ----
 extend type Query {
   """
-  검색 결과 '전체' 탭 카운트(상품/매장). 필터·정렬 없이 키워드(+지역)만 반영. '전체 N'은 FE가 합산. 비로그인 접근 가능.
+  검색 결과 '전체' 탭 카운트(상품/매장). 필터·정렬 없이 키워드(+지역)만 반영하며, keyword를 생략하면 지역만 반영한다. '전체 N'은 FE가 합산. 비로그인 접근 가능.
   """
   searchSummary(input: SearchSummaryInput!): SearchSummary!
 }
@@ -6573,9 +6734,9 @@ extend type Query {
 """
 input SearchSummaryInput {
   """
-  검색어(정규화: trim·공백 축약, 빈값/200자 초과 400).
+  검색어. 규칙은 SearchProductsInput.keyword와 같다(생략·null이면 검색어 조건 없음, 빈 문자열·공백은 400).
   """
-  keyword: String!
+  keyword: String
   """
   2차 시군구 ID 다중 선택. 비우면 전국 대상.
   """
@@ -7292,14 +7453,16 @@ type PickupSlot {
 
 # ---- src/features/store/store-search.graphql ----
 extend type Query {
-  """키워드 매장 검색(검색 결과 매장 탭). 매장명에 단어별 AND 부분일치, 인기순 고정. 비로그인 접근 가능."""
+  """
+  매장 검색(검색 결과 매장 탭). 매장명에 단어별 AND 부분일치, 인기순 고정. keyword를 생략하면 지역 조건만 적용한다. 비로그인 접근 가능.
+  """
   searchStores(input: SearchStoresInput!): SearchStoreConnection!
 }
 
 """매장 검색 조건. 커서가 아니라 오프셋 방식이다."""
 input SearchStoresInput {
-  """검색어(정규화: trim·공백 축약, 빈값/200자 초과 400)."""
-  keyword: String!
+  """검색어. 규칙은 SearchProductsInput.keyword와 같다(생략·null이면 검색어 조건 없음, 빈 문자열·공백은 400)."""
+  keyword: String
   """2차 시군구 ID 다중 선택. 비우면 전국 대상."""
   regionIds: [ID!]
   """건너뛸 개수. 기본 0."""
