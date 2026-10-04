@@ -113,7 +113,9 @@ jobs:
         with:
           name: blob-${{ matrix.shard }}
           path: blob-report/
-          retention-days: 1
+          # 실패한 샤드도 올리므로 재실행 때 같은 이름이 생긴다(덮어쓰지 않으면 업로드 실패로 빨간불이 이어짐)
+          overwrite: true
+          retention-days: 7
           if-no-files-found: error
 
   # 필수 체크라 always()로 돈다 — needs 실패로 건너뛰면(skipped) 통과로 잡힌다
@@ -178,6 +180,7 @@ jobs:
           path: |
             coverage/coverage-summary.json
             coverage/coverage-final.json
+          overwrite: true
           retention-days: 90
           if-no-files-found: error
 
@@ -194,10 +197,11 @@ jobs:
           name: admin-fe-lcov
           fail_ci_if_error: true
 
-      # 기준은 이 레포 base 브랜치의 성공한 push 실행만 쓴다(PR 실행 아티팩트는 믿지 않음). base 커밋 실행 우선, 없으면 최신
+      # 기준은 이 레포 base 브랜치의 성공한 push 실행만 쓴다(PR 실행 아티팩트는 믿지 않음). base 커밋 실행 우선, 그다음 최신 순으로
+      # 아티팩트가 있는 실행을 최대 5개까지 찾는다. 임계 미달로 병합이 실패해도 요약이 있으면 댓글을 갱신한다
       - name: Fetch base coverage (PR)
         id: base
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && hashFiles('coverage/coverage-summary.json') != '' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -205,24 +209,24 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          run_id=$(gh api "repos/$REPO/actions/workflows/pr-check.yml/runs?branch=$BASE_REF&event=push&status=success&per_page=50" \
+          run_ids=$(gh api "repos/$REPO/actions/workflows/pr-check.yml/runs?branch=$BASE_REF&event=push&status=success&per_page=50" \
             | jq -r --arg repo "$REPO" --arg ref "$BASE_REF" --arg sha "$BASE_SHA" '
                 [.workflow_runs[] | select(.event == "push" and .head_branch == $ref and .head_repository.full_name == $repo)]
-                | (map(select(.head_sha == $sha)) + .)[0].id // empty')
-          if [ -z "$run_id" ]; then
-            echo "기준 실행 없음 — 비교 없이 리포트"
-            exit 0
-          fi
-          echo "기준 실행: $run_id"
-          if gh run download "$run_id" -R "$REPO" -n coverage-summary -D base-coverage \
-            && [ -f base-coverage/coverage-summary.json ]; then
-            echo "summary=base-coverage/coverage-summary.json" >> "$GITHUB_OUTPUT"
-          else
-            echo "기준 아티팩트 없음 — 비교 없이 리포트"
-          fi
+                | (map(select(.head_sha == $sha)) + .) | map(.id)
+                | reduce .[] as $id ([]; if any(.[]; . == $id) then . else . + [$id] end)
+                | .[:5][]')
+          for run_id in $run_ids; do
+            if gh run download "$run_id" -R "$REPO" -n coverage-summary -D base-coverage \
+              && [ -f base-coverage/coverage-summary.json ]; then
+              echo "기준 실행: $run_id"
+              echo "summary=base-coverage/coverage-summary.json" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "기준 아티팩트 없음 — 비교 없이 리포트"
 
       - name: Coverage report (PR comment)
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && hashFiles('coverage/coverage-summary.json') != '' }}
         uses: davelosert/vitest-coverage-report-action@c4bbc33a89b7ace0e63d35f1f7d4bcee31155a73 # v2.13.0
         with:
           json-summary-compare-path: ${{ steps.base.outputs.summary }}
@@ -233,6 +237,7 @@ jobs:
     needs: [lint, static, test, coverage-report]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}
     steps:
       - name: Require all jobs succeeded
         env:
