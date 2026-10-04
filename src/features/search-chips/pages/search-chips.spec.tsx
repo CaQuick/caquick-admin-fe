@@ -338,7 +338,8 @@ describe('검색 칩 순서 변경', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     }
-    await userEvent.hover(screen.getByRole('button', { name: '칩 추가' }));
+    // hover로 열면 병렬 실행 부하에서 간헐적으로 툴팁이 열리지 않아(10회 중 2회) 키보드 포커스로 연다
+    act(() => screen.getByRole('button', { name: '칩 추가' }).focus());
     expect(await screen.findByRole('tooltip')).toHaveTextContent(reason);
   });
 
