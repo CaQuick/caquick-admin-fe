@@ -251,19 +251,26 @@ describe('검색 칩 순서 변경', () => {
     boot();
     await screen.findByRole('cell', { name: '생일' });
     const dt = dataTransfer();
-    fireEvent.dragStart(handleOf('추석'), { dataTransfer: dt });
+    // 손잡이를 누르기 전에는 행을 끌 수 없다
+    expect(rowOf('추석')).toHaveAttribute('draggable', 'false');
+    fireEvent.pointerDown(handleOf('추석'));
+    expect(rowOf('추석')).toHaveAttribute('draggable', 'true');
+    expect(rowOf('생일')).toHaveAttribute('draggable', 'false');
+    fireEvent.dragStart(rowOf('추석'), { dataTransfer: dt });
     expect(dt.setData).toHaveBeenCalledWith('text/plain', '4');
     fireEvent.dragOver(rowOf('크리스마스'), { dataTransfer: dt });
     expect(rowOf('크리스마스').className).toContain('border-t-primary');
     fireEvent.drop(rowOf('크리스마스'), { dataTransfer: dt });
-    fireEvent.dragEnd(handleOf('추석'), { dataTransfer: dt });
+    fireEvent.dragEnd(rowOf('추석'), { dataTransfer: dt });
+    expect(rowOf('추석')).toHaveAttribute('draggable', 'false');
     expect(keywordsInTable()).toEqual(['생일', '추석', '크리스마스', '당일 픽업', '도시락 케이크']);
     expect(screen.getByRole('status')).toHaveTextContent(
       '추석을 전체 5개 가운데 2번째로 옮겼습니다.',
     );
 
     // 아래로 끌어 놓기
-    fireEvent.dragStart(handleOf('생일'), { dataTransfer: dt });
+    fireEvent.pointerDown(handleOf('생일'));
+    fireEvent.dragStart(rowOf('생일'), { dataTransfer: dt });
     fireEvent.dragOver(rowOf('당일 픽업'), { dataTransfer: dt });
     expect(rowOf('당일 픽업').className).toContain('border-b-primary');
     fireEvent.drop(rowOf('당일 픽업'), { dataTransfer: dt });
@@ -272,6 +279,15 @@ describe('검색 칩 순서 변경', () => {
     await userEvent.click(screen.getByRole('button', { name: '되돌리기' }));
     expect(keywordsInTable()).toEqual(['생일', '크리스마스', '당일 픽업', '추석', '도시락 케이크']);
     expect(screen.queryByText('순서를 바꿨습니다.')).not.toBeInTheDocument();
+  });
+
+  it('손잡이를 눌렀다 끌지 않고 떼면 행은 다시 끌 수 없다', async () => {
+    boot();
+    await screen.findByRole('cell', { name: '생일' });
+    fireEvent.pointerDown(handleOf('생일'));
+    expect(rowOf('생일')).toHaveAttribute('draggable', 'true');
+    fireEvent.pointerUp(handleOf('생일'));
+    expect(rowOf('생일')).toHaveAttribute('draggable', 'false');
   });
 
   it('끌지 않은 채 들어온 드래그(파일 등)는 무시한다', async () => {

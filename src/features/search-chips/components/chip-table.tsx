@@ -42,6 +42,8 @@ export function ChipTable({
   onMove,
 }: Props) {
   const qc = useQueryClient();
+  /** 손잡이를 누른 행. 그 행만 끌 수 있다(button은 Firefox에서 끌기를 시작하지 못해 행을 끈다) */
+  const [armedId, setArmedId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -72,6 +74,7 @@ export function ChipTable({
   };
 
   const endDrag = () => {
+    setArmedId(null);
     setDragId(null);
     setOverId(null);
   };
@@ -116,12 +119,20 @@ export function ChipTable({
               return (
                 <TableRow
                   key={chip.id}
+                  draggable={armedId === chip.id && !reorderDisabled}
                   data-dragging={dragId === chip.id || undefined}
                   className={cn(
                     'data-[dragging]:opacity-50',
                     isOver && dragFrom < index && 'border-b-2 border-b-primary',
                     isOver && dragFrom > index && 'border-t-2 border-t-primary',
                   )}
+                  onDragStart={(e) => {
+                    // 데이터가 비면 Firefox는 끌기를 시작하지 않는다
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', chip.id);
+                    setDragId(chip.id);
+                  }}
+                  onDragEnd={endDrag}
                   onDragOver={(e) => {
                     if (dragId === null) return;
                     e.preventDefault();
@@ -138,21 +149,14 @@ export function ChipTable({
                     <span className="inline-flex items-center gap-2 text-muted-foreground tabular-nums">
                       <button
                         type="button"
-                        draggable={!reorderDisabled}
                         aria-label={`${chip.keyword} 순서 바꾸기`}
                         aria-describedby={HINT_ID}
                         aria-disabled={reorderDisabled || undefined}
                         className="inline-flex size-7 cursor-grab items-center justify-center rounded-md hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                         onKeyDown={(e) => onHandleKey(e, chip.id)}
-                        onDragStart={(e) => {
-                          // 브라우저마다 dataTransfer가 비면 끌기가 시작되지 않는다(Firefox)
-                          e.dataTransfer.effectAllowed = 'move';
-                          e.dataTransfer.setData('text/plain', chip.id);
-                          const tr = e.currentTarget.closest('tr');
-                          if (tr) e.dataTransfer.setDragImage(tr, 16, 16);
-                          setDragId(chip.id);
-                        }}
-                        onDragEnd={endDrag}
+                        onPointerDown={() => setArmedId(chip.id)}
+                        // 끌지 않고 뗀 경우. 끌기가 시작되면 pointerup 대신 dragend가 온다
+                        onPointerUp={() => setArmedId(null)}
                       >
                         <GripVerticalIcon className="size-4" aria-hidden />
                       </button>
