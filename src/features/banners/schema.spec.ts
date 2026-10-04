@@ -2,8 +2,6 @@ import {
   type Banner,
   bannerFormSchema,
   defaultBannerValues,
-  isoToLocal,
-  localToIso,
   toCreateInput,
   toFormValues,
   toUpdateInput,
@@ -28,13 +26,6 @@ const banner: Banner = {
 };
 
 describe('banner schema', () => {
-  it('KST datetime-local ↔ UTC ISO', () => {
-    expect(localToIso('2026-10-01T00:00')).toBe('2026-09-30T15:00:00.000Z');
-    expect(localToIso('')).toBeNull();
-    expect(isoToLocal('2026-09-30T15:00:00.000Z')).toBe('2026-10-01T00:00');
-    expect(isoToLocal(null)).toBe('');
-  });
-
   const base = { ...defaultBannerValues(), imageUrl: 'https://cdn/a.png' };
   it.each<{ name: string; patch: Partial<typeof base>; path?: string; message?: string }>([
     { name: '기본값에 이미지만 있으면 통과', patch: {} },

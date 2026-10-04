@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 
-import { bannerLiveStatus } from './live-status';
+import { liveStatus } from '@/shared/lib/live-status';
 import { useLiveNow } from './use-live-now';
 
 const START = '2026-10-01T00:00:00.000Z';
@@ -14,7 +14,7 @@ describe('노출 상태의 지금', () => {
 
   it('화면을 켜 둔 채 시작 시각이 되면 예약이 노출 중으로, 종료 시각이 되면 종료로 바뀐다', () => {
     const b = { isActive: true, startsAt: START, endsAt: '2026-10-01T00:30:00.000Z' };
-    const { result } = renderHook(() => bannerLiveStatus(b, useLiveNow([b])));
+    const { result } = renderHook(() => liveStatus(b, useLiveNow([b])));
     expect(result.current).toBe('SCHEDULED');
 
     act(() => {
@@ -36,7 +36,7 @@ describe('노출 상태의 지금', () => {
 
   it('나중에 받은 목록의 경계가 이미 지났으면 곧바로 다시 잡는다', () => {
     const { result, rerender } = renderHook(
-      ({ banners }) => bannerLiveStatus(banners[0] ?? { isActive: false }, useLiveNow(banners)),
+      ({ banners }) => liveStatus(banners[0] ?? { isActive: false }, useLiveNow(banners)),
       { initialProps: { banners: [] as { isActive: boolean; startsAt?: string }[] } },
     );
     // 경계가 없어 '지금'이 멈춘 사이 시각이 시작 시각을 넘는다
@@ -61,7 +61,7 @@ describe('노출 상태의 지금', () => {
     const b = { isActive: true, startsAt: '2026-12-01T00:00:00.000Z' };
     // 상한을 넘기면 브라우저는 곧바로 불러 다시 그리기를 반복한다 — 가짜 타이머는 이를 흉내 내지 않아 지연 값을 직접 본다
     const spy = vi.spyOn(globalThis, 'setTimeout');
-    const { result } = renderHook(() => bannerLiveStatus(b, useLiveNow([b])));
+    const { result } = renderHook(() => liveStatus(b, useLiveNow([b])));
     expect(spy.mock.calls.map(([, ms]) => ms)).toContain(2 ** 31 - 1);
     expect(spy.mock.calls.every(([, ms]) => (ms ?? 0) <= 2 ** 31 - 1)).toBe(true);
     for (const _ of [1, 2]) {

@@ -46,3 +46,20 @@ export function formatKst(iso: string, withYear = false): string {
   const hhmm = `${String(k.getUTCHours()).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`;
   return `${withYear ? `${k.getUTCFullYear()}-` : ''}${mmdd} ${hhmm}`;
 }
+
+/** datetime-local(KST) → UTC ISO. 빈 값은 null. */
+export function localToIso(v: string): string | null {
+  if (!v) return null;
+  const [d, t] = v.split('T');
+  const [y, m, day] = (d ?? '').split('-').map(Number);
+  const [hh, mm] = (t ?? '00:00').split(':').map(Number);
+  if (!y || !m || !day) return null;
+  return new Date(Date.UTC(y, m - 1, day, hh ?? 0, mm ?? 0) - KST_OFFSET_MS).toISOString();
+}
+/** UTC ISO → datetime-local(KST) 값 */
+export function isoToLocal(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const k = new Date(new Date(iso).getTime() + KST_OFFSET_MS);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${k.getUTCFullYear()}-${p(k.getUTCMonth() + 1)}-${p(k.getUTCDate())}T${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
+}

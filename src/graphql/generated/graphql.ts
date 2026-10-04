@@ -143,6 +143,18 @@ export type AdminCreateRegionInput = {
   sortOrder?: number | null | undefined;
 };
 
+/** 검색 키워드 바로가기 칩 생성 입력. */
+export type AdminCreateSearchKeywordChipInput = {
+  /** 노출 종료 시각(제외, ISO 8601 오프셋 포함). 생략하면 종료 제한 없음. */
+  endsAt?: string | null | undefined;
+  /** 노출 여부. 기본 true. */
+  isActive?: boolean | null | undefined;
+  /** 칩 문구이자 검색어. 정규화 후 1~200자(코드 포인트 기준). */
+  keyword: string;
+  /** 노출 시작 시각(포함, ISO 8601 오프셋 포함). 생략하면 시작 제한 없음. */
+  startsAt?: string | null | undefined;
+};
+
 /** 판매자 온보딩 입력. 계정·자격증명·사업자 프로필·매장을 한 번에 만든다. */
 export type AdminCreateSellerInput = {
   /** 상호. */
@@ -300,6 +312,12 @@ export type AdminRegionListInput = {
   includeInactive?: boolean | null | undefined;
   /** 상위 지역 ID. 지정하면 그 아래 2차 지역만, 미지정 시 전체. */
   parentId?: string | number | null | undefined;
+};
+
+/** 검색 키워드 바로가기 칩 순서 변경 입력. */
+export type AdminReorderSearchKeywordChipsInput = {
+  /** 새 노출 순서대로 나열한 칩 ID 전체(삭제되지 않은 칩 전부). */
+  chipIds: Array<string | number>;
 };
 
 /** 관리자 비밀번호 초기화 입력. */
@@ -530,6 +548,19 @@ export type AdminUpdateRegionInput = {
   sortOrder?: number | null | undefined;
 };
 
+/** 검색 키워드 바로가기 칩 수정 입력. 전달한 필드만 변경된다. */
+export type AdminUpdateSearchKeywordChipInput = {
+  chipId: string | number;
+  /** 노출 종료 시각(제외). null이면 종료 제한을 없앤다. */
+  endsAt?: string | null | undefined;
+  /** 노출 여부. null은 허용하지 않는다. */
+  isActive?: boolean | null | undefined;
+  /** 칩 문구이자 검색어. null은 허용하지 않는다. */
+  keyword?: string | null | undefined;
+  /** 노출 시작 시각(포함). null이면 시작 제한을 없앤다. */
+  startsAt?: string | null | undefined;
+};
+
 /** 매장 기본 정보 대리 수정 입력. 전달한 필드만 변경된다(부분 수정). */
 export type AdminUpdateStoreBasicInfoInput = {
   /** 시·도 단위. null이면 제거. */
@@ -619,6 +650,8 @@ export type AuditTargetType =
   | 'REVIEW_COMMENT'
   /** 신고 처리. */
   | 'REVIEW_REPORT'
+  /** 검색 진입 화면 키워드 바로가기 칩. 순서 변경은 순서가 바뀐 칩마다 1건씩 남는다. */
+  | 'SEARCH_KEYWORD_CHIP'
   /** 매장 설정·콘텐츠. */
   | 'STORE'
   /** 태그 마스터. */
@@ -1133,6 +1166,39 @@ export type AdminResolveReviewReportMutationVariables = Exact<{
 
 
 export type AdminResolveReviewReportMutation = { adminResolveReviewReport: { id: string, status: ReviewReportStatus } };
+
+export type AdminSearchKeywordChipsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminSearchKeywordChipsQuery = { adminSearchKeywordChips: Array<{ id: string, keyword: string, sortOrder: number, isActive: boolean, startsAt: string | null, endsAt: string | null, createdAt: string, updatedAt: string }> };
+
+export type AdminCreateSearchKeywordChipMutationVariables = Exact<{
+  input: AdminCreateSearchKeywordChipInput;
+}>;
+
+
+export type AdminCreateSearchKeywordChipMutation = { adminCreateSearchKeywordChip: { id: string, keyword: string } };
+
+export type AdminUpdateSearchKeywordChipMutationVariables = Exact<{
+  input: AdminUpdateSearchKeywordChipInput;
+}>;
+
+
+export type AdminUpdateSearchKeywordChipMutation = { adminUpdateSearchKeywordChip: { id: string, keyword: string } };
+
+export type AdminDeleteSearchKeywordChipMutationVariables = Exact<{
+  chipId: string | number;
+}>;
+
+
+export type AdminDeleteSearchKeywordChipMutation = { adminDeleteSearchKeywordChip: boolean };
+
+export type AdminReorderSearchKeywordChipsMutationVariables = Exact<{
+  input: AdminReorderSearchKeywordChipsInput;
+}>;
+
+
+export type AdminReorderSearchKeywordChipsMutation = { adminReorderSearchKeywordChips: Array<{ id: string }> };
 
 export type AdminSellersQueryVariables = Exact<{
   input?: AdminSellerListInput | null | undefined;
@@ -2126,6 +2192,48 @@ export const AdminResolveReviewReportDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminResolveReviewReportMutation, AdminResolveReviewReportMutationVariables>;
+export const AdminSearchKeywordChipsDocument = new TypedDocumentString(`
+    query AdminSearchKeywordChips {
+  adminSearchKeywordChips {
+    id
+    keyword
+    sortOrder
+    isActive
+    startsAt
+    endsAt
+    createdAt
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSearchKeywordChipsQuery, AdminSearchKeywordChipsQueryVariables>;
+export const AdminCreateSearchKeywordChipDocument = new TypedDocumentString(`
+    mutation AdminCreateSearchKeywordChip($input: AdminCreateSearchKeywordChipInput!) {
+  adminCreateSearchKeywordChip(input: $input) {
+    id
+    keyword
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCreateSearchKeywordChipMutation, AdminCreateSearchKeywordChipMutationVariables>;
+export const AdminUpdateSearchKeywordChipDocument = new TypedDocumentString(`
+    mutation AdminUpdateSearchKeywordChip($input: AdminUpdateSearchKeywordChipInput!) {
+  adminUpdateSearchKeywordChip(input: $input) {
+    id
+    keyword
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdateSearchKeywordChipMutation, AdminUpdateSearchKeywordChipMutationVariables>;
+export const AdminDeleteSearchKeywordChipDocument = new TypedDocumentString(`
+    mutation AdminDeleteSearchKeywordChip($chipId: ID!) {
+  adminDeleteSearchKeywordChip(chipId: $chipId)
+}
+    `) as unknown as TypedDocumentString<AdminDeleteSearchKeywordChipMutation, AdminDeleteSearchKeywordChipMutationVariables>;
+export const AdminReorderSearchKeywordChipsDocument = new TypedDocumentString(`
+    mutation AdminReorderSearchKeywordChips($input: AdminReorderSearchKeywordChipsInput!) {
+  adminReorderSearchKeywordChips(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminReorderSearchKeywordChipsMutation, AdminReorderSearchKeywordChipsMutationVariables>;
 export const AdminSellersDocument = new TypedDocumentString(`
     query AdminSellers($input: AdminSellerListInput) {
   adminSellers(input: $input) {
