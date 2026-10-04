@@ -6,6 +6,7 @@ import {
   type AdminUpdateBannerInput,
 } from '@/graphql/generated/graphql';
 import { formatCount } from '@/shared/lib/format';
+import { isoToLocal, localToIso } from '@/shared/lib/kst';
 import { listSearchBase, optionalBoolText } from '@/shared/lib/list-search';
 
 export type Banner = AdminBannerQuery['adminBanner'];
@@ -44,24 +45,6 @@ export const bannersSearchSchema = z.object({
 });
 export type BannersSearch = z.infer<typeof bannersSearchSchema>;
 export type BannersSearchInput = z.input<typeof bannersSearchSchema>;
-
-const KST_OFFSET_MS = 9 * 3600_000;
-/** datetime-local(KST) → UTC ISO. 빈 값은 null. */
-export function localToIso(v: string): string | null {
-  if (!v) return null;
-  const [d, t] = v.split('T');
-  const [y, m, day] = (d ?? '').split('-').map(Number);
-  const [hh, mm] = (t ?? '00:00').split(':').map(Number);
-  if (!y || !m || !day) return null;
-  return new Date(Date.UTC(y, m - 1, day, hh ?? 0, mm ?? 0) - KST_OFFSET_MS).toISOString();
-}
-/** UTC ISO → datetime-local(KST) 값 */
-export function isoToLocal(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const k = new Date(new Date(iso).getTime() + KST_OFFSET_MS);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${k.getUTCFullYear()}-${p(k.getUTCMonth() + 1)}-${p(k.getUTCDate())}T${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
-}
 
 /** GraphQL Int(32비트 부호 있는 정수) 범위. 넘으면 서버가 요청 자체를 거절한다 */
 export const SORT_ORDER_MIN = -(2 ** 31);

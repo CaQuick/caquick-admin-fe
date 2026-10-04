@@ -2,8 +2,10 @@ import {
   addDays,
   formatKst,
   formatYmd,
+  isoToLocal,
   kstDayEndIso,
   kstDayStartIso,
+  localToIso,
   parseYmd,
   todayKst,
 } from './kst';
@@ -37,5 +39,12 @@ describe('kst', () => {
   it('formatKst는 UTC ISO를 KST 표시로', () => {
     expect(formatKst('2026-09-27T08:05:00.000Z')).toBe('09-27 17:05');
     expect(formatKst('2026-12-31T15:00:00.000Z', true)).toBe('2027-01-01 00:00');
+  });
+
+  it('KST datetime-local ↔ UTC ISO', () => {
+    expect(localToIso('2026-10-01T00:00')).toBe('2026-09-30T15:00:00.000Z');
+    expect(localToIso('')).toBeNull();
+    expect(isoToLocal('2026-09-30T15:00:00.000Z')).toBe('2026-10-01T00:00');
+    expect(isoToLocal(null)).toBe('');
   });
 });
