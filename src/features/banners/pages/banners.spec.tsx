@@ -27,6 +27,7 @@ const banner = {
   linkProductId: null,
   linkStoreId: null,
   linkCategoryId: null,
+  linkTargetAvailable: true,
   startsAt: null,
   endsAt: null,
   sortOrder: 0,
@@ -115,6 +116,35 @@ describe('배너', () => {
     await userEvent.click(screen.getByRole('button', { name: '가을 한정 삭제' }));
     await userEvent.click(await screen.findByRole('button', { name: '삭제' }));
     await vi.waitFor(() => expect(deleted).toEqual({ bannerId: '5' }));
+  });
+
+  it('목록: 링크 대상이 숨김인 배너는 현재 노출에서 건너뛰고 링크 대상 숨김으로 표시한다', async () => {
+    const rows = [
+      {
+        ...banner,
+        id: '5',
+        title: '대상 숨김',
+        linkType: 'PRODUCT',
+        linkProductId: '3',
+        linkTargetAvailable: false,
+      },
+      { ...banner, id: '6', title: '다음 배너', sortOrder: 1 },
+    ];
+    server.use(
+      gqlOk('AdminBanners', {
+        adminBanners: { items: rows, totalCount: 2, hasMore: false, nextCursor: null },
+      }),
+      gqlOk('AdminBannersVisible', {
+        adminBanners: { items: rows, hasMore: false, nextCursor: null },
+      }),
+    );
+    boot('/banners');
+    const statusOf = async (title: string) =>
+      within((await screen.findByRole('link', { name: title })).closest('tr')!).getAllByRole(
+        'cell',
+      )[2]!.textContent;
+    await vi.waitFor(async () => expect(await statusOf('다음 배너')).toBe('노출 중현재 노출'));
+    expect(await statusOf('대상 숨김')).toBe('노출 중링크 대상 숨김');
   });
 
   it('목록을 켜 둔 채 시작 시각이 되면 예약이 노출 중·현재 노출로 바뀐다', async () => {

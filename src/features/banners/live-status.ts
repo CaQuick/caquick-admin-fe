@@ -5,6 +5,7 @@ interface SlotBanner extends Timed {
   id: string;
   placement: BannerPlacement;
   linkCategoryId?: string | null;
+  linkTargetAvailable: boolean;
   sortOrder: number;
 }
 
@@ -26,13 +27,13 @@ const byId = (a: string, b: string) =>
 
 /**
  * 슬롯마다 지금 구매자에게 보이는 배너 1개의 ID. 노출 중인 것 가운데 정렬 순서가 가장 작고, 같으면 먼저 등록한(ID가 작은) 것.
- * 연결한 상품·매장·카테고리가 숨김이면 구매자 앱은 다음 배너로 넘어가는데, 이 목록은 그 상태를 모른다.
+ * 연결한 상품·매장·카테고리가 숨김이면(linkTargetAvailable=false) 구매자 앱처럼 건너뛰고 다음 배너를 고른다.
  */
 export function currentBannerIds(banners: readonly SlotBanner[], now: Date): Set<string> {
   const winners = new Map<string, SlotBanner>();
   for (const b of banners) {
     const key = slotKey(b);
-    if (key === null || liveStatus(b, now) !== 'LIVE') continue;
+    if (key === null || !b.linkTargetAvailable || liveStatus(b, now) !== 'LIVE') continue;
     const cur = winners.get(key);
     if (
       !cur ||
