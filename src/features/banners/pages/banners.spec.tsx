@@ -115,7 +115,7 @@ describe('배너', () => {
     await userEvent.click(screen.getByRole('button', { name: '가을 한정 삭제' }));
     await userEvent.click(await screen.findByRole('button', { name: '삭제' }));
     await vi.waitFor(() => expect(deleted).toEqual({ bannerId: '5' }));
-  }, 15_000); // 앱 부팅부터 여러 단계를 한 번에 도는 흐름이라 기본 5초가 빠듯하다
+  });
 
   it('목록을 켜 둔 채 시작 시각이 되면 예약이 노출 중·현재 노출로 바뀐다', async () => {
     // 실제 시간도 흐르게 둬 부팅·요청은 그대로 진행되고, 시작 시각만 앞당겨 넘긴다

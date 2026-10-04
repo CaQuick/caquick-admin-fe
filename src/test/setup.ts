@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 
 import { installZodKorean } from '@/shared/lib/zod-locale';
 
@@ -32,7 +32,18 @@ proto.setPointerCapture ??= () => undefined;
 proto.releasePointerCapture ??= () => undefined;
 proto.scrollIntoView ??= () => undefined;
 
+/** sonner가 import될 때 문서에 넣는 토스트 스타일시트를 찾는 표식 */
+const SONNER_STYLE_MARKER = 'data-sonner-toaster';
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+// sonner는 import 시점에 97규칙짜리 <style>을 넣는다. jsdom은 DOM이 바뀔 때마다 스타일 캐시를 버리고
+// getComputedStyle에서 문서의 모든 규칙을 다시 대조하는데, 역할·이름 조회가 조회 1회에 이를 100번 넘게 부른다.
+// 조작 직후 조회가 66ms → 22ms, 전체 스위트(커버리지) 합계 135초 → 99초. jsdom에서 토스트 CSS는 쓸 데가 없다
+beforeEach(() => {
+  document.querySelectorAll('style').forEach((el) => {
+    if (el.textContent?.includes(SONNER_STYLE_MARKER)) el.remove();
+  });
+});
 afterEach(() => {
   server.resetHandlers();
   cleanup();
