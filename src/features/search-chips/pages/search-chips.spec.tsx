@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, graphql } from 'msw';
+import { toast } from 'sonner';
 
 import { App } from '@/app/app';
 import { useAuthStore } from '@/features/auth';
@@ -61,6 +62,21 @@ function boot(chips: Chip[] = CHIPS) {
   window.history.pushState({}, '', '/search-chips');
   render(<App />);
   return { listCalls: () => listCalls };
+}
+
+const CHIP_GONE = '그사이 삭제된 칩입니다. 목록을 새로 불러왔으니 확인해 주세요.';
+/** NOT_FOUND는 칩이 지워졌을 때만 나므로, 이후 목록 조회는 그 칩을 뺀 목록을 준다 */
+function listWithoutChip(id: string) {
+  let calls = 0;
+  server.use(
+    graphql.query('AdminSearchKeywordChips', () => {
+      calls++;
+      return HttpResponse.json({
+        data: { adminSearchKeywordChips: CHIPS.filter((c) => c.id !== id) },
+      });
+    }),
+  );
+  return () => calls;
 }
 
 const keywordsInTable = () =>
@@ -375,9 +391,11 @@ describe('검색 칩 순서 변경', () => {
 });
 
 describe('검색 칩 추가·수정·삭제', () => {
-  beforeEach(() =>
-    useAuthStore.setState({ status: 'unknown', accessToken: null, mustChangePassword: false }),
-  );
+  beforeEach(() => {
+    useAuthStore.setState({ status: 'unknown', accessToken: null, mustChangePassword: false });
+    // sonner는 살아 있는 토스트를 새 Toaster에 다시 보여 주므로 앞 케이스의 토스트를 걷어 낸다
+    toast.dismiss();
+  });
 
   it('추가: 빈 키워드·거꾸로 된 기간을 막고, 정규화한 키워드와 UTC 기간을 보낸다', async () => {
     let created: unknown;
@@ -513,8 +531,8 @@ describe('검색 칩 추가·수정·삭제', () => {
     expect(calls).toBe(0);
   });
 
-  it('수정: 그사이 삭제된 칩이면 폼 위에 알리고 목록을 새로 불러온다', async () => {
-    const { listCalls } = boot();
+  it('수정: 그사이 삭제된 칩이면 토스트로 알리고 닫은 뒤, 그 칩이 빠진 목록을 새로 불러온다', async () => {
+    boot();
     server.use(
       gqlError('AdminUpdateSearchKeywordChip', {
         message: '검색 키워드 칩을 찾을 수 없습니다.',
@@ -526,12 +544,12 @@ describe('검색 칩 추가·수정·삭제', () => {
     await userEvent.click(await screen.findByRole('button', { name: '생일 수정' }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.type(within(dialog).getByRole('textbox', { name: '키워드' }), ' 케이크');
-    const before = listCalls();
+    const refetched = listWithoutChip('1');
     await userEvent.click(within(dialog).getByRole('button', { name: '저장' }));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      '그사이 삭제된 칩입니다. 목록을 새로 불러왔으니 확인해 주세요.',
-    );
-    await vi.waitFor(() => expect(listCalls()).toBe(before + 1));
+    await vi.waitFor(() => expect(refetched()).toBe(1));
+    await vi.waitFor(() => expect(screen.queryByRole('cell', { name: '생일' })).toBeNull());
+    expect(screen.getByText(CHIP_GONE)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('삭제: 키워드를 담아 확인하고, 지우면 토스트로 알린다', async () => {
@@ -553,8 +571,8 @@ describe('검색 칩 추가·수정·삭제', () => {
     await vi.waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
   });
 
-  it('삭제: 이미 없는 칩이면 알리고 목록을 새로 불러온 뒤 확인 창을 닫는다', async () => {
-    const { listCalls } = boot();
+  it('삭제: 이미 없는 칩이면 알리고, 그 칩이 빠진 목록을 새로 불러온 뒤 확인 창을 닫는다', async () => {
+    boot();
     server.use(
       gqlError('AdminDeleteSearchKeywordChip', {
         message: '검색 키워드 칩을 찾을 수 없습니다.',
@@ -565,12 +583,11 @@ describe('검색 칩 추가·수정·삭제', () => {
     );
     await userEvent.click(await screen.findByRole('button', { name: '생일 삭제' }));
     const confirm = await screen.findByRole('alertdialog');
-    const before = listCalls();
+    const refetched = listWithoutChip('1');
     await userEvent.click(within(confirm).getByRole('button', { name: '삭제' }));
-    expect(
-      await screen.findByText('그사이 삭제된 칩입니다. 목록을 새로 불러왔으니 확인해 주세요.'),
-    ).toBeInTheDocument();
-    await vi.waitFor(() => expect(listCalls()).toBe(before + 1));
+    await vi.waitFor(() => expect(refetched()).toBe(1));
+    await vi.waitFor(() => expect(screen.queryByRole('cell', { name: '생일' })).toBeNull());
+    expect(screen.getByText(CHIP_GONE)).toBeInTheDocument();
     await vi.waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
   });
 

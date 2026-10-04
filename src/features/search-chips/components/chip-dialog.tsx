@@ -66,10 +66,16 @@ export function ChipDialog({ trigger, chip }: Props) {
       setOpen(false);
     } catch (e) {
       const r = chipSaveError(e);
+      if (r.notFound) {
+        // 다시 받은 목록에서 행이 빠지면 이 다이얼로그도 함께 사라지므로 토스트로 알린다
+        toast.error(r.message);
+        setOpen(false);
+        await searchChipMutations.refresh(qc);
+        return;
+      }
       if (r.field)
         form.setError(r.field, { type: 'server', message: r.message }, { shouldFocus: true });
       else setError(r.message);
-      if (r.notFound) await searchChipMutations.refresh(qc);
     }
   });
 
