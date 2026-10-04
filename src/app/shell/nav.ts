@@ -10,6 +10,7 @@ import {
   BellIcon,
   MapPinIcon,
   ScrollTextIcon,
+  SearchIcon,
   ShieldIcon,
   MessageSquareIcon,
   MessagesSquareIcon,
@@ -30,6 +31,7 @@ interface NavItem {
     | '/categories'
     | '/tags'
     | '/banners'
+    | '/search-chips'
     | '/reports'
     | '/reviews'
     | '/review-comments'
@@ -73,6 +75,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/categories', label: '카테고리', icon: LayersIcon },
       { to: '/tags', label: '태그', icon: TagsIcon },
       { to: '/banners', label: '배너', icon: ImageIcon },
+      { to: '/search-chips', label: '검색 칩', icon: SearchIcon },
       { to: '/regions', label: '지역', icon: MapPinIcon },
     ],
   },

@@ -69,6 +69,11 @@ type Documents = {
     "\n  mutation AdminDeleteReview($input: AdminDeleteReviewInput!) {\n    adminDeleteReview(input: $input)\n  }\n": typeof types.AdminDeleteReviewDocument,
     "\n  mutation AdminDeleteReviewComment($input: AdminDeleteReviewCommentInput!) {\n    adminDeleteReviewComment(input: $input)\n  }\n": typeof types.AdminDeleteReviewCommentDocument,
     "\n  mutation AdminResolveReviewReport($input: AdminResolveReviewReportInput!) {\n    adminResolveReviewReport(input: $input) {\n      id\n      status\n    }\n  }\n": typeof types.AdminResolveReviewReportDocument,
+    "\n  query AdminSearchKeywordChips {\n    adminSearchKeywordChips {\n      id\n      keyword\n      sortOrder\n      isActive\n      startsAt\n      endsAt\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.AdminSearchKeywordChipsDocument,
+    "\n  mutation AdminCreateSearchKeywordChip($input: AdminCreateSearchKeywordChipInput!) {\n    adminCreateSearchKeywordChip(input: $input) {\n      id\n      keyword\n    }\n  }\n": typeof types.AdminCreateSearchKeywordChipDocument,
+    "\n  mutation AdminUpdateSearchKeywordChip($input: AdminUpdateSearchKeywordChipInput!) {\n    adminUpdateSearchKeywordChip(input: $input) {\n      id\n      keyword\n    }\n  }\n": typeof types.AdminUpdateSearchKeywordChipDocument,
+    "\n  mutation AdminDeleteSearchKeywordChip($chipId: ID!) {\n    adminDeleteSearchKeywordChip(chipId: $chipId)\n  }\n": typeof types.AdminDeleteSearchKeywordChipDocument,
+    "\n  mutation AdminReorderSearchKeywordChips($input: AdminReorderSearchKeywordChipsInput!) {\n    adminReorderSearchKeywordChips(input: $input) {\n      id\n    }\n  }\n": typeof types.AdminReorderSearchKeywordChipsDocument,
     "\n  query AdminSellers($input: AdminSellerListInput) {\n    adminSellers(input: $input) {\n      items {\n        accountId\n        username\n        email\n        name\n        status\n        mustChangePassword\n        lastLoginAt\n        profile {\n          businessName\n          businessPhone\n          websiteUrl\n        }\n        store {\n          id\n          storeName\n          storePhone\n          addressFull\n          isActive\n        }\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": typeof types.AdminSellersDocument,
     "\n  query AdminSeller($accountId: ID!) {\n    adminSeller(accountId: $accountId) {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      profile {\n        businessName\n        businessPhone\n        websiteUrl\n      }\n      store {\n        id\n        storeName\n        storePhone\n        addressFull\n        isActive\n      }\n      createdAt\n    }\n  }\n": typeof types.AdminSellerDocument,
     "\n  mutation AdminCreateSeller($input: AdminCreateSellerInput!) {\n    adminCreateSeller(input: $input) {\n      accountId\n      username\n    }\n  }\n": typeof types.AdminCreateSellerDocument,
@@ -142,6 +147,11 @@ const documents: Documents = {
     "\n  mutation AdminDeleteReview($input: AdminDeleteReviewInput!) {\n    adminDeleteReview(input: $input)\n  }\n": types.AdminDeleteReviewDocument,
     "\n  mutation AdminDeleteReviewComment($input: AdminDeleteReviewCommentInput!) {\n    adminDeleteReviewComment(input: $input)\n  }\n": types.AdminDeleteReviewCommentDocument,
     "\n  mutation AdminResolveReviewReport($input: AdminResolveReviewReportInput!) {\n    adminResolveReviewReport(input: $input) {\n      id\n      status\n    }\n  }\n": types.AdminResolveReviewReportDocument,
+    "\n  query AdminSearchKeywordChips {\n    adminSearchKeywordChips {\n      id\n      keyword\n      sortOrder\n      isActive\n      startsAt\n      endsAt\n      createdAt\n      updatedAt\n    }\n  }\n": types.AdminSearchKeywordChipsDocument,
+    "\n  mutation AdminCreateSearchKeywordChip($input: AdminCreateSearchKeywordChipInput!) {\n    adminCreateSearchKeywordChip(input: $input) {\n      id\n      keyword\n    }\n  }\n": types.AdminCreateSearchKeywordChipDocument,
+    "\n  mutation AdminUpdateSearchKeywordChip($input: AdminUpdateSearchKeywordChipInput!) {\n    adminUpdateSearchKeywordChip(input: $input) {\n      id\n      keyword\n    }\n  }\n": types.AdminUpdateSearchKeywordChipDocument,
+    "\n  mutation AdminDeleteSearchKeywordChip($chipId: ID!) {\n    adminDeleteSearchKeywordChip(chipId: $chipId)\n  }\n": types.AdminDeleteSearchKeywordChipDocument,
+    "\n  mutation AdminReorderSearchKeywordChips($input: AdminReorderSearchKeywordChipsInput!) {\n    adminReorderSearchKeywordChips(input: $input) {\n      id\n    }\n  }\n": types.AdminReorderSearchKeywordChipsDocument,
     "\n  query AdminSellers($input: AdminSellerListInput) {\n    adminSellers(input: $input) {\n      items {\n        accountId\n        username\n        email\n        name\n        status\n        mustChangePassword\n        lastLoginAt\n        profile {\n          businessName\n          businessPhone\n          websiteUrl\n        }\n        store {\n          id\n          storeName\n          storePhone\n          addressFull\n          isActive\n        }\n        createdAt\n      }\n      totalCount\n      hasMore\n      nextCursor\n    }\n  }\n": types.AdminSellersDocument,
     "\n  query AdminSeller($accountId: ID!) {\n    adminSeller(accountId: $accountId) {\n      accountId\n      username\n      email\n      name\n      status\n      mustChangePassword\n      lastLoginAt\n      profile {\n        businessName\n        businessPhone\n        websiteUrl\n      }\n      store {\n        id\n        storeName\n        storePhone\n        addressFull\n        isActive\n      }\n      createdAt\n    }\n  }\n": types.AdminSellerDocument,
     "\n  mutation AdminCreateSeller($input: AdminCreateSellerInput!) {\n    adminCreateSeller(input: $input) {\n      accountId\n      username\n    }\n  }\n": types.AdminCreateSellerDocument,
@@ -377,6 +387,26 @@ export function graphql(source: "\n  mutation AdminDeleteReviewComment($input: A
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation AdminResolveReviewReport($input: AdminResolveReviewReportInput!) {\n    adminResolveReviewReport(input: $input) {\n      id\n      status\n    }\n  }\n"): typeof import('./graphql').AdminResolveReviewReportDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AdminSearchKeywordChips {\n    adminSearchKeywordChips {\n      id\n      keyword\n      sortOrder\n      isActive\n      startsAt\n      endsAt\n      createdAt\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AdminSearchKeywordChipsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminCreateSearchKeywordChip($input: AdminCreateSearchKeywordChipInput!) {\n    adminCreateSearchKeywordChip(input: $input) {\n      id\n      keyword\n    }\n  }\n"): typeof import('./graphql').AdminCreateSearchKeywordChipDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminUpdateSearchKeywordChip($input: AdminUpdateSearchKeywordChipInput!) {\n    adminUpdateSearchKeywordChip(input: $input) {\n      id\n      keyword\n    }\n  }\n"): typeof import('./graphql').AdminUpdateSearchKeywordChipDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminDeleteSearchKeywordChip($chipId: ID!) {\n    adminDeleteSearchKeywordChip(chipId: $chipId)\n  }\n"): typeof import('./graphql').AdminDeleteSearchKeywordChipDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AdminReorderSearchKeywordChips($input: AdminReorderSearchKeywordChipsInput!) {\n    adminReorderSearchKeywordChips(input: $input) {\n      id\n    }\n  }\n"): typeof import('./graphql').AdminReorderSearchKeywordChipsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

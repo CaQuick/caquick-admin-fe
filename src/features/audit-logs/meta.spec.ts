@@ -1,3 +1,8 @@
+import { buildSchema, isEnumType } from 'graphql';
+
+// vite의 ?raw 가져오기 — codegen이 읽는 SDL 스냅샷 원문. 타입 수준 검사는 meta.ts의 Record가 맡는다
+import sdl from '../../../schema/schema.graphql?raw';
+
 import {
   accountLabel,
   actionMeta,
@@ -7,6 +12,7 @@ import {
   hasAuditFilters,
   prettyJson,
   targetLabel,
+  TARGET_TYPES,
   toAuditListInput,
 } from './meta';
 
@@ -116,5 +122,41 @@ describe('변경 전·후 항목 표', () => {
     ['null JSON', 'null', '{"a":1}'],
   ])('%s이면 표를 만들지 않는다(원문만 보인다)', (_, before, after) => {
     expect(diffRows(before, after)).toBeNull();
+  });
+});
+
+/** 스냅샷의 AuditTargetType 값 전부. 손으로 적은 목록과 대조하는 정답지 */
+function schemaTargetTypes(): string[] {
+  const t = buildSchema(sdl).getType('AuditTargetType');
+  if (!isEnumType(t)) throw new Error('AuditTargetType enum이 스키마에 없다');
+  return t.getValues().map((v) => v.name);
+}
+
+describe('감사 대상 유형 라벨', () => {
+  it('스키마의 대상 유형은 10개 이상이다(정답지가 비어 통과하지 않게)', () => {
+    expect(schemaTargetTypes().length).toBeGreaterThanOrEqual(10);
+  });
+
+  it.each(schemaTargetTypes())('%s는 원문이 아닌 한국어 라벨로 보이고 필터에 나온다', (value) => {
+    expect(TARGET_TYPES.filter((t) => t.value === value)).toHaveLength(1);
+    expect(targetLabel(value)).not.toBe(value);
+  });
+
+  it('스키마에 없는 유형은 라벨 표에도 없다', () => {
+    const known = new Set(schemaTargetTypes());
+    expect(TARGET_TYPES.map((t) => t.value).filter((v) => !known.has(v))).toEqual([]);
+  });
+
+  it('검색 칩은 검색 칩으로 보이고, 변경 전·후 항목도 한국어로 보인다', () => {
+    expect(targetLabel('SEARCH_KEYWORD_CHIP')).toBe('검색 칩');
+    const snapshot =
+      '{"keyword":"생일","sortOrder":1,"isActive":true,"startsAt":null,"endsAt":null}';
+    expect(diffRows(null, snapshot)!.map((r) => r.label)).toEqual([
+      '키워드',
+      '정렬 순서',
+      '노출',
+      '노출 시작',
+      '노출 종료',
+    ]);
   });
 });

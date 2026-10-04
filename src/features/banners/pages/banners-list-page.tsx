@@ -6,8 +6,10 @@ import { toast } from 'sonner';
 
 import { type AdminBannersQuery } from '@/graphql/generated/graphql';
 import { messageFor } from '@/shared/api';
+import { useLiveNow } from '@/shared/hooks/use-live-now';
 import { formatCount } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
+import { LIVE_STATUS, liveStatus } from '@/shared/lib/live-status';
 import { DEFAULT_LIMIT } from '@/shared/lib/list-search';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
@@ -21,9 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusPill } from '@/shared/ui/status-pill';
 
 import { bannersListQueryOptions, deleteBanner, visibleBannersQueryOptions } from '../api/queries';
-import { LIVE_STATUS, bannerLiveStatus, currentBannerIds } from '../live-status';
+import { currentBannerIds } from '../live-status';
 import { type BannersSearch, type BannersSearchInput, LINK_TYPES, PLACEMENTS } from '../schema';
-import { useLiveNow } from '../use-live-now';
 
 type BannerRow = AdminBannersQuery['adminBanners']['items'][number];
 const ALL = '__all__';
@@ -81,7 +82,7 @@ export function BannersListPage({ search, onSearchChange }: Props) {
       id: 'status',
       header: '노출 상태',
       cell: ({ row }) => {
-        const s = LIVE_STATUS[bannerLiveStatus(row.original, now)];
+        const s = LIVE_STATUS[liveStatus(row.original, now)];
         return (
           <span className="flex items-center gap-1.5">
             <StatusPill tone={s.tone}>{s.label}</StatusPill>
