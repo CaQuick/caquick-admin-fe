@@ -84,9 +84,14 @@ const keywordsInTable = () =>
     .getAllByRole('row')
     .slice(1)
     .map((r) => within(r).getAllByRole('cell')[1]!.textContent);
-const rowOf = (keyword: string) => screen.getByRole('cell', { name: keyword }).closest('tr')!;
 const handleOf = (keyword: string) =>
   screen.getByRole('button', { name: `${keyword} 순서 바꾸기` });
+// 셀 이름 조회(getByRole('cell', { name }))는 모든 셀의 접근 가능한 이름을 계산해 회당 수십 ms가 든다 —
+// aria-label로 바로 찾히는 손잡이에서 행을 잡는다(전체 실행 부하에서 드래그 흐름이 5초를 넘던 원인)
+const rowOf = (keyword: string) => handleOf(keyword).closest('tr')!;
+/** 표가 그려질 때까지 기다린다 — 셀 이름 대신 손잡이 이름으로(같은 이유) */
+const tableReady = (keyword = '생일') =>
+  screen.findByRole('button', { name: `${keyword} 순서 바꾸기` });
 const dataTransfer = () => ({
   effectAllowed: 'none',
   dropEffect: 'none',
@@ -125,7 +130,7 @@ describe('검색 칩 목록', () => {
     { keyword: '도시락 케이크', status: '숨김', period: '제한 없음' },
   ])('$keyword: $status · $period', async ({ keyword, status, period }) => {
     boot();
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     const cells = within(rowOf(keyword)).getAllByRole('cell');
     expect(cells[0]).toHaveTextContent(String(CHIPS.findIndex((c) => c.keyword === keyword) + 1));
     expect(cells[2]).toHaveTextContent(status);
@@ -218,7 +223,7 @@ describe('검색 칩 순서 변경', () => {
         return HttpResponse.json({ data: { adminReorderSearchKeywordChips: [] } });
       }),
     );
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     const handle = handleOf('생일');
     expect(handle).toHaveAccessibleDescription(
       '손잡이를 끌거나, 손잡이에서 ↑↓ 키로 순서를 바꿉니다.',
@@ -256,7 +261,7 @@ describe('검색 칩 순서 변경', () => {
 
   it('맨 뒤 칩에서 ↓를 누르면 맨 뒤라고 알리고 순서는 그대로다', async () => {
     boot();
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     handleOf('도시락 케이크').focus();
     await userEvent.keyboard('{ArrowDown}');
     expect(screen.getByRole('status')).toHaveTextContent('이미 맨 뒤입니다.');
@@ -265,7 +270,7 @@ describe('검색 칩 순서 변경', () => {
 
   it('손잡이를 끌어 다른 칩 위에 놓으면 그 자리로 옮기고, 되돌리기로 서버 순서로 돌아간다', async () => {
     boot();
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     const dt = dataTransfer();
     // 손잡이를 누르기 전에는 행을 끌 수 없다
     expect(rowOf('추석')).toHaveAttribute('draggable', 'false');
@@ -299,7 +304,7 @@ describe('검색 칩 순서 변경', () => {
 
   it('손잡이를 눌렀다 끌지 않고 떼면 행은 다시 끌 수 없다', async () => {
     boot();
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     fireEvent.pointerDown(handleOf('생일'));
     expect(rowOf('생일')).toHaveAttribute('draggable', 'true');
     fireEvent.pointerUp(handleOf('생일'));
@@ -308,7 +313,7 @@ describe('검색 칩 순서 변경', () => {
 
   it('끌지 않은 채 들어온 드래그(파일 등)는 무시한다', async () => {
     boot();
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     fireEvent.drop(rowOf('생일'), { dataTransfer: dataTransfer() });
     expect(keywordsInTable()[0]).toBe('생일');
     expect(screen.queryByText('순서를 바꿨습니다.')).not.toBeInTheDocument();
@@ -316,7 +321,7 @@ describe('검색 칩 순서 변경', () => {
 
   it('원래 자리로 되돌려 놓으면 바뀐 것이 없어 저장 줄이 사라진다', async () => {
     boot();
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     handleOf('생일').focus();
     await userEvent.keyboard('{ArrowDown}');
     expect(screen.getByText('순서를 바꿨습니다.')).toBeInTheDocument();
@@ -326,7 +331,7 @@ describe('검색 칩 순서 변경', () => {
 
   it('저장 전에는 추가·수정·삭제를 막고 이유를 알린다', async () => {
     boot();
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     handleOf('생일').focus();
     await userEvent.keyboard('{ArrowDown}');
     const reason = '바꾼 순서를 저장하거나 되돌린 뒤에 할 수 있습니다.';
@@ -355,7 +360,7 @@ describe('검색 칩 순서 변경', () => {
           statusCode: 400,
         }),
       );
-      await screen.findByRole('cell', { name: '생일' });
+      await tableReady();
       handleOf('생일').focus();
       await userEvent.keyboard('{ArrowDown}');
       await userEvent.click(screen.getByRole('button', { name: '순서 저장' }));
@@ -381,7 +386,7 @@ describe('검색 칩 순서 변경', () => {
         statusCode: 400,
       }),
     );
-    await screen.findByRole('cell', { name: '생일' });
+    await tableReady();
     handleOf('생일').focus();
     await userEvent.keyboard('{ArrowDown}');
     await userEvent.click(screen.getByRole('button', { name: '순서 저장' }));
