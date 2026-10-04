@@ -10,13 +10,16 @@ permissions:
   contents: read
 
 concurrency:
-  # PR push는 같은 PR의 이전 실행을 취소, main/develop push는 커밋별 독립 실행
+  # PR push는 같은 PR의 이전 실행을 취소, main/develop push는 커밋별 독립 실행(기준 커버리지 아티팩트 유실 방지)
   group: ci-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  # test 잡 matrix.shard와 함께 바꾼다 — coverage-report가 blob 개수를 이 값과 대조한다
+  SHARD_COUNT: 3
+
 jobs:
-  # 로컬 validate(pre-push)와 같은 순서. 보호된 check status라 --no-verify·훅 미설치를 우회하지 못한다
-  check:
+  lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -38,41 +41,10 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Type check
-        run: pnpm typecheck
-
-      - name: Dead code / unused deps (knip)
-        run: pnpm knip
-
-      - name: Test with coverage
-        run: pnpm test:cov
-
-      # CODECOV_TOKEN이 레포 시크릿에 있을 때만 올린다 — 등록 전에는 건너뛰고, 등록 뒤 실패는 CI 실패로 드러낸다
-      - name: Upload coverage to Codecov
-        if: env.CODECOV_TOKEN != ''
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          disable_search: true
-          name: admin-fe-lcov
-          fail_ci_if_error: true
-
-      - name: Build
-        run: |
-          pnpm build
-          test -f dist/index.html
-
-  # PR 코멘트에 커버리지 표. check와 별도 잡이라 필수 체크 이름이 안정적이다
-  coverage-report:
-    if: github.event_name == 'pull_request'
+  # build가 tsc -b를 돌리므로 별도 typecheck 단계는 두지 않는다
+  static:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -89,12 +61,190 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test with coverage
-        run: pnpm test:cov
+      - name: Codegen freshness
+        run: pnpm codegen:check
 
-      - name: Coverage report (vitest)
-        if: always()
+      - name: Dead code / unused deps (knip)
+        run: pnpm knip
+
+      - name: Build
+        run: |
+          pnpm build
+          test -f dist/index.html
+
+  # 샤드는 커버리지 일부만 가져 임계를 0으로 끈다. 임계는 coverage-report가 합친 결과로 검사한다
+  test:
+    name: test (${{ matrix.shard }}/${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js (24.x) & pnpm cache
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test shard with coverage
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: >-
+          pnpm exec vitest run --coverage --shard="$SHARD/$SHARD_COUNT"
+          --reporter=default --reporter=blob --outputFile.blob="blob-report/blob-$SHARD.json"
+          --coverage.thresholds.lines=0 --coverage.thresholds.functions=0
+          --coverage.thresholds.branches=0 --coverage.thresholds.statements=0
+
+      # 기본 경로(.vitest/blob)는 숨김 폴더라 upload-artifact가 건너뛴다
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: blob-${{ matrix.shard }}
+          path: blob-report/
+          # 실패한 샤드도 올리므로 재실행 때 같은 이름이 생긴다(덮어쓰지 않으면 업로드 실패로 빨간불이 이어짐)
+          overwrite: true
+          retention-days: 7
+          if-no-files-found: error
+
+  # 필수 체크라 always()로 돈다 — needs 실패로 건너뛰면(skipped) 통과로 잡힌다
+  coverage-report:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Require all test shards passed
+        env:
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [ "$TEST_RESULT" != "success" ]; then
+            echo "test 샤드 결과: $TEST_RESULT"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js (24.x) & pnpm cache
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download blob reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: blob-*
+          merge-multiple: true
+          path: blob-report
+
+      # 빠진 샤드가 있으면 부분 커버리지가 된다. 임계(vitest.config.ts)는 합친 결과에 적용된다
+      - name: Merge shard reports (coverage thresholds)
+        run: |
+          count=$(find blob-report -name 'blob-*.json' | wc -l)
+          if [ "$count" -ne "$SHARD_COUNT" ]; then
+            echo "blob ${count}개, 기대 ${SHARD_COUNT}개"
+            exit 1
+          fi
+          pnpm exec vitest run --merge-reports=blob-report --coverage
+
+      # develop·main push의 요약이 이후 PR의 비교 기준이 된다. 업로드 실패가 배포를 막지 않게 둔다
+      - name: Upload base coverage (push)
+        if: github.event_name == 'push'
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-summary
+          path: |
+            coverage/coverage-summary.json
+            coverage/coverage-final.json
+          overwrite: true
+          retention-days: 90
+          if-no-files-found: error
+
+      # CODECOV_TOKEN이 레포 시크릿에 있을 때만 올린다 — 등록 전에는 건너뛰고, 등록 뒤 실패는 CI 실패로 드러낸다
+      - name: Upload coverage to Codecov
+        if: env.CODECOV_TOKEN != ''
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          disable_search: true
+          name: admin-fe-lcov
+          fail_ci_if_error: true
+
+      # 기준은 이 레포 base 브랜치의 성공한 push 실행만 쓴다(PR 실행 아티팩트는 믿지 않음). base 커밋 실행 우선, 그다음 최신 순으로
+      # 아티팩트가 있는 실행을 최대 5개까지 찾는다. 임계 미달로 병합이 실패해도 요약이 있으면 댓글을 갱신한다
+      - name: Fetch base coverage (PR)
+        id: base
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && hashFiles('coverage/coverage-summary.json') != '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          run_ids=$(gh api "repos/$REPO/actions/workflows/pr-check.yml/runs?branch=$BASE_REF&event=push&status=success&per_page=50" \
+            | jq -r --arg repo "$REPO" --arg ref "$BASE_REF" --arg sha "$BASE_SHA" '
+                [.workflow_runs[] | select(.event == "push" and .head_branch == $ref and .head_repository.full_name == $repo)]
+                | (map(select(.head_sha == $sha)) + .) | map(.id)
+                | reduce .[] as $id ([]; if any(.[]; . == $id) then . else . + [$id] end)
+                | .[:5][]')
+          for run_id in $run_ids; do
+            if gh run download "$run_id" -R "$REPO" -n coverage-summary -D base-coverage \
+              && [ -f base-coverage/coverage-summary.json ]; then
+              echo "기준 실행: $run_id"
+              echo "summary=base-coverage/coverage-summary.json" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "기준 아티팩트 없음 — 비교 없이 리포트"
+
+      - name: Coverage report (PR comment)
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && hashFiles('coverage/coverage-summary.json') != '' }}
         uses: davelosert/vitest-coverage-report-action@c4bbc33a89b7ace0e63d35f1f7d4bcee31155a73 # v2.13.0
+        with:
+          json-summary-compare-path: ${{ steps.base.outputs.summary }}
+
+  # 필수 체크 집계. 건너뜀·취소도 실패로 본다 — 보호된 status라 --no-verify·훅 미설치를 우회하지 못한다
+  check:
+    if: always()
+    needs: [lint, static, test, coverage-report]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require all jobs succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success")' > /dev/null
 
   pr-title:
     if: github.event_name == 'pull_request'

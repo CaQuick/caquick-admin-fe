@@ -29,7 +29,8 @@ export default defineConfig({
         'src/main.tsx',
         'src/**/*.d.ts',
       ],
-      thresholds: { lines: 80, statements: 80, branches: 70, functions: 80 },
+      // 실측(샤드 합산 = 단일 실행)의 정수 내림. CI는 coverage-report가 합친 결과로 검사한다
+      thresholds: { lines: 96, statements: 95, branches: 88, functions: 94 },
     },
   },
 });
