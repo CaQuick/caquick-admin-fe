@@ -20,6 +20,7 @@ import { Route as AuthedShellCategoriesRouteImport } from './routes/_authed/_she
 import { Route as AuthedShellRegionsRouteImport } from './routes/_authed/_shell/regions'
 import { Route as AuthedShellReviewCommentsRouteImport } from './routes/_authed/_shell/review-comments'
 import { Route as AuthedShellReviewsRouteImport } from './routes/_authed/_shell/reviews'
+import { Route as AuthedShellSearchChipsRouteImport } from './routes/_authed/_shell/search-chips'
 import { Route as AuthedShellTagsRouteImport } from './routes/_authed/_shell/tags'
 import { Route as AuthedShellBannersIndexRouteImport } from './routes/_authed/_shell/banners/index'
 import { Route as AuthedShellBannersBannerIdRouteImport } from './routes/_authed/_shell/banners/$bannerId'
@@ -92,6 +93,11 @@ const AuthedShellReviewCommentsRoute =
 const AuthedShellReviewsRoute = AuthedShellReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellSearchChipsRoute = AuthedShellSearchChipsRouteImport.update({
+  id: '/search-chips',
+  path: '/search-chips',
   getParentRoute: () => AuthedShellRoute,
 } as any)
 const AuthedShellTagsRoute = AuthedShellTagsRouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/regions': typeof AuthedShellRegionsRoute
   '/review-comments': typeof AuthedShellReviewCommentsRoute
   '/reviews': typeof AuthedShellReviewsRoute
+  '/search-chips': typeof AuthedShellSearchChipsRoute
   '/tags': typeof AuthedShellTagsRoute
   '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
   '/banners/new': typeof AuthedShellBannersNewRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/regions': typeof AuthedShellRegionsRoute
   '/review-comments': typeof AuthedShellReviewCommentsRoute
   '/reviews': typeof AuthedShellReviewsRoute
+  '/search-chips': typeof AuthedShellSearchChipsRoute
   '/tags': typeof AuthedShellTagsRoute
   '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
   '/banners/new': typeof AuthedShellBannersNewRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/_authed/_shell/regions': typeof AuthedShellRegionsRoute
   '/_authed/_shell/review-comments': typeof AuthedShellReviewCommentsRoute
   '/_authed/_shell/reviews': typeof AuthedShellReviewsRoute
+  '/_authed/_shell/search-chips': typeof AuthedShellSearchChipsRoute
   '/_authed/_shell/tags': typeof AuthedShellTagsRoute
   '/_authed/_shell/': typeof AuthedShellIndexRoute
   '/_authed/_shell/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/regions'
     | '/review-comments'
     | '/reviews'
+    | '/search-chips'
     | '/tags'
     | '/banners/$bannerId'
     | '/banners/new'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/regions'
     | '/review-comments'
     | '/reviews'
+    | '/search-chips'
     | '/tags'
     | '/banners/$bannerId'
     | '/banners/new'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/_authed/_shell/regions'
     | '/_authed/_shell/review-comments'
     | '/_authed/_shell/reviews'
+    | '/_authed/_shell/search-chips'
     | '/_authed/_shell/tags'
     | '/_authed/_shell/'
     | '/_authed/_shell/banners/$bannerId'
@@ -470,6 +482,13 @@ declare module '@tanstack/react-router' {
       path: '/reviews'
       fullPath: '/reviews'
       preLoaderRoute: typeof AuthedShellReviewsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/search-chips': {
+      id: '/_authed/_shell/search-chips'
+      path: '/search-chips'
+      fullPath: '/search-chips'
+      preLoaderRoute: typeof AuthedShellSearchChipsRouteImport
       parentRoute: typeof AuthedShellRoute
     }
     '/_authed/_shell/tags': {
@@ -615,6 +634,7 @@ interface AuthedShellRouteChildren {
   AuthedShellRegionsRoute: typeof AuthedShellRegionsRoute
   AuthedShellReviewCommentsRoute: typeof AuthedShellReviewCommentsRoute
   AuthedShellReviewsRoute: typeof AuthedShellReviewsRoute
+  AuthedShellSearchChipsRoute: typeof AuthedShellSearchChipsRoute
   AuthedShellTagsRoute: typeof AuthedShellTagsRoute
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
   AuthedShellBannersBannerIdRoute: typeof AuthedShellBannersBannerIdRoute
@@ -644,6 +664,7 @@ const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellRegionsRoute: AuthedShellRegionsRoute,
   AuthedShellReviewCommentsRoute: AuthedShellReviewCommentsRoute,
   AuthedShellReviewsRoute: AuthedShellReviewsRoute,
+  AuthedShellSearchChipsRoute: AuthedShellSearchChipsRoute,
   AuthedShellTagsRoute: AuthedShellTagsRoute,
   AuthedShellIndexRoute: AuthedShellIndexRoute,
   AuthedShellBannersBannerIdRoute: AuthedShellBannersBannerIdRoute,
