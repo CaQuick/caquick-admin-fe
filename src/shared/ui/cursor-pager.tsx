@@ -1,7 +1,9 @@
+import { type AnyRouter, useRouter } from '@tanstack/react-router';
 import { ChevronLeftIcon, ChevronRightIcon, RotateCcwIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { formatCount } from '@/shared/lib/format';
+import { type CursorTrail, rememberTrail, rememberedTrail } from '@/shared/lib/list-return';
 import { DEFAULT_LIMIT } from '@/shared/lib/list-search';
 import { Button } from '@/shared/ui/button';
 
@@ -31,21 +33,26 @@ function filterKeyOf(search: ListSearch): string {
   );
 }
 
-interface Trail {
-  filterKey: string;
-  /** 이 화면에서 지나온 커서 순서. undefined는 첫 페이지 */
-  cursors: (string | undefined)[];
-}
-
 /**
  * 키셋 커서 페이지네이션. 서버는 다음 커서만 주므로 지나온 커서를 여기서 쌓아 '이전'을 만든다.
  * 브라우저 뒤로가기로 커서가 바뀌어도 쌓인 순서에서 위치를 찾는다. 목록 조건이 바뀌면 처음부터 다시 쌓는다.
+ * 쌓은 커서는 경로별로 기억해, 상세에서 목록으로 돌아와 다시 마운트돼도 이어 쓴다.
  * 주소로 중간 페이지에 바로 들어오면 앞 페이지를 알 수 없어 '처음'만 둔다.
  */
 export function CursorPager({ page, search, onCursorChange, isFetching = false }: Props) {
   const cursor = search.cursor;
   const filterKey = filterKeyOf(search);
-  const [trail, setTrail] = useState<Trail>({ filterKey, cursors: [cursor] });
+  // 라우터 밖(단독 렌더)이면 경로가 없어 기억하지 않는다. 경로는 목록 화면마다 고정이라 마운트 때 한 번 읽는다
+  const router: AnyRouter | null = useRouter({ warn: false });
+  const [pathname] = useState(() => router?.state.location.pathname);
+  // 기억한 것이 다른 조건이거나 지금 커서를 지나오지 않았으면 아래 보정이 새로 쌓는다
+  const [trail, setTrail] = useState<CursorTrail>(() => {
+    const saved = pathname === undefined ? undefined : rememberedTrail(pathname);
+    return saved ?? { filterKey, cursors: [cursor] };
+  });
+  useEffect(() => {
+    if (pathname !== undefined) rememberTrail(pathname, trail);
+  }, [pathname, trail]);
 
   let current = trail;
   if (trail.filterKey !== filterKey || !trail.cursors.includes(cursor)) {

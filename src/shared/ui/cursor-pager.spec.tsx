@@ -1,6 +1,16 @@
+import {
+  Outlet,
+  RouterProvider,
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from '@tanstack/react-router';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
+
+import { forgetSearches } from '@/shared/lib/list-return';
 
 import { CursorPager } from './cursor-pager';
 
@@ -43,6 +53,23 @@ function Harness({ initial = {} }: { initial?: Search }) {
 }
 
 const button = (name: string) => screen.queryByRole('button', { name });
+
+/** 목록 화면처럼 라우터 아래 경로에 붙여 렌더한다. 검색 파라미터는 Harness가 들고 있다 */
+function renderAt(pathname: string, initial: Search = {}) {
+  const root = createRootRoute({ component: Outlet });
+  const routes = ['/stores', '/orders'].map((path) =>
+    createRoute({
+      getParentRoute: () => root,
+      path,
+      component: () => <Harness initial={initial} />,
+    }),
+  );
+  const router = createRouter({
+    routeTree: root.addChildren(routes),
+    history: createMemoryHistory({ initialEntries: [pathname] }),
+  });
+  return render(<RouterProvider router={router} />);
+}
 
 describe('CursorPager', () => {
   it('다음으로 가며 지나온 커서를 쌓고, 이전으로 한 페이지씩 돌아온다', async () => {
@@ -128,6 +155,46 @@ describe('CursorPager', () => {
     await userEvent.click(button('다음')!);
     await userEvent.click(button('다음')!);
     expect(screen.getByText('21–30 / 전체 45건')).toBeInTheDocument();
+  });
+
+  describe('목록으로 돌아와 다시 마운트될 때', () => {
+    afterEach(() => forgetSearches());
+
+    /** 첫 페이지부터 두 번 다음으로 가 41–45 구간에서 화면을 떠난다 */
+    async function leaveAtThirdPage() {
+      const { unmount } = renderAt('/stores');
+      await userEvent.click(await screen.findByRole('button', { name: '다음' }));
+      await userEvent.click(button('다음')!);
+      expect(screen.getByText('41–45 / 전체 45건')).toBeInTheDocument();
+      unmount();
+    }
+
+    it('같은 경로·목록 조건이고 그 커서를 지나왔으면 이전과 구간을 되살린다', async () => {
+      await leaveAtThirdPage();
+      renderAt('/stores', { cursor: 'c40' });
+      expect(await screen.findByText('41–45 / 전체 45건')).toBeInTheDocument();
+      await userEvent.click(button('이전')!);
+      expect(screen.getByText('21–40 / 전체 45건')).toBeInTheDocument();
+    });
+
+    it.each<[string, string, Search]>([
+      ['경로가 다르면', '/orders', { cursor: 'c40' }],
+      ['목록 조건이 다르면', '/stores', { cursor: 'c40', q: '케이크' }],
+      ['지나오지 않은 커서면', '/stores', { cursor: 'c30' }],
+    ])('%s 되살리지 않는다', async (_, pathname, initial) => {
+      await leaveAtThirdPage();
+      renderAt(pathname, initial);
+      expect(await screen.findByRole('button', { name: '처음' })).toBeInTheDocument();
+      expect(button('이전')).not.toBeInTheDocument();
+    });
+
+    it('세션을 비우면(forgetSearches) 되살리지 않는다', async () => {
+      await leaveAtThirdPage();
+      forgetSearches();
+      renderAt('/stores', { cursor: 'c40' });
+      expect(await screen.findByText('전체 45건 중 5건 표시')).toBeInTheDocument();
+      expect(button('이전')).not.toBeInTheDocument();
+    });
   });
 
   it('결과가 없으면 0건으로 보인다', () => {
