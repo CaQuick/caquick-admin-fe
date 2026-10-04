@@ -67,7 +67,7 @@ src/
 
 - `*.spec.ts(x)`를 소스 옆에. `it`은 한국어 평서형.
 - 네트워크는 MSW로 계약 기반 mock(응답 모양은 codegen 타입을 따른다). fetch를 직접 stub하지 않는다.
-- 커버리지 임계는 `vitest.config.ts`. shadcn 복사본(`src/shared/ui`)·codegen 산출물·라우트 트리는 제외.
+- 커버리지 임계는 `vitest.config.ts`. shadcn 복사본(`src/shared/ui`)·codegen 산출물·라우트 트리는 제외. CI는 샤드별 임계를 끄고 합친 결과로 검사한다(샤드 하나는 일부 커버리지만 가진다).
 
 ## 8. 명령어와 게이트
 
@@ -78,5 +78,10 @@ pnpm schema:pull [ref]   # BE SDL 스냅샷 갱신(기본 main). BE_DIR=../caqui
 pnpm codegen             # 스냅샷 + 문서 → src/graphql/generated (커밋 대상, CI가 codegen:check로 신선도 검사)
 ```
 
+- CI(`pr-check.yml`)는 잡을 나눠 병렬로 돈다. 필수 체크 `check`는 아래 잡이 모두 `success`인지 집계한다(건너뜀·취소도 실패).
+  - `lint`
+  - `static`: `codegen:check` → `knip` → `build`(`tsc -b` 포함이라 typecheck 단계는 따로 없다)
+  - `test`: Vitest 3샤드, 결과는 blob 아티팩트로 넘긴다
+  - `coverage-report`: blob을 합쳐 임계 검사 → Codecov → PR 댓글. 비교 기준은 base 브랜치(develop·main) push 실행이 올린 커버리지 요약
 - 커밋은 Conventional Commits + 한국어 본문(commitlint). 브랜치는 `<type>/<대상>`.
 - PR 본문에 `## 플랜 대조` 표. 봇 리뷰(Codex·CodeRabbit)는 BE와 같은 절차로 처리한다.
