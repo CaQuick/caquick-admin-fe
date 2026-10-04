@@ -14,22 +14,28 @@ import {
 } from '@/shared/lib/list-search';
 import { type PillTone } from '@/shared/ui/status-pill';
 
-export const TARGET_TYPES: { value: AuditTargetType; label: string }[] = [
-  { value: 'ORDER', label: '주문' },
-  { value: 'STORE', label: '매장' },
-  { value: 'PRODUCT', label: '상품' },
-  { value: 'ACCOUNT', label: '계정' },
-  { value: 'CHANGE_PASSWORD', label: '비밀번호 변경' },
-  { value: 'BANNER', label: '배너' },
-  { value: 'CATEGORY', label: '카테고리' },
-  { value: 'TAG', label: '태그' },
-  { value: 'REGION', label: '지역' },
-  { value: 'REVIEW', label: '리뷰' },
-  { value: 'REVIEW_COMMENT', label: '리뷰 댓글' },
-  { value: 'REVIEW_REPORT', label: '신고' },
-  { value: 'NOTIFICATION', label: '알림' },
-  { value: 'CONVERSATION', label: '대화' },
-];
+/** 대상 유형 라벨. Record라 codegen enum에 값이 늘거나 줄면 tsc가 잡는다(빠지면 필터 드롭다운에서 사라지고 원문이 보인다) */
+const TARGET_LABELS: Record<AuditTargetType, string> = {
+  ORDER: '주문',
+  STORE: '매장',
+  PRODUCT: '상품',
+  ACCOUNT: '계정',
+  CHANGE_PASSWORD: '비밀번호 변경',
+  BANNER: '배너',
+  SEARCH_KEYWORD_CHIP: '검색 칩',
+  CATEGORY: '카테고리',
+  TAG: '태그',
+  REGION: '지역',
+  REVIEW: '리뷰',
+  REVIEW_COMMENT: '리뷰 댓글',
+  REVIEW_REPORT: '신고',
+  NOTIFICATION: '알림',
+  CONVERSATION: '대화',
+};
+export const TARGET_TYPES = (Object.keys(TARGET_LABELS) as AuditTargetType[]).map((value) => ({
+  value,
+  label: TARGET_LABELS[value],
+}));
 export const ACTIONS: { value: AuditActionType; label: string; tone: PillTone }[] = [
   { value: 'CREATE', label: '생성', tone: 'positive' },
   { value: 'UPDATE', label: '수정', tone: 'primary' },
@@ -121,6 +127,9 @@ const FIELD_LABEL: Record<string, string> = {
   placement: '노출 위치',
   linkType: '연결 대상 유형',
   title: '제목',
+  keyword: '키워드',
+  startsAt: '노출 시작',
+  endsAt: '노출 종료',
   type: '유형',
   targetKind: '발송 대상',
   sentCount: '보낸 수',
