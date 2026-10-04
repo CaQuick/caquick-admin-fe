@@ -1,4 +1,4 @@
-# 생성 파일 — 수정하지 않는다. caquick-be main@3483e3420a134e2b00259c99307b5b9b40e09fc3 의 src/features/**/*.graphql 64개를 경로순으로 합쳤다.
+# 생성 파일 — 수정하지 않는다. caquick-be local@9c15e94d1458101007ed17b4462ec131daa6a4dc 의 src/features/**/*.graphql 64개를 경로순으로 합쳤다.
 # 갱신: pnpm schema:pull [ref]
 
 # ---- src/features/audit-log/audit-log.types.graphql ----
