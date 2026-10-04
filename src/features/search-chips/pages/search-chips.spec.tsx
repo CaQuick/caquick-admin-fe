@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, graphql } from 'msw';
 
@@ -127,6 +127,38 @@ describe('검색 칩 목록', () => {
           .map((li) => li.textContent),
       ).toEqual(['급상승 · 고정', '생일', '당일 픽업']),
     );
+  });
+
+  it('화면을 켜 둔 채 시작 시각이 되면 예약이 노출 중으로 바뀌고 미리보기에 들어가며, 종료 시각이 되면 빠진다', async () => {
+    // 실제 시간도 흐르게 둬 부팅·요청은 그대로 진행되고, 경계 시각만 앞당겨 넘긴다
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const startsAt = new Date(Date.now() + 10 * 60_000).toISOString();
+      const endsAt = new Date(Date.now() + 20 * 60_000).toISOString();
+      boot([chip('1', '생일'), chip('2', '크리스마스', { startsAt, endsAt })]);
+      const status = async () =>
+        within(
+          (await screen.findByRole('cell', { name: '크리스마스' })).closest('tr')!,
+        ).getAllByRole('cell')[2]!.textContent;
+      const preview = () =>
+        within(screen.getByRole('region', { name: '구매자 앱 미리보기' }))
+          .getAllByRole('listitem')
+          .map((li) => li.textContent);
+      await vi.waitFor(async () => expect(await status()).toBe('예약'));
+      expect(preview()).toEqual(['급상승 · 고정', '생일']);
+      act(() => {
+        vi.advanceTimersByTime(10 * 60_000);
+      });
+      await vi.waitFor(async () => expect(await status()).toBe('노출 중'));
+      expect(preview()).toEqual(['급상승 · 고정', '생일', '크리스마스']);
+      act(() => {
+        vi.advanceTimersByTime(10 * 60_000);
+      });
+      await vi.waitFor(async () => expect(await status()).toBe('종료'));
+      expect(preview()).toEqual(['급상승 · 고정', '생일']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('노출 중인 칩이 없으면 미리보기에 그렇게 알린다', async () => {

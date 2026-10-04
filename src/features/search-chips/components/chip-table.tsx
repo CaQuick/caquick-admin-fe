@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { GripVerticalIcon, PencilIcon, Trash2Icon } from 'lucide-react';
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 import { toast } from 'sonner';
 
 import { formatCount } from '@/shared/lib/format';
@@ -45,16 +45,6 @@ export function ChipTable({
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
-  const handles = useRef(new Map<string, HTMLButtonElement>());
-  const focusAfterMove = useRef<string | null>(null);
-
-  // 키보드로 옮긴 뒤에도 같은 칩의 손잡이에 포커스를 둔다 — 이어서 ↑↓를 누를 수 있게
-  useEffect(() => {
-    const id = focusAfterMove.current;
-    if (id === null) return;
-    focusAfterMove.current = null;
-    handles.current.get(id)?.focus();
-  }, [rows]);
 
   const indexOf = (id: string) => rows.findIndex((r) => r.id === id);
   const move = (id: string, to: number) => {
@@ -77,7 +67,7 @@ export function ChipTable({
       setAnnouncement(to < 0 ? '이미 맨 앞입니다.' : '이미 맨 뒤입니다.');
       return;
     }
-    focusAfterMove.current = id;
+    // 행 키가 칩 ID라 DOM 노드가 옮겨질 뿐이고, 포커스는 React가 같은 손잡이로 되돌린다
     move(id, to);
   };
 
@@ -148,10 +138,6 @@ export function ChipTable({
                     <span className="inline-flex items-center gap-2 text-muted-foreground tabular-nums">
                       <button
                         type="button"
-                        ref={(el) => {
-                          if (el) handles.current.set(chip.id, el);
-                          else handles.current.delete(chip.id);
-                        }}
                         draggable={!reorderDisabled}
                         aria-label={`${chip.keyword} 순서 바꾸기`}
                         aria-describedby={HINT_ID}
