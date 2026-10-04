@@ -39,6 +39,7 @@ const AdminBannersDocument = graphql(/* GraphQL */ `
         linkProductId
         linkStoreId
         linkCategoryId
+        linkTargetAvailable
         startsAt
         endsAt
         sortOrder
@@ -101,6 +102,7 @@ const AdminBannersVisibleDocument = graphql(/* GraphQL */ `
         id
         placement
         linkCategoryId
+        linkTargetAvailable
         startsAt
         endsAt
         sortOrder

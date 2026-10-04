@@ -87,6 +87,9 @@ export function BannersListPage({ search, onSearchChange }: Props) {
           <span className="flex items-center gap-1.5">
             <StatusPill tone={s.tone}>{s.label}</StatusPill>
             {current.has(row.original.id) && <StatusPill tone="primary">현재 노출</StatusPill>}
+            {!row.original.linkTargetAvailable && (
+              <StatusPill tone="caution">링크 대상 숨김</StatusPill>
+            )}
           </span>
         );
       },
@@ -142,7 +145,7 @@ export function BannersListPage({ search, onSearchChange }: Props) {
     <>
       <PageHeader
         title="배너"
-        description="'현재 노출'은 자리마다 구매자에게 지금 보이는 배너 1개입니다. 연결한 상품·매장·카테고리가 숨김이면 구매자 앱에는 다음 배너가 보입니다."
+        description="'현재 노출'은 자리마다 구매자에게 지금 보이는 배너 1개입니다. 연결한 상품·매장·카테고리가 숨김인 배너는 '링크 대상 숨김'으로 표시되며 구매자 앱에서 건너뜁니다."
         meta={list.data ? `전체 ${formatCount(list.data.totalCount)}개` : undefined}
         actions={
           <Button asChild>
