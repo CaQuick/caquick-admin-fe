@@ -5,7 +5,13 @@ const BEFORE = '2026-09-30T23:59:59.999Z';
 const AFTER = '2026-10-01T00:00:00.001Z';
 
 describe('배너 현재 노출', () => {
-  const live = { isActive: true, startsAt: null, endsAt: null, linkCategoryId: null };
+  const live = {
+    isActive: true,
+    startsAt: null,
+    endsAt: null,
+    linkCategoryId: null,
+    linkTargetAvailable: true,
+  };
   it.each([
     {
       name: '슬롯마다 정렬 순서가 가장 작은 것',
@@ -33,6 +39,14 @@ describe('배너 현재 노출', () => {
         { ...live, id: '4', placement: 'HOME_MAIN', sortOrder: 7 },
       ],
       want: ['4'],
+    },
+    {
+      name: '링크 대상이 숨김이면 구매자 앱처럼 건너뛰고 다음 배너',
+      banners: [
+        { ...live, id: '1', placement: 'HOME_MAIN', sortOrder: 0, linkTargetAvailable: false },
+        { ...live, id: '2', placement: 'HOME_MAIN', sortOrder: 1 },
+      ],
+      want: ['2'],
     },
     {
       name: '카테고리 배치는 카테고리마다 따로 고른다',

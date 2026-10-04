@@ -31,6 +31,12 @@ describe('디자인 토큰 대비', () => {
     [':root', 'popover'],
     ['.dark', 'background'],
     ['.dark', 'card'],
+    ['.dark', 'popover'],
+    ['.dark', 'muted'],
+    ['.dark', 'secondary'],
+    ['.dark', 'accent'],
+    ['.dark', 'surface-tint'],
+    ['.dark', 'sidebar'],
   ] as const)('%s 보조 텍스트는 %s 위에서 4.5:1 이상이다', (selector, surface) => {
     const t = tokens(selector);
     expect(t['muted-foreground']).toBeDefined();

@@ -2,6 +2,9 @@
 node_modules
 /dist
 /coverage
+# vitest blob(기본 .vitest/blob, CI 샤드는 blob-report/)
+.vitest/
+blob-report/
 *.tsbuildinfo
 .pnpm-store
 

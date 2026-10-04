@@ -33,12 +33,12 @@ pnpm dev            # http://localhost:5173 — /graphql·/auth는 localhost:400
 
 ## 명령어
 
-| 명령                          | 내용                                                                        |
-| ----------------------------- | --------------------------------------------------------------------------- |
-| `pnpm validate`               | lint → typecheck → knip → 테스트(커버리지) → 빌드. pre-push 훅과 동일합니다 |
-| `pnpm test` / `pnpm test:cov` | Vitest                                                                      |
-| `pnpm lint` / `pnpm format`   | ESLint(경계 규칙 포함) / Prettier                                           |
-| `pnpm build` / `pnpm preview` | 운영 빌드 / 로컬 미리보기                                                   |
+| 명령                          | 내용                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm validate`               | lint → typecheck → codegen:check → knip → 테스트(커버리지) → 빌드. pre-push 훅과 동일합니다 |
+| `pnpm test` / `pnpm test:cov` | Vitest                                                                                      |
+| `pnpm lint` / `pnpm format`   | ESLint(경계 규칙 포함) / Prettier                                                           |
+| `pnpm build` / `pnpm preview` | 운영 빌드 / 로컬 미리보기                                                                   |
 
 ## 배포
 

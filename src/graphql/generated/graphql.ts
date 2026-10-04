@@ -873,7 +873,7 @@ export type AdminBannersQueryVariables = Exact<{
 }>;
 
 
-export type AdminBannersQuery = { adminBanners: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, title: string | null, imageUrl: string, linkType: BannerLinkType, linkUrl: string | null, linkProductId: string | null, linkStoreId: string | null, linkCategoryId: string | null, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean, createdAt: string, updatedAt: string }> } };
+export type AdminBannersQuery = { adminBanners: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, title: string | null, imageUrl: string, linkType: BannerLinkType, linkUrl: string | null, linkProductId: string | null, linkStoreId: string | null, linkCategoryId: string | null, linkTargetAvailable: boolean, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean, createdAt: string, updatedAt: string }> } };
 
 export type AdminBannerQueryVariables = Exact<{
   bannerId: string | number;
@@ -908,7 +908,7 @@ export type AdminBannersVisibleQueryVariables = Exact<{
 }>;
 
 
-export type AdminBannersVisibleQuery = { adminBanners: { hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, linkCategoryId: string | null, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean }> } };
+export type AdminBannersVisibleQuery = { adminBanners: { hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, placement: BannerPlacement, linkCategoryId: string | null, linkTargetAvailable: boolean, startsAt: string | null, endsAt: string | null, sortOrder: number, isActive: boolean }> } };
 
 export type AdminBannerProductOptionsQueryVariables = Exact<{
   input?: AdminProductListInput | null | undefined;
@@ -1507,6 +1507,7 @@ export const AdminBannersDocument = new TypedDocumentString(`
       linkProductId
       linkStoreId
       linkCategoryId
+      linkTargetAvailable
       startsAt
       endsAt
       sortOrder
@@ -1568,6 +1569,7 @@ export const AdminBannersVisibleDocument = new TypedDocumentString(`
       id
       placement
       linkCategoryId
+      linkTargetAvailable
       startsAt
       endsAt
       sortOrder
