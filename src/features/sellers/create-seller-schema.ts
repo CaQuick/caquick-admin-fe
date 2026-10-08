@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { refineCoordPair, storeLocationShape } from '@/features/stores';
 import { initialPasswordSchema } from '@/shared/lib/initial-password';
 
-const USERNAME = /^[a-z0-9._-]{4,80}$/;
+const USERNAME = /^[A-Za-z0-9._-]{4,80}$/;
 
 /** BE 상한(auth-admin.constants·store-field-limits). BE는 trim 뒤 코드 포인트로 센다. */
 const SELLER_FIELD_MAX = {
@@ -32,7 +32,7 @@ const sellerFields = z.object({
     .trim()
     .regex(
       USERNAME,
-      '아이디는 4~80자의 영문 소문자, 숫자, 마침표(.), 밑줄(_), 하이픈(-)으로 입력해 주세요.',
+      '아이디는 4~80자의 영문, 숫자, 마침표(.), 밑줄(_), 하이픈(-)으로 입력해 주세요.',
     ),
   password: initialPasswordSchema,
   email: maxChars(SELLER_FIELD_MAX.email)

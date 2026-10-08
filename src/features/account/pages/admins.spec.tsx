@@ -94,7 +94,7 @@ describe('관리자 계정', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: '추가' }));
     expect(
       await within(dialog).findByText(
-        '아이디는 4~80자의 영문 소문자, 숫자, 마침표(.), 밑줄(_), 하이픈(-)으로 입력해 주세요.',
+        '아이디는 4~80자의 영문, 숫자, 마침표(.), 밑줄(_), 하이픈(-)으로 입력해 주세요.',
       ),
     ).toBeInTheDocument();
     await userEvent.type(within(dialog).getByLabelText('아이디'), 'new.admin');
