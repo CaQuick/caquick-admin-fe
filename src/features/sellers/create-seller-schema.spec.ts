@@ -50,7 +50,7 @@ describe('createSellerSchema', () => {
   });
 
   it.each([
-    ['username', 'Lumi'], // 대문자
+    ['username', 'lumi@shop'], // 허용 외 문자
     ['username', 'ab'], // 짧음
     ['password', '1234567'], // 7자
     ['password', 'a'.repeat(65)],
@@ -61,6 +61,11 @@ describe('createSellerSchema', () => {
     ['storeName', ''],
   ])('%s=%s 는 거절', (key, value) => {
     expect(createSellerSchema.safeParse({ ...base, [key]: value }).success).toBe(false);
+  });
+
+  it('아이디에 영문 대문자를 받고 입력 그대로 보낸다', () => {
+    const parsed = createSellerSchema.parse({ ...base, username: 'Lumi.Cake' });
+    expect(toCreateSellerInput(parsed).username).toBe('Lumi.Cake');
   });
 
   // BE 상한: auth-admin.constants(name·email), store-field-limits(나머지)

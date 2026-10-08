@@ -1,4 +1,4 @@
-# 생성 파일 — 수정하지 않는다. caquick-be local@746d6fa87c2438aeef9afd739885f33274e1f021 의 src/features/**/*.graphql 64개를 경로순으로 합쳤다.
+# 생성 파일 — 수정하지 않는다. caquick-be main@b3fe44f45b6940700e03723f7c6abe17f1656a29 의 src/features/**/*.graphql 68개를 경로순으로 합쳤다.
 # 갱신: pnpm schema:pull [ref]
 
 # ---- src/features/audit-log/audit-log.types.graphql ----
@@ -178,7 +178,7 @@ type AdminAccountConnection {
 """
 input AdminCreateAdminInput {
   """
-  로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT.
+  로그인 username. 4~80자, 영문 대소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면(대소문자만 달라도) BAD_USER_INPUT.
   """
   username: String!
   """
@@ -361,6 +361,45 @@ type AdminAccountStatusResult {
   변경 후 상태.
   """
   status: AccountStatus!
+}
+
+# ---- src/features/auth/auth-seller-account.graphql ----
+extend type Query {
+  """
+  내 판매자 계정을 조회한다. 판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN.
+  초기 비밀번호 상태(mustChangePassword=true)면 다른 판매자 API와 같이 FORBIDDEN이므로, 초기 비밀번호 여부는 refresh 응답의 mustChangePassword로 판단한다.
+  """
+  sellerMe: SellerAccount!
+}
+
+"""
+판매자 본인 계정. 로그인 자격증명·계정 상태·보유 매장 ID를 함께 보여준다. 매장명은 sellerMyStore로 받는다.
+"""
+type SellerAccount {
+  """
+  계정 ID.
+  """
+  accountId: ID!
+  """
+  로그인 username. 자격증명이 없는 개발용 계정이면 null.
+  """
+  username: String
+  """
+  표시 이름. 계정 이름이 있으면 그것, 없으면 사업자명, 둘 다 없으면 null.
+  """
+  displayName: String
+  """
+  보유 매장 ID. 매장이 없거나 삭제됐으면 null.
+  """
+  storeId: ID
+  """
+  초기 비밀번호 상태. true면 본인이 비밀번호를 바꾸기 전까지 판매자 API가 FORBIDDEN이다.
+  """
+  mustChangePassword: Boolean!
+  """
+  계정 상태.
+  """
+  accountStatus: AccountStatus!
 }
 
 # ---- src/features/auth/auth-user-profile.graphql ----
@@ -788,6 +827,13 @@ extend type Mutation {
   sellerSendConversationMessage(
     input: SellerSendConversationMessageInput!
   ): SellerConversationMessage!
+  """
+  대화방을 판매자가 읽었다고 표시한다. 호출 시점에 존재하는 가장 최근 메시지의 작성 시각까지 sellerLastReadAt을
+  전진시키며 과거로 되돌리지 않는다(반복·동시 호출 안전). 메시지가 없으면 변경 없이 현재 상태를 돌려준다.
+  조회만으로는 읽음 처리되지 않으므로 앱이 상세 진입 시 호출한다. 판매자 답장은 서버가 마커를 함께 전진시킨다.
+  판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않거나 내 매장의 대화가 아니면 NOT_FOUND.
+  """
+  sellerMarkConversationRead(conversationId: ID!): SellerConversation!
 }
 
 """
@@ -801,13 +847,30 @@ type SellerConversation {
   accountId: ID!
   storeId: ID!
   """
+  대화 상대인 구매자의 표시명. 대화 생성 시점 스냅샷이라 이후 닉네임 변경·탈퇴가 반영되지 않는다.
+  스냅샷 도입 이전 대화 중 복원하지 못한 건은 null.
+  """
+  buyerNickname: String
+  """
+  마지막 메시지 미리보기(HTML은 태그 제거). 메시지가 없으면 null.
+  """
+  lastMessagePreview: String
+  """
   마지막 메시지 시각. 메시지가 없으면 null. 목록 정렬 기준은 이 값이 아니라 updated_at이다.
   """
   lastMessageAt: DateTime
   """
-  구매자가 이 대화방을 마지막으로 읽은 시각(구매자 조회 시 전진). 판매자 읽음 마커는 없다. 읽은 적이 없으면 null.
+  구매자가 이 대화방을 마지막으로 읽은 시각(구매자 조회 시 전진). 읽은 적이 없으면 null.
   """
   lastReadAt: DateTime
+  """
+  판매자가 마지막으로 읽은 시각. sellerMarkConversationRead 호출과 판매자 답장이 전진시킨다. 읽은 적이 없으면 null.
+  """
+  sellerLastReadAt: DateTime
+  """
+  판매자 기준 읽지 않은 구매자 메시지 수(senderType USER이고 sellerLastReadAt 이후 작성). 0이면 답변 필요 대상이 아니다.
+  """
+  unreadCount: Int!
   updatedAt: DateTime!
 }
 
@@ -949,15 +1012,25 @@ type ConversationListUpdate {
   unreadCount: Int!
 }
 
-"""판매자 대화 목록 갱신 이벤트. 도착 순서 비보장 — lastMessageAt 기준 폐기 규칙 동일."""
+"""
+판매자 대화 목록 갱신 이벤트(구매자 메시지 도착·판매자 답장). 도착 순서 비보장 — (lastMessageAt, sellerLastReadAt)
+사전식 비교로 폐기한다. 읽음 mutation은 이벤트를 내지 않으므로 로컬 읽음 처리 뒤 도착한 이벤트의 unreadCount는
+로컬 sellerLastReadAt이 더 크면 0으로 본다.
+"""
 type SellerConversationListUpdate {
   conversationId: ID!
   """대화 상대인 구매자 계정 ID."""
   accountId: ID!
+  """대화 상대 구매자 표시명(대화 생성 시점 스냅샷). 복원 불가 건은 null."""
+  buyerNickname: String
   """마지막 메시지 미리보기(HTML은 태그 제거)"""
   lastMessagePreview: String
-  """마지막 메시지 시각. 폐기 규칙의 비교 키다."""
+  """마지막 메시지 시각. 폐기 규칙의 1차 비교 키다."""
   lastMessageAt: DateTime!
+  """이벤트 스냅샷 시점의 판매자 마지막 읽음 시각(폐기 규칙 비교용)."""
+  sellerLastReadAt: DateTime
+  """이벤트 시점의 판매자 기준 미읽음 구매자 메시지 수."""
+  unreadCount: Int!
 }
 
 # ---- src/features/conversation/conversation.types.graphql ----
@@ -1302,6 +1375,87 @@ type AdminSearchKeywordRank {
   집계 창 안의 검색 횟수.
   """
   searchCount: Int!
+}
+
+# ---- src/features/dashboard/dashboard-seller.graphql ----
+extend type Query {
+  """
+  판매자 홈 지표를 요청 시점에 집계한다(스냅샷 테이블 없음). 날짜는 KST 달력일이며 생략하면 서버의 오늘(KST).
+  형식이 YYYY-MM-DD가 아니거나 존재하지 않는 날짜면 BAD_USER_INPUT. 판매자 로그인 필수.
+  SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않으면 NOT_FOUND.
+  """
+  sellerDashboard(input: SellerDashboardInput): SellerDashboard!
+}
+
+"""
+판매자 홈 집계 조건.
+"""
+input SellerDashboardInput {
+  """
+  집계 기준 날짜(KST, YYYY-MM-DD). 생략하면 오늘.
+  """
+  date: String
+}
+
+"""
+판매자 홈 지표. 금액은 원 단위 정수다.
+"""
+type SellerDashboard {
+  """
+  집계 기준 날짜(KST, YYYY-MM-DD).
+  """
+  date: String!
+  """
+  집계 시점(서버 시각). 화면의 'N시 기준' 표기용이며 date가 오늘이 아니어도 현재 시각이다.
+  """
+  asOf: DateTime!
+  """
+  접수(SUBMITTED) 상태로 남아 있는 주문 수. 날짜와 무관하게 전체를 센다.
+  """
+  newOrderCount: Int!
+  """
+  기준일에 픽업 예정인 주문의 건수·금액. 취소 주문은 제외. 시안의 '오늘 매출 / 정산예정'에 해당한다.
+  """
+  pickupDay: SellerDashboardOrderMetrics!
+  """
+  기준일에 생성된 주문의 건수·금액. 취소 주문은 제외. 접수 추세 표기('+N')용.
+  """
+  createdDay: SellerDashboardOrderMetrics!
+  """
+  기준일의 제작 수량 설정값. 설정이 없으면 null(무제한).
+  """
+  capacity: Int
+  """
+  기준일의 남은 제작 수량 = 설정값 − 기준일 픽업 주문의 수량 합(취소 제외). 음수가 되면 0으로 자른다.
+  설정이 없으면 null.
+  """
+  remainingCapacity: Int
+  """
+  기준일 픽업 주문의 제작 수량 합(취소 제외). capacity 유무와 무관하게 센다.
+  """
+  bookedQuantity: Int!
+  """
+  노출 중(is_active)인 내 상품 수. 매장 노출 여부와 무관하다.
+  """
+  activeProductCount: Int!
+  """
+  답변이 필요한 대화 수 = 판매자 기준 읽지 않은 구매자 메시지가 있는 대화 수.
+  """
+  unansweredConversationCount: Int!
+}
+
+"""
+기간 내 주문 건수와 결제 금액 합.
+"""
+type SellerDashboardOrderMetrics {
+  """
+  주문 건수.
+  """
+  orderCount: Int!
+  """
+  최종 결제 금액 합(원). Int(32비트)를 넘을 수 있어 Float로 내리지만 값은 항상 정수다.
+  """
+  salesAmount: Float!
 }
 
 # ---- src/features/mypage/mypage-overview.graphql ----
@@ -2193,6 +2347,65 @@ type NotificationItem {
   createdAt: DateTime!
 }
 
+# ---- src/features/notification/notification-seller-push.graphql ----
+extend type Mutation {
+  """
+  판매자 앱 디바이스의 Expo 푸시 토큰을 등록한다. 판매자 로그인 필수(SELLER 아니면 FORBIDDEN, 매장 없으면 NOT_FOUND).
+  같은 토큰을 다시 보내면 마지막 확인 시각만 갱신되고, 다른 판매자가 쓰던 토큰이면 현재 로그인 판매자가 가져간다(앱 재설치·계정 전환).
+  해제됐던 토큰은 다시 활성화된다. 토큰이 Expo 형식이 아니면 BAD_REQUEST(INVALID_PUSH_TOKEN).
+  앱 시작·로그인마다 호출해도 된다(멱등).
+  """
+  sellerRegisterPushToken(input: SellerRegisterPushTokenInput!): Boolean!
+  """
+  푸시 토큰을 해제한다(로그아웃). 판매자 로그인 필수(SELLER 아니면 FORBIDDEN).
+  매장 컨텍스트를 보지 않으므로 매장이 없는 판매자도 해제할 수 있다.
+  본인이 등록한 토큰만 해제되며, 없거나 남의 토큰이면 아무 일도 하지 않고 true다.
+  """
+  sellerUnregisterPushToken(input: SellerUnregisterPushTokenInput!): Boolean!
+}
+
+"""
+푸시 토큰 등록 입력
+"""
+input SellerRegisterPushTokenInput {
+  """
+  Expo 푸시 토큰. ExponentPushToken[...] 또는 ExpoPushToken[...] 형식, 최대 200자
+  """
+  token: String!
+  """
+  디바이스 플랫폼
+  """
+  platform: PushPlatform!
+  """
+  앱이 부여한 디바이스 식별자(선택, 최대 128자). 같은 기기의 토큰 교체 추적용이며 서버 로직은 토큰만 본다
+  """
+  deviceId: String
+}
+
+"""
+푸시 토큰 해제 입력
+"""
+input SellerUnregisterPushTokenInput {
+  """
+  해제할 Expo 푸시 토큰
+  """
+  token: String!
+}
+
+"""
+푸시 디바이스 플랫폼
+"""
+enum PushPlatform {
+  """
+  iOS(APNs 경유)
+  """
+  IOS
+  """
+  Android(FCM 경유)
+  """
+  ANDROID
+}
+
 # ---- src/features/notification/notification.types.graphql ----
 """
 알림 분류. 알림센터 목록의 그룹 기준이다.
@@ -2308,6 +2521,14 @@ type AdminOrderSummary {
   주문 생성 시각.
   """
   createdAt: DateTime!
+  """
+  첫 품목의 상품명(주문 시점 스냅샷). 이후 상품명이 바뀌어도 유지된다. 품목이 없으면 null.
+  """
+  firstItemName: String
+  """
+  첫 품목의 상품 대표 이미지 URL(주문 시점 스냅샷). 주문 당시 이미지가 없었거나 품목이 없으면 null.
+  """
+  firstItemImageUrl: String
 }
 
 """
@@ -2816,6 +3037,14 @@ type SellerOrderSummary {
   주문 생성 시각. 목록 정렬 기준이다.
   """
   createdAt: DateTime!
+  """
+  내 매장 첫 품목의 상품명(주문 시점 스냅샷). 이후 상품명이 바뀌어도 유지된다. 활성 품목이 없으면 null.
+  """
+  firstItemName: String
+  """
+  내 매장 첫 품목의 상품 대표 이미지 URL(주문 시점 스냅샷). 주문 당시 이미지가 없었으면 null.
+  """
+  firstItemImageUrl: String
 }
 
 """
@@ -2965,6 +3194,40 @@ input SellerUpdateOrderStatusInput {
   변경 사유 메모. toStatus가 CANCELED면 필수이고, 없으면 BAD_USER_INPUT.
   """
   note: String
+}
+
+# ---- src/features/order/order-subscription.graphql ----
+extend type Subscription {
+  """
+  내 매장 주문 생성·상태 변경 이벤트. 판매자 로그인 필수(SELLER 아니면 FORBIDDEN).
+  삭제되지 않은 매장을 보유한 판매자만 구독할 수 있다 — 매장이 없거나 삭제됐으면 NOT_FOUND.
+  비활성(is_active=false) 매장도 구독은 유지된다. 인증은 graphql-ws connectionParams.authorization.
+  구매자 주문 생성(SUBMITTED)·판매자 상태 변경·관리자 강제 취소가 모두 여기로 온다.
+  """
+  sellerOrderUpdated: SellerOrderUpdate!
+}
+
+"""
+판매자 주문 갱신 이벤트. 발행 시점 주문 행의 스냅샷이다.
+이벤트 간 도착 순서는 보장되지 않는다 — 구독자는 같은 orderId의 더 오래된 updatedAt 이벤트는 폐기한다.
+전달 누락 가능(Redis 장애 시 발행 생략)하므로 폴백은 sellerOrderList 재조회다.
+"""
+type SellerOrderUpdate {
+  orderId: ID!
+  """주문번호."""
+  orderNumber: String!
+  """이벤트 시점의 주문 상태."""
+  status: OrderStatusType!
+  """픽업 예정 일시."""
+  pickupAt: DateTime!
+  """주문자 이름(주문 시점 값)."""
+  buyerName: String!
+  """할인 반영 후 최종 결제 금액(원)."""
+  totalPrice: Int!
+  """첫 품목의 상품명(주문 시점 스냅샷). 주문은 단일 상품 구조다."""
+  productName: String!
+  """주문 행의 updated_at. 폐기 규칙의 비교 키다."""
+  updatedAt: DateTime!
 }
 
 # ---- src/features/order/order.types.graphql ----
@@ -3351,6 +3614,7 @@ extend type Mutation {
   adminDeleteCategory(categoryId: ID!): Boolean!
   """
   태그를 만든다. 같은 이름이 있으면 BAD_USER_INPUT. 삭제된 같은 이름이 있으면 복구한다(상품 연결은 복구하지 않는다).
+  판매자가 sellerSetProductTagsByName으로 만든 태그도 같은 마스터에 있으므로 충돌 대상이다.
   관리자 로그인 필수. ADMIN 계정이 아니면 FORBIDDEN.
   """
   adminCreateTag(input: AdminCreateTagInput!): AdminTag!
@@ -3398,7 +3662,7 @@ type AdminCategory {
 }
 
 """
-태그 마스터. 판매자는 여기 있는 것 중에서만 상품에 연결할 수 있다.
+태그 마스터. 관리자가 만든 태그와 판매자가 sellerSetProductTagsByName으로 만든 태그(소문자 정규화)를 모두 포함한다.
 """
 type AdminTag {
   id: ID!
@@ -4304,6 +4568,12 @@ extend type Query {
   내 매장 상품 상세를 조회한다. 판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않으면 NOT_FOUND.
   """
   sellerProduct(productId: ID!): SellerProduct!
+  """
+  내 상품에 붙일 태그를 이름으로 검색한다(타이프어헤드). keyword를 정규화(앞뒤 공백·선행 '#' 제거, 연속 공백 1칸, 소문자)한 뒤
+  부분일치로 찾아 이름순(정확 일치가 맨 앞)으로 limit건까지 준다. 정확 일치 태그는 이름순 limit 밖이어도 항상 포함한다.
+  정규화 후 비면 빈 배열, 80자를 넘으면 BAD_USER_INPUT. 판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않으면 NOT_FOUND.
+  """
+  sellerSearchTags(input: SellerTagSearchInput!): [SellerTagSuggestion!]!
 }
 
 extend type Mutation {
@@ -4349,6 +4619,17 @@ extend type Mutation {
   상품 태그 연결을 설정한다. 판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않으면 NOT_FOUND.
   """
   sellerSetProductTags(input: SellerSetProductTagsInput!): SellerProduct!
+  """
+  상품 태그 연결을 이름 목록으로 통째로 교체한다. 각 이름은 앞뒤 공백·선행 '#' 제거, 연속 공백 1칸, 소문자로 정규화하고
+  정규화 후 같은 이름은 하나로 합친다(대소문자·악센트가 같은 이름도 DB 기준 하나로 저장되지만, 개수 검사는 정규화 문자열
+  기준이라 악센트만 다른 café·cafe는 각각 센다). 없는 이름은 새 태그로 만들고
+  (삭제된 같은 이름은 복구), 있으면 저장된 형태 그대로 재사용한다. 빈 목록이면 전체 해제.
+  정규화 후 빈 이름이 있거나 80자(코드 포인트, 정규화 전후 모두)를 넘는 이름이 있거나 합친 뒤 20개를 넘으면 BAD_USER_INPUT.
+  판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않거나 내 상품이 아니면 NOT_FOUND.
+  """
+  sellerSetProductTagsByName(
+    input: SellerSetProductTagsByNameInput!
+  ): SellerProduct!
 
   """
   상품 옵션 그룹을 생성한다. 판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않으면 NOT_FOUND.
@@ -4406,6 +4687,8 @@ extend type Mutation {
   ): SellerCustomTemplate!
   """
   커스텀 텍스트 토큰을 등록 또는 수정한다. 판매자 로그인 필수. SELLER 계정이 아니면 FORBIDDEN, 매장을 보유하지 않으면 NOT_FOUND.
+  등록 시 같은 템플릿에 같은 tokenKey의 삭제된 슬롯이 있으면 그 슬롯(같은 id)을 복구해 입력값으로 갱신한다.
+  활성 슬롯과 tokenKey가 겹치면(수정으로 삭제된 슬롯의 키로 바꾸는 경우 포함) CUSTOM_TEXT_TOKEN_KEY_TAKEN.
   """
   sellerUpsertProductCustomTextToken(
     input: SellerUpsertProductCustomTextTokenInput!
@@ -4442,6 +4725,25 @@ type SellerTag {
   태그명.
   """
   name: String!
+}
+
+"""
+태그 제안 1건. 정확 일치 여부로 FE가 '새 태그 만들기' 행을 띄울지 판단한다.
+"""
+type SellerTagSuggestion {
+  id: ID!
+  """
+  태그명(저장된 형태).
+  """
+  name: String!
+  """
+  정규화한 keyword와 이름이 같으면 true(대소문자·악센트 무시). 목록에 true가 없으면 FE는 '새로 만들기'를 보여준다.
+  """
+  isExactMatch: Boolean!
+  """
+  이 태그가 붙은 활성 상품 수(전 매장). 표시용 근사치이며 정렬에는 쓰지 않는다.
+  """
+  productCount: Int!
 }
 
 """
@@ -4570,19 +4872,20 @@ type SellerCustomTextToken {
   """
   isRequired: Boolean!
   """
-  베이스 이미지 위에서 문구가 놓일 가로 위치. 미지정 시 null이고 배치는 클라이언트가 정한다.
+  문구 영역 왼쪽 위 모서리의 가로 위치. 베이스 이미지 한 변을 10000으로 본 정수 비율(0~10000)이고 서버는 범위를 검사하지 않는다.
+  미지정 시 null이고 배치는 클라이언트가 정한다.
   """
   posX: Int
   """
-  베이스 이미지 위에서 문구가 놓일 세로 위치. 미지정 시 null.
+  문구 영역 왼쪽 위 모서리의 세로 위치. 베이스 이미지 한 변을 10000으로 본 정수 비율(0~10000). 미지정 시 null.
   """
   posY: Int
   """
-  문구 영역 너비. 미지정 시 null.
+  문구 영역 너비. 베이스 이미지 한 변을 10000으로 본 정수 비율(1~10000). 미지정 시 null.
   """
   width: Int
   """
-  문구 영역 높이. 미지정 시 null.
+  문구 영역 높이. 베이스 이미지 한 변을 10000으로 본 정수 비율(1~10000). 미지정 시 null.
   """
   height: Int
 }
@@ -4870,6 +5173,32 @@ input SellerSetProductTagsInput {
 }
 
 """
+이름 기반 태그 연결 설정 입력. 전달한 목록으로 통째로 교체한다.
+"""
+input SellerSetProductTagsByNameInput {
+  productId: ID!
+  """
+  연결할 태그 이름 전체. 정규화·중복 제거 뒤 최대 20개(개수는 정규화 문자열 기준 — 악센트만 다른 이름은 저장 시 하나로
+  합쳐져도 각각 센다). 각 이름은 정규화 전후 모두 80자(코드 포인트) 이내. 빈 배열이면 전체 해제.
+  """
+  names: [String!]!
+}
+
+"""
+태그 검색 입력.
+"""
+input SellerTagSearchInput {
+  """
+  검색어. 정규화 후 80자를 넘으면 BAD_USER_INPUT.
+  """
+  keyword: String!
+  """
+  최대 건수. 기본 10, 1~20만 허용하며 벗어나면 BAD_USER_INPUT.
+  """
+  limit: Int = 10
+}
+
+"""
 옵션 그룹 생성 입력.
 """
 input SellerCreateOptionGroupInput {
@@ -5097,19 +5426,20 @@ input SellerUpsertProductCustomTextTokenInput {
   """
   isRequired: Boolean = true
   """
-  베이스 이미지 위 가로 위치. 생략 시 배치를 클라이언트가 정한다.
+  문구 영역 왼쪽 위 모서리의 가로 위치. 베이스 이미지 한 변을 10000으로 본 정수 비율(0~10000)이고 서버는 범위를 검사하지 않는다.
+  생략 시 배치를 클라이언트가 정한다.
   """
   posX: Int
   """
-  베이스 이미지 위 세로 위치.
+  문구 영역 왼쪽 위 모서리의 세로 위치. 베이스 이미지 한 변을 10000으로 본 정수 비율(0~10000).
   """
   posY: Int
   """
-  문구 영역 너비.
+  문구 영역 너비. 베이스 이미지 한 변을 10000으로 본 정수 비율(1~10000).
   """
   width: Int
   """
-  문구 영역 높이.
+  문구 영역 높이. 베이스 이미지 한 변을 10000으로 본 정수 비율(1~10000).
   """
   height: Int
 }
@@ -6980,7 +7310,7 @@ input AdminSellerListInput {
 """
 input AdminCreateSellerInput {
   """
-  로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT.
+  로그인 username. 4~80자, 영문 대소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면(대소문자만 달라도) BAD_USER_INPUT.
   """
   username: String!
   """
