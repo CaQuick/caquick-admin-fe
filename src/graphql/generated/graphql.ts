@@ -79,7 +79,7 @@ export type AdminCreateAdminInput = {
   name?: string | null | undefined;
   /** 초기 비밀번호. 8~64자(공백만으로는 불가). 최초 로그인 시 변경이 강제되므로 조합 규칙은 없다. */
   password: string;
-  /** 로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT. */
+  /** 로그인 username. 4~80자, 영문 대소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면(대소문자만 달라도) BAD_USER_INPUT. */
   username: string;
 };
 
@@ -169,7 +169,7 @@ export type AdminCreateSellerInput = {
   password: string;
   /** 매장 기본 정보. */
   store: AdminCreateSellerStoreInput;
-  /** 로그인 username. 4~80자, 소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면 BAD_USER_INPUT. */
+  /** 로그인 username. 4~80자, 영문 대소문자·숫자·`.`·`_`·`-`만 허용. 이미 쓰이고 있으면(대소문자만 달라도) BAD_USER_INPUT. */
   username: string;
   /** 홈페이지·SNS URL. 선택. */
   websiteUrl?: string | null | undefined;
