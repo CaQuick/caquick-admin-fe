@@ -84,4 +84,4 @@ pnpm codegen             # 스냅샷 + 문서 → src/graphql/generated (커밋 
   - `test`: Vitest 3샤드, 결과는 blob 아티팩트로 넘긴다
   - `coverage-report`: blob을 합쳐 임계 검사 → Codecov → PR 댓글. 비교 기준은 base 브랜치(develop·main) push 실행이 올린 커버리지 요약
 - 커밋은 Conventional Commits + 한국어 본문(commitlint). 브랜치는 `<type>/<대상>`.
-- PR 본문에 `## 플랜 대조` 표. 봇 리뷰(Codex·CodeRabbit)는 BE와 같은 절차로 처리한다.
+- PR 본문에 `## 플랜 대조` 표. 봇 리뷰(Codex)는 BE와 같은 절차로 처리한다(CodeRabbit은 BE 전용, D17).

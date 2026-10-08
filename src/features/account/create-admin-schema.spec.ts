@@ -6,6 +6,8 @@ describe('createAdminSchema', () => {
   it.each([
     [{}, true],
     [{ username: 'Ops' }, false],
+    [{ username: 'Ops.Admin_1' }, true],
+    [{ username: 'ops@admin' }, false],
     [{ email: 'nope' }, false],
     [{ email: 'a@b.co', name: '운영' }, true],
   ])('%j → %s', (patch, ok) => {
