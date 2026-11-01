@@ -5,7 +5,7 @@
 ## 1. 큰 그림
 
 ```
-브라우저(admin.caquick.site) ──GraphQL·REST──> api.caquick.site (caquick-be)
+브라우저(admin.caquick.com) ──GraphQL·REST──> api.caquick.com (caquick-be)
 ```
 
 - SPA 1개. 서버 코드가 없다. 정적 파일을 nginx가 서빙하고, 데이터는 전부 백엔드 관리자 API에서 온다.

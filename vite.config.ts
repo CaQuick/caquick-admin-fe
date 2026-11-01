@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 // 로컬 개발은 /graphql·/auth를 백엔드(기본 localhost:4000)로 프록시해 same-origin으로 만든다 — CORS·쿠키 설정 없이 refresh 쿠키가 돈다.
-// 운영 빌드는 VITE_API_BASE_URL(절대 URL)로 api.caquick.site에 직접 붙는다.
+// 운영 빌드는 VITE_API_BASE_URL(절대 URL)로 api.caquick.com에 직접 붙는다.
 export default defineConfig({
   plugins: [
     tanstackRouter({

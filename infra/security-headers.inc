@@ -6,4 +6,4 @@ add_header X-Content-Type-Options "nosniff" always;
 add_header X-Frame-Options "DENY" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://t1.kakaocdn.net https://oapi.map.naver.com https://nrbe.pstatic.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.caquick.site https://*.amazonaws.com https://kr-col-ext.nelo.navercorp.com; frame-src https://postcode.map.kakao.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://t1.kakaocdn.net https://oapi.map.naver.com https://nrbe.pstatic.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.caquick.com https://*.amazonaws.com https://kr-col-ext.nelo.navercorp.com; frame-src https://postcode.map.kakao.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
