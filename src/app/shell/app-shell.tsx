@@ -17,7 +17,7 @@ function Brand() {
       <img src="/logo.png" alt="" className="size-7 rounded-lg" />
       <div className="leading-tight">
         <div className="text-[15px] font-bold">케이퀵 어드민</div>
-        <div className="text-[11px] text-muted-foreground">admin.caquick.site</div>
+        <div className="text-[11px] text-muted-foreground">admin.caquick.com</div>
       </div>
     </div>
   );

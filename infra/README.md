@@ -1,6 +1,6 @@
 # infra — 홈서버 배포
 
-관리자 웹은 nginx 정적 이미지 1개다. BE compose(프로젝트 `caquick`)의 네트워크 `caquick_default`에 external로 참여하고, BE 쪽 cloudflared가 `admin.caquick.site → http://caquick-admin:80`으로 라우팅한다. 인바운드 포트는 열지 않는다.
+관리자 웹은 nginx 정적 이미지 1개다. BE compose(프로젝트 `caquick`)의 네트워크 `caquick_default`에 external로 참여하고, BE 쪽 cloudflared가 `admin.caquick.com → http://caquick-admin:80`으로 라우팅한다. 인바운드 포트는 열지 않는다.
 
 | 파일                                | 역할                                                              |
 | ----------------------------------- | ----------------------------------------------------------------- |
@@ -18,7 +18,7 @@
 
 1. BE compose가 떠 있어야 한다(네트워크 `caquick_default`).
 2. 이 레포용 셀프호스트 러너를 같은 맥미니에 등록한다(라벨 `macmini`). Settings → Actions → Runners → New self-hosted runner. 러너 디렉터리는 BE 러너와 분리(예 `~/actions-runner-admin`).
-3. Cloudflare Zero Trust → Tunnel → Public hostname 추가: `admin.caquick.site` → `HTTP` → `caquick-admin:80`.
+3. Cloudflare Zero Trust → Tunnel → Public hostname 추가: `admin.caquick.com` → `HTTP` → `caquick-admin:80`.
 4. GitHub Environment `production`(선택: 시크릿 `DISCORD_WEBHOOK_URL`, 변수 `DEPLOY_DIR` 기본 `/opt/caquick-admin`).
 
 ## 점검
