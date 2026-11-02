@@ -28,7 +28,7 @@ describe('nginx 설정', () => {
 
   it('CSP는 API·S3 오리진을 허용하고 프레임을 막는다', () => {
     const csp = /Content-Security-Policy "([^"]+)"/.exec(read('security-headers.inc'))?.[1] ?? '';
-    expect(csp).toContain("connect-src 'self' https://api.caquick.site https://*.amazonaws.com");
+    expect(csp).toContain("connect-src 'self' https://api.caquick.com https://*.amazonaws.com");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).not.toContain('\n');
   });
@@ -58,7 +58,7 @@ describe('nginx 설정', () => {
     // maps.js의 오류 수집 XHR. 막아도 지도는 뜨지만 콘솔 위반이 장애로 오인된다
     expect(d.get('connect-src')).toEqual([
       "'self'",
-      'https://api.caquick.site',
+      'https://api.caquick.com',
       'https://*.amazonaws.com',
       'https://kr-col-ext.nelo.navercorp.com',
     ]);

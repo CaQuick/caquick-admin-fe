@@ -1,5 +1,5 @@
 # 운영 compose(홈서버). BE compose(프로젝트 caquick)의 네트워크에 external로 참여해 기존 cloudflared가
-# admin.caquick.site → http://caquick-admin:80 으로 라우팅한다. 인바운드 포트는 열지 않는다(진단용 127.0.0.1만).
+# admin.caquick.com → http://caquick-admin:80 으로 라우팅한다. 인바운드 포트는 열지 않는다(진단용 127.0.0.1만).
 # 값은 .env — 배포 잡이 IMAGE·IMAGE_TAG를 쓴다. 롤백은 IMAGE_TAG를 이전 sha로 바꿔 다시 실행.
 name: caquick-admin
 

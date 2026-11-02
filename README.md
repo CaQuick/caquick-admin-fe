@@ -2,7 +2,7 @@
 
 # caquick-admin-fe
 
-케이퀵(CaQuick) 관리자 웹입니다. React + Vite + TypeScript SPA로, 백엔드([caquick-be](https://github.com/CaQuick/caquick-be))의 관리자 GraphQL·REST API를 사용합니다. 운영 주소는 `admin.caquick.site`입니다.
+케이퀵(CaQuick) 관리자 웹입니다. React + Vite + TypeScript SPA로, 백엔드([caquick-be](https://github.com/CaQuick/caquick-be))의 관리자 GraphQL·REST API를 사용합니다. 운영 주소는 `admin.caquick.com`입니다.
 
 ## 스택
 
