@@ -142,6 +142,24 @@ describe('감사 대상 유형 라벨', () => {
     expect(targetLabel(value)).not.toBe(value);
   });
 
+  it.each([
+    ['PAYMENT_SETTING', '결제 설정'],
+    ['SETTLEMENT_ACCOUNT', '정산 계좌'],
+    ['SETTLEMENT', '정산'],
+    ['REFUND', '환불'],
+    ['DEPOSIT_RECORD', '입금 기록'],
+  ])('결제·정산 대상 %s의 라벨: %s', (value, label) => {
+    expect(targetLabel(value)).toBe(label);
+  });
+
+  it.each([['PAYOUT'], ['constructor'], ['']])(
+    '모르는 유형 %j는 원문으로 보이고 필터에는 나오지 않는다',
+    (value) => {
+      expect(targetLabel(value)).toBe(value);
+      expect(auditSearchSchema.parse({ targetType: value }).targetType).toBeUndefined();
+    },
+  );
+
   it('스키마에 없는 유형은 라벨 표에도 없다', () => {
     const known = new Set(schemaTargetTypes());
     expect(TARGET_TYPES.map((t) => t.value).filter((v) => !known.has(v))).toEqual([]);

@@ -4,7 +4,7 @@ import { HttpResponse, graphql } from 'msw';
 
 import { App } from '@/app/app';
 import { useAuthStore } from '@/features/auth';
-import { type AdminProductQuery } from '@/graphql/generated/graphql';
+import { type AdminProductQuery, type CustomModeType } from '@/graphql/generated/graphql';
 import { forgetSearches } from '@/shared/lib/list-return';
 import { gqlError, gqlOk, restOk } from '@/test/msw/graphql';
 import { server } from '@/test/msw/server';
@@ -27,7 +27,8 @@ const product = (isActive = true) => ({
   regularPrice: 45000,
   salePrice: 39000,
   currency: 'KRW',
-  baseDesignImageUrl: 'https://img.test/base.png',
+  thumbnailUrl: 'https://img.test/thumb.png' as string | null,
+  customMode: 'SLOT' as CustomModeType,
   isActive,
   createdAt: '2026-09-01T00:00:00.000Z',
   updatedAt: '2026-09-02T00:00:00.000Z',
@@ -57,8 +58,6 @@ const group = (over: Partial<Group>): Group => ({
   isRequired: true,
   minSelect: 1,
   maxSelect: 1,
-  optionRequiresDescription: false,
-  optionRequiresImage: false,
   sortOrder: 0,
   isActive: true,
   optionItems: [],
@@ -73,6 +72,7 @@ const item = (over: Partial<Item>): Item => ({
   priceDelta: 0,
   sortOrder: 0,
   isActive: true,
+  threeDKey: null,
   ...over,
 });
 const RICH: Partial<Detail> = {
@@ -109,23 +109,36 @@ const RICH: Partial<Detail> = {
       description: '사진은 주문 뒤 채팅으로 보내 주세요.',
       isRequired: false,
       minSelect: 0,
-      optionRequiresImage: true,
-      optionItems: [item({ id: '31', title: '사진 1장', priceDelta: 5000 })],
+      optionItems: [item({ id: '31', title: '사진 1장', priceDelta: 5000, threeDKey: 'heart' })],
     }),
     group({ id: '4', name: '초', isRequired: false, isActive: false }),
   ],
   customTemplate: {
     id: '5',
     baseImageUrl: 'https://img.test/tpl.png',
-    isActive: false,
+    freeEditEnabled: true,
     textTokens: [
       {
+        id: '2',
+        tokenKey: 'slot2',
+        label: '보내는 사람',
+        defaultText: '',
+        maxLength: 10,
+        sortOrder: 1,
+        isRequired: false,
+        textColor: 'not-a-color',
+        textAlign: 'RIGHT',
+      },
+      {
         id: '1',
-        tokenKey: '메인 문구',
+        tokenKey: 'slot1',
+        label: '메인 문구',
         defaultText: 'HAPPY BIRTHDAY',
         maxLength: 20,
         sortOrder: 0,
         isRequired: true,
+        textColor: '#FF5A5F',
+        textAlign: 'CENTER',
       },
     ],
   },
@@ -151,11 +164,14 @@ describe('상품', () => {
     forgetSearches();
   });
 
-  it('목록: 판매가 첫 줄·정가 둘째 줄, 수정일 헤더', async () => {
+  it('목록: 대표 이미지 썸네일, 판매가 첫 줄·정가 둘째 줄, 수정일 헤더', async () => {
     server.use(
       gqlOk('AdminProducts', {
         adminProducts: {
-          items: [product(), { ...product(), id: '100', name: '생크림 케이크', salePrice: null }],
+          items: [
+            product(),
+            { ...product(), id: '100', name: '생크림 케이크', salePrice: null, thumbnailUrl: null },
+          ],
           totalCount: 2,
           hasMore: false,
           nextCursor: null,
@@ -171,6 +187,8 @@ describe('상품', () => {
     expect(within(plain).getByText('45,000원').tagName).not.toBe('S');
     expect(within(plain).queryByText(/정가/)).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '수정일' })).toBeInTheDocument();
+    expect(row.querySelector('img')).toHaveAttribute('src', 'https://img.test/thumb.png');
+    expect(plain.querySelector('img')).toBeNull();
   });
 
   it('목록: 매장 필터는 이름으로 검색해 고르고, 주소로 들어온 매장은 이름으로 보인다', async () => {
@@ -329,7 +347,7 @@ describe('상품', () => {
     expect(new URL(tag.getAttribute('href')!, 'http://x').searchParams.get('q')).toBe('비건');
   });
 
-  it('상세: 옵션 그룹은 규칙·선택지·가격 증감과 주문 불가 경고를 보인다', async () => {
+  it('상세: 옵션 그룹은 규칙·선택지·가격 증감·3D 연결 키와 주문 불가 경고를 보인다', async () => {
     server.use(gqlOk('AdminProduct', { adminProduct: detail(RICH) }));
     boot('/products/99');
     expect(await screen.findByText('옵션 그룹 4개')).toBeInTheDocument();
@@ -365,11 +383,10 @@ describe('상품', () => {
     expect(within(photo).getByText('선택 사항')).toBeInTheDocument();
     expect(within(photo).getByText('최대 1개 선택')).toBeInTheDocument();
     expect(within(photo).getByText('사진은 주문 뒤 채팅으로 보내 주세요.')).toBeInTheDocument();
-    expect(
-      within(photo).getByText('이미지 입력 필요').closest('[tabindex]'),
-    ).toHaveAccessibleDescription(
-      '구매자가 이미지를 입력할 수 없어 이 그룹의 선택지를 고르면 주문이 거절됩니다.',
-    );
+    expect(within(photo).getAllByRole('listitem')[0]).toHaveTextContent('사진 1장3D heart+5,000원');
+    expect(within(size).queryByText(/^3D /)).not.toBeInTheDocument();
+    // 옵션 입력 플래그가 없어져 입력 필요 경고는 더 이상 없다
+    expect(screen.queryByText(/입력 필요/)).not.toBeInTheDocument();
 
     const candle = screen.getByRole('listitem', { name: '옵션 그룹 초' });
     expect(within(candle).getByText('숨김')).toBeInTheDocument();
@@ -377,20 +394,71 @@ describe('상품', () => {
     expect(within(candle).queryByText('주문 불가')).not.toBeInTheDocument();
   });
 
-  it('상세: 문구 커스텀 템플릿은 바탕 이미지·사용 여부·문구 칸을 보인다', async () => {
+  it('상세: 커스텀 설정은 방식·자유 편집과 문구 자리 스타일을 순서대로 보인다', async () => {
     server.use(gqlOk('AdminProduct', { adminProduct: detail(RICH) }));
     boot('/products/99');
-    const card = (await screen.findByText('문구 커스텀 템플릿')).closest<HTMLElement>(
-      '[data-slot=card]',
-    )!;
+    const card = (await screen.findByText('커스텀 설정')).closest<HTMLElement>('[data-slot=card]')!;
+    expect(
+      within(card)
+        .getAllByRole('term')
+        .map((t) => t.textContent),
+    ).toEqual(['커스텀 방식', '자유 편집']);
+    expect(
+      within(card)
+        .getAllByRole('definition')
+        .map((d) => d.textContent),
+    ).toEqual(['슬롯형', '허용']);
     expect(within(card).getByRole('img', { name: '템플릿 바탕 이미지' })).toHaveAttribute(
       'src',
       'https://img.test/tpl.png',
     );
-    expect(within(card).getByText('사용 안 함')).toBeInTheDocument();
-    const [header, row] = within(card).getAllByRole('row');
-    expect(header).toHaveTextContent('문구 칸 이름기본 문구최대 글자 수필수 입력');
-    expect(row).toHaveTextContent('메인 문구HAPPY BIRTHDAY20자필수');
+    const [header, main, sender] = within(card).getAllByRole('row');
+    expect(header).toHaveTextContent('문구 자리기본 문구최대 글자 수필수 입력글자색정렬');
+    expect(main).toHaveTextContent('메인 문구slot1HAPPY BIRTHDAY20자필수#FF5A5F가운데');
+    expect(sender).toHaveTextContent('보내는 사람slot2—10자선택not-a-color오른쪽');
+    expect(main!.querySelector('[data-slot=color-swatch]')).toHaveStyle(
+      'background-color: rgb(255, 90, 95)',
+    );
+    expect(sender!.querySelector('[data-slot=color-swatch]')).not.toHaveAttribute('style');
+    expect(within(card).queryByText(/구매자에게 보이지 않습니다/)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      '3D는 옵션 3D 연결 안내만 보인다',
+      'THREE_D',
+      null,
+      ['3D'],
+      '모양·크기·맛·디자인은 옵션 선택지의 3D 연결로 고릅니다. 3D 상품에는 자유 편집이 없습니다.',
+    ],
+    [
+      '슬롯형인데 템플릿이 없으면 없다고 알린다',
+      'SLOT',
+      null,
+      ['슬롯형'],
+      '등록된 템플릿이 없습니다.',
+    ],
+    [
+      '슬롯형이 아닌데 남은 템플릿은 구매자에게 보이지 않는다고 알린다',
+      'NONE',
+      { ...RICH.customTemplate!, freeEditEnabled: false },
+      ['없음', '허용 안 함'],
+      '커스텀 방식이 슬롯형이 아니라 이 템플릿은 구매자에게 보이지 않습니다.',
+    ],
+  ] as const)('상세: 커스텀 설정 — %s', async (_, customMode, customTemplate, defs, text) => {
+    server.use(
+      gqlOk('AdminProduct', {
+        adminProduct: detail({ product: { ...product(), customMode }, customTemplate }),
+      }),
+    );
+    boot('/products/99');
+    const card = (await screen.findByText('커스텀 설정')).closest<HTMLElement>('[data-slot=card]')!;
+    expect(
+      within(card)
+        .getAllByRole('definition')
+        .map((d) => d.textContent),
+    ).toEqual(defs);
+    expect(within(card).getByText(text)).toBeInTheDocument();
   });
 
   it('상세: 분류·옵션·템플릿이 없으면 없다고 알린다', async () => {

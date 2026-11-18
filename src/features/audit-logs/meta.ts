@@ -31,6 +31,11 @@ const TARGET_LABELS: Record<AuditTargetType, string> = {
   REVIEW_REPORT: '신고',
   NOTIFICATION: '알림',
   CONVERSATION: '대화',
+  PAYMENT_SETTING: '결제 설정',
+  SETTLEMENT_ACCOUNT: '정산 계좌',
+  SETTLEMENT: '정산',
+  REFUND: '환불',
+  DEPOSIT_RECORD: '입금 기록',
 };
 export const TARGET_TYPES = (Object.keys(TARGET_LABELS) as AuditTargetType[]).map((value) => ({
   value,

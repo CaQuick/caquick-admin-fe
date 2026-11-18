@@ -13,9 +13,9 @@ import { StatusPill } from '@/shared/ui/status-pill';
 
 import { productDetailQueryOptions } from '../api/queries';
 import { ProductActiveToggle } from '../components/product-active-toggle';
+import { ProductCustomCard } from '../components/product-custom-card';
 import { ProductOptionsCard } from '../components/product-options-card';
 import { ProductTaxonomyCard } from '../components/product-taxonomy-card';
-import { ProductTemplateCard } from '../components/product-template-card';
 
 export function ProductDetailPage({ productId }: { productId: string }) {
   const q = useQuery(productDetailQueryOptions(productId));
@@ -113,7 +113,7 @@ export function ProductDetailPage({ productId }: { productId: string }) {
             </CardContent>
           </Card>
           <ProductOptionsCard optionGroups={optionGroups} />
-          <ProductTemplateCard template={customTemplate} />
+          <ProductCustomCard mode={p.customMode} template={customTemplate} />
         </div>
         <div className="flex flex-col gap-3">
           <Card>

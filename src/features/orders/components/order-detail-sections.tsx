@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 
 import { storeNameQueryOptions } from '../api/queries';
 import { ORDER_STATUS, orderStatusMeta } from '../status';
+import { OrderItemCustom } from './order-item-custom';
 
 export type OrderDetail = AdminOrderQuery['adminOrder'];
 
@@ -74,8 +75,6 @@ export function OrderProgress({ order }: { order: OrderDetail }) {
   );
 }
 
-type FreeEdit = OrderDetail['items'][number]['freeEdits'][number];
-
 /** 품목에는 매장명 스냅샷이 없어 현재 매장 이름을 불러 보인다. 못 불러오면 #ID */
 function StoreLink({ storeId }: { storeId: string }) {
   const name = useQuery(storeNameQueryOptions(storeId));
@@ -87,52 +86,6 @@ function StoreLink({ storeId }: { storeId: string }) {
     >
       매장 {name.data ?? `#${storeId}`}
     </Link>
-  );
-}
-
-const bySortOrder = (a: { sortOrder: number }, b: { sortOrder: number }) =>
-  a.sortOrder - b.sortOrder;
-
-/** 자유 편집 1건: 편집 이미지, 요청 문구 전문, 첨부 이미지. 이미지는 새 탭에서 원본으로 연다 */
-function FreeEditRow({ edit }: { edit: FreeEdit }) {
-  const n = edit.sortOrder + 1;
-  const attachments = [...edit.attachments].sort(bySortOrder);
-  return (
-    <li className="flex gap-3 rounded-md border p-2 text-xs">
-      <a href={edit.cropImageUrl} target="_blank" rel="noreferrer" className="shrink-0">
-        <img
-          src={edit.cropImageUrl}
-          alt={`자유 편집 ${n} 이미지`}
-          className="size-16 rounded-md border object-cover"
-        />
-      </a>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div>
-          <div className="text-muted-foreground">요청 문구</div>
-          <p className="break-words whitespace-pre-wrap">
-            {edit.descriptionText.trim() ? edit.descriptionText : '요청 문구가 없습니다.'}
-          </p>
-        </div>
-        {attachments.length > 0 && (
-          <div>
-            <div className="text-muted-foreground">첨부 이미지 {attachments.length}장</div>
-            <ul aria-label={`자유 편집 ${n} 첨부 이미지`} className="mt-1 flex flex-wrap gap-1.5">
-              {attachments.map((a, i) => (
-                <li key={a.id}>
-                  <a href={a.imageUrl} target="_blank" rel="noreferrer" className="block">
-                    <img
-                      src={a.imageUrl}
-                      alt={`자유 편집 ${n} 첨부 ${i + 1}`}
-                      className="size-12 rounded-md border object-cover"
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </li>
   );
 }
 
@@ -180,23 +133,7 @@ export function OrderItems({ order }: { order: OrderDetail }) {
                     ))}
                   </div>
                 )}
-                {it.customTexts.length > 0 && (
-                  <div className="mt-1 text-xs">
-                    {it.customTexts.map((c) => (
-                      <span key={c.id} className="mr-3">
-                        문구 “{c.valueText}”
-                        <span className="text-muted-foreground"> (기본 {c.defaultText})</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {it.freeEdits.length > 0 && (
-                  <ul className="mt-2 flex flex-col gap-2">
-                    {it.freeEdits.map((f) => (
-                      <FreeEditRow key={f.id} edit={f} />
-                    ))}
-                  </ul>
-                )}
+                <OrderItemCustom item={it} />
               </div>
               <div className="text-right font-semibold tabular-nums">
                 {formatKrw(it.itemSubtotalPrice)}

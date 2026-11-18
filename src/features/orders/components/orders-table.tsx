@@ -4,6 +4,7 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { type AdminOrdersQuery } from '@/graphql/generated/graphql';
 import { formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
+import { Badge } from '@/shared/ui/badge';
 import { DataTable } from '@/shared/ui/data-table';
 
 import { OrderStatusPill } from './order-status-pill';
@@ -15,13 +16,16 @@ const columns: ColumnDef<OrderRow, unknown>[] = [
     accessorKey: 'orderNumber',
     header: '주문번호',
     cell: ({ row }) => (
-      <Link
-        to="/orders/$orderId"
-        params={{ orderId: row.original.id }}
-        className="font-mono font-medium text-primary-soft-foreground hover:underline"
-      >
-        {row.original.orderNumber}
-      </Link>
+      <span className="flex items-center gap-1.5">
+        <Link
+          to="/orders/$orderId"
+          params={{ orderId: row.original.id }}
+          className="font-mono font-medium text-primary-soft-foreground hover:underline"
+        >
+          {row.original.orderNumber}
+        </Link>
+        {row.original.hasCustom && <Badge variant="outline">커스텀</Badge>}
+      </span>
     ),
   },
   {
