@@ -35,8 +35,8 @@ export const SLOT_TEXT_STATE_LABEL: Record<SlotTextState, string> = {
   EMPTY: '문구 없음',
 };
 
-/** BE는 문구를 CRLF→LF·trim해 저장하므로 기본 문구도 같은 규칙으로 맞춰 비교한다 */
+/** BE는 문구의 CRLF·CR을 LF로 바꾸고 trim해 저장하므로 기본 문구도 같은 규칙으로 맞춰 비교한다 */
 export function slotTextState(t: { defaultText: string; valueText: string | null }): SlotTextState {
   if (t.valueText === null || t.valueText === '') return 'EMPTY';
-  return t.valueText === t.defaultText.replaceAll('\r\n', '\n').trim() ? 'DEFAULT' : 'CHANGED';
+  return t.valueText === t.defaultText.replace(/\r\n?/g, '\n').trim() ? 'DEFAULT' : 'CHANGED';
 }

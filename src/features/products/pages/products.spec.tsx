@@ -423,29 +423,34 @@ describe('상품', () => {
     expect(within(card).queryByText(/구매자에게 보이지 않습니다/)).not.toBeInTheDocument();
   });
 
+  const THREE_D_NOTE =
+    '모양·크기·맛·디자인은 옵션 선택지의 3D 연결로 고릅니다. 3D 상품에는 자유 편집이 없습니다.';
+  const UNUSED_NOTE = '커스텀 방식이 슬롯형이 아니라 이 템플릿은 구매자에게 보이지 않습니다.';
   it.each([
-    [
-      '3D는 옵션 3D 연결 안내만 보인다',
-      'THREE_D',
-      null,
-      ['3D'],
-      '모양·크기·맛·디자인은 옵션 선택지의 3D 연결로 고릅니다. 3D 상품에는 자유 편집이 없습니다.',
-    ],
+    ['3D는 옵션 3D 연결 안내만 보인다', 'THREE_D', null, ['3D'], [THREE_D_NOTE]],
     [
       '슬롯형인데 템플릿이 없으면 없다고 알린다',
       'SLOT',
       null,
       ['슬롯형'],
-      '등록된 템플릿이 없습니다.',
+      ['등록된 템플릿이 없습니다.'],
     ],
+    ['방식이 없고 템플릿도 없으면 방식만 보인다', 'NONE', null, ['없음'], []],
     [
       '슬롯형이 아닌데 남은 템플릿은 구매자에게 보이지 않는다고 알린다',
       'NONE',
       { ...RICH.customTemplate!, freeEditEnabled: false },
-      ['없음', '허용 안 함'],
-      '커스텀 방식이 슬롯형이 아니라 이 템플릿은 구매자에게 보이지 않습니다.',
+      ['없음'],
+      [UNUSED_NOTE, '템플릿 자유 편집: 허용 안 함'],
     ],
-  ] as const)('상세: 커스텀 설정 — %s', async (_, customMode, customTemplate, defs, text) => {
+    [
+      '3D에 남은 템플릿의 자유 편집 허용은 방식 아래가 아니라 남은 템플릿 안내에 보인다',
+      'THREE_D',
+      RICH.customTemplate!,
+      ['3D'],
+      [THREE_D_NOTE, UNUSED_NOTE, '템플릿 자유 편집: 허용'],
+    ],
+  ] as const)('상세: 커스텀 설정 — %s', async (_, customMode, customTemplate, defs, notes) => {
     server.use(
       gqlOk('AdminProduct', {
         adminProduct: detail({ product: { ...product(), customMode }, customTemplate }),
@@ -458,7 +463,7 @@ describe('상품', () => {
         .getAllByRole('definition')
         .map((d) => d.textContent),
     ).toEqual(defs);
-    expect(within(card).getByText(text)).toBeInTheDocument();
+    expect([...card.querySelectorAll('p')].map((p) => p.textContent)).toEqual(notes);
   });
 
   it('상세: 분류·옵션·템플릿이 없으면 없다고 알린다', async () => {

@@ -68,7 +68,9 @@ function ImageLink({ url, label, className }: { url: string; label: string; clas
   );
 }
 
-const renderLabel = (image: CustomImage) => `3D ${imageKindLabel(image.kind)}`;
+// 모르는 종류는 3D 렌더라고 단정하지 않고 원문으로 보인다
+const renderLabel = ({ kind }: CustomImage) =>
+  kind.startsWith('THREE_D_') ? `3D ${imageKindLabel(kind)}` : imageKindLabel(kind);
 
 function RenderImages({ top, sides }: { top: CustomImage | null; sides: CustomImage[] }) {
   return (

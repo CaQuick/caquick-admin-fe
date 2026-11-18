@@ -157,6 +157,13 @@ const detail = {
     },
   ],
 };
+// 확정·제작 완료는 사정(fault) 선택이 필요해 지금 다이얼로그로는 취소할 수 없다
+const submitted = {
+  ...detail,
+  status: 'SUBMITTED',
+  confirmedAt: null,
+  statusHistories: detail.statusHistories.slice(1),
+};
 
 /** 매장·구매자 이름 조회 기본 응답. 테스트가 뒤에 등록한 핸들러가 이긴다 */
 function useNameLookups() {
@@ -525,8 +532,8 @@ describe('주문 상세', () => {
           data: {
             adminOrder:
               detailCalls === 1
-                ? detail
-                : { ...detail, status: 'CANCELED', canceledAt: '2026-09-27T03:00:00.000Z' },
+                ? submitted
+                : { ...submitted, status: 'CANCELED', canceledAt: '2026-09-27T03:00:00.000Z' },
           },
         });
       }),
@@ -542,7 +549,7 @@ describe('주문 상세', () => {
     expect(screen.getByText(/서연아 생일 축하해/)).toBeInTheDocument();
     expect(screen.getByText('seoyeon')).toBeInTheDocument();
     const history = screen.getByText('상태 이력').closest<HTMLElement>('[data-slot="card"]')!;
-    expect(within(history).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(history).getAllByRole('listitem')).toHaveLength(1);
 
     await userEvent.click(screen.getByRole('button', { name: '주문 취소' }));
     const dialog = await screen.findByRole('dialog');
@@ -558,6 +565,16 @@ describe('주문 상세', () => {
     expect(screen.queryByRole('button', { name: '주문 취소' })).not.toBeInTheDocument();
     expect(detailCalls).toBe(2);
   });
+
+  it.each(['CONFIRMED', 'MADE'])(
+    '%s 주문은 사정 선택이 필요해 취소 버튼이 없다',
+    async (status) => {
+      server.use(gqlOk('AdminOrder', { adminOrder: { ...detail, status } }));
+      boot('/orders/1');
+      await screen.findByText('레터링 생크림 케이크');
+      expect(screen.queryByRole('button', { name: '주문 취소' })).not.toBeInTheDocument();
+    },
+  );
 
   it('상품·매장·구매자를 해당 상세로 잇고 계정 상태는 한국어로 보인다', async () => {
     server.use(gqlOk('AdminOrder', { adminOrder: detail }));
@@ -708,7 +725,7 @@ describe('주문 상세', () => {
     expect(screen.queryByRole('figure')).not.toBeInTheDocument();
   });
 
-  it('3D는 렌더 5장을 윗면 크게 → 앞·뒤·왼·오 순서로 보이고 문구 표는 없다', async () => {
+  it('3D는 렌더 5장을 윗면 크게 → 앞·뒤·왼·오 순서로, 모르는 종류는 원문 라벨로 뒤에 보이고 문구 표는 없다', async () => {
     const item = detail.items[0]!;
     const render = (kind: string) => ({
       id: kind,
@@ -726,6 +743,7 @@ describe('주문 상세', () => {
               customPreviewImageUrl: 'https://img.test/THREE_D_TOP.png',
               customBaseImageUrl: null,
               customImages: [
+                'HOLOGRAM',
                 'THREE_D_RIGHT',
                 'THREE_D_LEFT',
                 'THREE_D_TOP',
@@ -748,10 +766,12 @@ describe('주문 상세', () => {
       '3D 뒤 원본 보기(새 탭)',
       '3D 왼쪽 원본 보기(새 탭)',
       '3D 오른쪽 원본 보기(새 탭)',
+      'HOLOGRAM 원본 보기(새 탭)',
     ]);
     expect(links.map((l) => l.getAttribute('href'))[0]).toBe('https://img.test/THREE_D_TOP.png');
     expect(links.map((l) => l.querySelector('img')!.classList.contains('size-40'))).toEqual([
       true,
+      false,
       false,
       false,
       false,
@@ -832,7 +852,7 @@ describe('주문 상세', () => {
 
   it('취소 실패는 토스트로 알리고 다이얼로그는 남는다', async () => {
     server.use(
-      gqlOk('AdminOrder', { adminOrder: detail }),
+      gqlOk('AdminOrder', { adminOrder: submitted }),
       gqlError('AdminCancelOrder', {
         message: '이미 픽업된 주문',
         code: 'ORDER_NOT_CANCELABLE',

@@ -20,7 +20,7 @@ export function orderStatusMeta(value: OrderStatusType) {
   );
 }
 
-/** 취소 가능 상태(BE: SUBMITTED·CONFIRMED·MADE) */
+/** 사정(fault) 선택 없이 취소할 수 있는 상태. 확정·제작 완료는 BE가 사정을 요구한다 */
 export function isCancelable(status: OrderStatusType): boolean {
-  return status === 'SUBMITTED' || status === 'CONFIRMED' || status === 'MADE';
+  return status === 'PENDING_PAYMENT' || status === 'SUBMITTED';
 }

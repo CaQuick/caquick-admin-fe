@@ -1,13 +1,17 @@
+import { type OrderStatusType } from '@/graphql/generated/graphql';
+
 import { ORDER_STATUS, isCancelable, orderStatusMeta } from './status';
 
 describe('order status', () => {
   it.each([
+    ['PENDING_PAYMENT', true],
     ['SUBMITTED', true],
-    ['CONFIRMED', true],
-    ['MADE', true],
+    ['CONFIRMED', false],
+    ['MADE', false],
     ['PICKED_UP', false],
+    ['NO_SHOW', false],
     ['CANCELED', false],
-  ] as const)('%s 취소 가능=%s', (status, ok) => {
+  ] satisfies [OrderStatusType, boolean][])('%s 취소 가능=%s', (status, ok) => {
     expect(isCancelable(status)).toBe(ok);
   });
 

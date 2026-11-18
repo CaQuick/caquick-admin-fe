@@ -5,6 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 type Template = NonNullable<AdminProductQuery['adminProduct']['customTemplate']>;
 
+const freeEditLabel = (t: Template) => (t.freeEditEnabled ? '허용' : '허용 안 함');
+
 /** 커스텀 방식과 슬롯형 템플릿(바탕·자유 편집·문구 자리 스타일). 문구 자리 위치는 보이지 않는다 */
 export function ProductCustomCard({
   mode,
@@ -13,6 +15,8 @@ export function ProductCustomCard({
   mode: CustomModeType;
   template: Template | null;
 }) {
+  // 구매자는 슬롯형에서만 템플릿을 받아 그 밖의 방식에는 자유 편집이 없다
+  const slot = mode === 'SLOT';
   return (
     <Card>
       <CardHeader>
@@ -22,10 +26,10 @@ export function ProductCustomCard({
         <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-1.5">
           <dt className="text-muted-foreground">커스텀 방식</dt>
           <dd className="font-medium">{customModeLabel(mode)}</dd>
-          {template && (
+          {slot && template && (
             <>
               <dt className="text-muted-foreground">자유 편집</dt>
-              <dd>{template.freeEditEnabled ? '허용' : '허용 안 함'}</dd>
+              <dd>{freeEditLabel(template)}</dd>
             </>
           )}
         </dl>
@@ -36,9 +40,9 @@ export function ProductCustomCard({
           </p>
         )}
         {template ? (
-          <TemplateSection template={template} unused={mode !== 'SLOT'} />
+          <TemplateSection template={template} unused={!slot} />
         ) : (
-          mode === 'SLOT' && <p className="text-muted-foreground">등록된 템플릿이 없습니다.</p>
+          slot && <p className="text-muted-foreground">등록된 템플릿이 없습니다.</p>
         )}
       </CardContent>
     </Card>
@@ -50,9 +54,10 @@ function TemplateSection({ template, unused }: { template: Template; unused: boo
   return (
     <>
       {unused && (
-        <p className="text-muted-foreground">
-          커스텀 방식이 슬롯형이 아니라 이 템플릿은 구매자에게 보이지 않습니다.
-        </p>
+        <div className="text-muted-foreground">
+          <p>커스텀 방식이 슬롯형이 아니라 이 템플릿은 구매자에게 보이지 않습니다.</p>
+          <p>템플릿 자유 편집: {freeEditLabel(template)}</p>
+        </div>
       )}
       <a href={template.baseImageUrl} target="_blank" rel="noreferrer" className="w-fit">
         <img
