@@ -6,6 +6,7 @@ import {
   DEFAULT_LIMIT,
   keywordText,
   listSearchBase,
+  optionalBoolText,
   optionalIdText,
   optionalText,
 } from '@/shared/lib/list-search';
@@ -16,6 +17,8 @@ export const ordersSearchSchema = z.object({
   ...listSearchBase,
   q: keywordText,
   status: z.enum(ORDER_STATUS_VALUES).optional().catch(undefined),
+  /** 진행 중(입금 대기~제작 완료)만. 'false'는 전체와 같다 */
+  inProgress: optionalBoolText,
   storeId: optionalIdText,
   accountId: optionalIdText,
   from: optionalText,
@@ -33,6 +36,7 @@ export function toOrderListInput(s: OrdersSearch): AdminOrderListInput {
     cursor: s.cursor ?? null,
     keyword: s.q ?? null,
     status: s.status ?? null,
+    inProgress: s.inProgress === 'true',
     storeId: s.storeId ?? null,
     accountId: s.accountId ?? null,
     fromCreatedAt: from ? kstDayStartIso(from) : null,
@@ -41,5 +45,8 @@ export function toOrderListInput(s: OrdersSearch): AdminOrderListInput {
 }
 
 export function hasOrderFilters(s: OrdersSearch): boolean {
-  return [s.q, s.status, s.storeId, s.accountId, s.from, s.to].some((v) => v !== undefined);
+  return (
+    s.inProgress === 'true' ||
+    [s.q, s.status, s.storeId, s.accountId, s.from, s.to].some((v) => v !== undefined)
+  );
 }

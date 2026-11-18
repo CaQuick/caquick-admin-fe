@@ -9,14 +9,23 @@ import { Skeleton } from '@/shared/ui/skeleton';
 
 import { orderDetailQueryOptions } from '../api/queries';
 import { CancelOrderDialog } from '../components/cancel-order-dialog';
+import { CompletePickupDialog } from '../components/complete-pickup-dialog';
 import {
   OrderBuyer,
   OrderHistory,
   OrderItems,
+  OrderPickupChanges,
   OrderProgress,
+  OrderRequestNote,
 } from '../components/order-detail-sections';
+import {
+  OrderCancellation,
+  OrderPayment,
+  OrderRefunds,
+  OrderSettlement,
+} from '../components/order-money-sections';
 import { OrderStatusPill } from '../components/order-status-pill';
-import { isCancelable } from '../status';
+import { canCompletePickup } from '../status';
 
 export function OrderDetailPage({ orderId }: { orderId: string }) {
   const q = useQuery(orderDetailQueryOptions(orderId));
@@ -53,8 +62,15 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
                 <HistoryIcon className="size-4" /> 감사 이력
               </Link>
             </Button>
-            {isCancelable(order.status) && (
-              <CancelOrderDialog orderId={order.id} orderNumber={order.orderNumber} />
+            {canCompletePickup(order.status) && (
+              <CompletePickupDialog orderId={order.id} orderNumber={order.orderNumber} />
+            )}
+            {order.cancelOptions.cancelable && (
+              <CancelOrderDialog
+                orderId={order.id}
+                orderNumber={order.orderNumber}
+                options={order.cancelOptions}
+              />
             )}
           </>
         }
@@ -63,9 +79,15 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
         <div className="flex flex-col gap-3">
           <OrderProgress order={order} />
           <OrderItems order={order} />
+          {order.requestNote !== null && <OrderRequestNote note={order.requestNote} />}
+          <OrderPayment payment={order.payment} />
+          {order.cancellation && <OrderCancellation cancellation={order.cancellation} />}
+          {order.refunds.length > 0 && <OrderRefunds refunds={order.refunds} />}
+          <OrderSettlement order={order} />
         </div>
         <div className="flex flex-col gap-3">
           <OrderBuyer order={order} />
+          {order.pickupChanges.length > 0 && <OrderPickupChanges changes={order.pickupChanges} />}
           <OrderHistory order={order} />
         </div>
       </div>

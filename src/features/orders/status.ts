@@ -1,26 +1,35 @@
 import { type OrderStatusType } from '@/graphql/generated/graphql';
 import { type PillTone } from '@/shared/ui/status-pill';
 
-export const ORDER_STATUS: { value: OrderStatusType; label: string; tone: PillTone }[] = [
-  { value: 'SUBMITTED', label: '접수', tone: 'primary' },
-  { value: 'CONFIRMED', label: '주문 확정', tone: 'caution' },
-  { value: 'MADE', label: '제작 완료', tone: 'neutral' },
-  { value: 'PICKED_UP', label: '픽업 완료', tone: 'positive' },
-  { value: 'CANCELED', label: '취소', tone: 'negative' },
-];
+// Record라 codegen enum에 값이 늘면 tsc가 잡는다. 적은 순서가 필터·차트 순서다(흐름 → 종료 상태)
+const META: Record<OrderStatusType, { label: string; tone: PillTone }> = {
+  PENDING_PAYMENT: { label: '입금 대기', tone: 'neutral' },
+  SUBMITTED: { label: '접수', tone: 'primary' },
+  CONFIRMED: { label: '주문 확정', tone: 'caution' },
+  MADE: { label: '제작 완료', tone: 'neutral' },
+  PICKED_UP: { label: '픽업 완료', tone: 'positive' },
+  NO_SHOW: { label: '노쇼', tone: 'negative' },
+  CANCELED: { label: '취소', tone: 'negative' },
+};
+
+export const ORDER_STATUS = (Object.keys(META) as OrderStatusType[]).map((value) => ({
+  value,
+  ...META[value],
+}));
 
 export const ORDER_STATUS_VALUES = ORDER_STATUS.map((s) => s.value) as [
   OrderStatusType,
   ...OrderStatusType[],
 ];
 
+/** BE가 먼저 배포돼 모르는 값이 와도 원문으로 보인다 */
 export function orderStatusMeta(value: OrderStatusType) {
-  return (
-    ORDER_STATUS.find((s) => s.value === value) ?? { value, label: value, tone: 'neutral' as const }
-  );
+  return Object.hasOwn(META, value)
+    ? { value, ...META[value] }
+    : { value, label: value as string, tone: 'neutral' as const };
 }
 
-/** 사정(fault) 선택 없이 취소할 수 있는 상태. 확정·제작 완료는 BE가 사정을 요구한다 */
-export function isCancelable(status: OrderStatusType): boolean {
-  return status === 'PENDING_PAYMENT' || status === 'SUBMITTED';
+/** adminCompleteOrderPickup이 받는 상태. 숨김 매장은 자동 픽업 완료가 돌지 않아 관리자가 처리한다 */
+export function canCompletePickup(status: OrderStatusType): boolean {
+  return status === 'CONFIRMED' || status === 'MADE';
 }
