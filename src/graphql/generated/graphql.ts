@@ -250,6 +250,19 @@ export type AdminDeleteReviewInput = {
   reviewId: string | number;
 };
 
+/** 송금 완료 입력. */
+export type AdminMarkSettlementPaidInput = {
+  /** 송금 메모(선택, 500자 이하). 정산과 감사 로그에 남는다. */
+  note?: string | null | undefined;
+  settlementId: string | number;
+};
+
+/** 월 수수료 집계 조건. */
+export type AdminMonthlyCommissionInput = {
+  /** 집계 월(KST). "YYYY-MM" 형식. 예: "2026-11". */
+  month: string;
+};
+
 /** 알림 발송 이력 조회 조건. 모든 필터는 AND로 결합된다. */
 export type AdminNotificationBroadcastListInput = {
   /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
@@ -472,6 +485,20 @@ export type AdminSetStoreActiveInput = {
   storeId: string | number;
 };
 
+/** 주간 정산 목록 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminSettlementListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. 필터를 바꾸면 커서를 버리고 첫 페이지부터 다시 조회한다. */
+  cursor?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 정산 기간 시작일(월요일, KST, YYYY-MM-DD) 필터. 관리자 알림 링크의 periodStart와 같다. null이면 전체. */
+  periodStart?: string | null | undefined;
+  /** 송금 상태 필터. null이면 전체. */
+  status?: SettlementStatusType | null | undefined;
+  /** 매장 필터. null이면 전체. */
+  storeId?: string | number | null | undefined;
+};
+
 /** 매장 목록 조회 조건. */
 export type AdminStoreListInput = {
   /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
@@ -546,6 +573,20 @@ export type AdminUpdateCategoryInput = {
   sortOrder?: number | null | undefined;
 };
 
+/** 결제 설정 변경 입력. 보낸 필드만 바꾼다. */
+export type AdminUpdatePaymentSettingInput = {
+  /** 판매 수수료율(bp). 0~10000 정수. 생략·null이면 그대로 둔다. */
+  commissionRateBps?: number | null | undefined;
+  /** 케이퀵 입금 계좌 예금주(1~50자). 생략·null이면 그대로 둔다. */
+  depositAccountHolder?: string | null | undefined;
+  /** 케이퀵 입금 계좌번호. 하이픈을 빼고 숫자 8~20자리여야 하며 숫자만 저장한다. 생략·null이면 그대로 둔다. */
+  depositAccountNumber?: string | null | undefined;
+  /** 케이퀵 입금 계좌 은행 코드(paymentBanks의 code). 생략·null이면 그대로 둔다. */
+  depositBankCode?: string | null | undefined;
+  /** 변경 사유(필수, 500자 이하). 감사 로그에 남는다. */
+  reason: string;
+};
+
 /** 지역 수정 입력. 전달한 필드만 변경된다. */
 export type AdminUpdateRegionInput = {
   /** 중심 위도. null이면 제거. */
@@ -614,6 +655,19 @@ export type AdminUpdateTagInput = {
   /** 이름. 1~80자, 전역 유일. */
   name: string;
   tagId: string | number;
+};
+
+/** 매장 정산 계좌 등록·변경 입력(관리자 대리 수정). */
+export type AdminUpsertStoreSettlementAccountInput = {
+  /** 예금주(1~50자). */
+  accountHolder: string;
+  /** 계좌번호. 하이픈을 빼고 숫자 8~20자리여야 하며 숫자만 저장한다. */
+  accountNumber: string;
+  /** 은행 코드(paymentBanks의 code). */
+  bankCode: string;
+  /** 변경 사유(필수, 500자 이하). 감사 로그에 남는다. */
+  reason: string;
+  storeId: string | number;
 };
 
 /** 구매자 목록 조회 조건. */
@@ -926,6 +980,13 @@ export type ReviewReportStatus =
   | 'REJECTED'
   /** 처리됨(대상 삭제). */
   | 'RESOLVED';
+
+/** 주간 정산 상태. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type SettlementStatusType =
+  /** 송금 완료. */
+  | 'PAID'
+  /** 케이퀵의 매장 송금 대기. */
+  | 'PENDING';
 
 /** 매장 지도 연동 provider. 구매자·판매자 API가 공용으로 쓴다. */
 export type StoreMapProvider =
@@ -1394,6 +1455,72 @@ export type AdminResetSellerPasswordMutationVariables = Exact<{
 
 export type AdminResetSellerPasswordMutation = { adminResetSellerPassword: boolean };
 
+export type AdminSettlementsQueryVariables = Exact<{
+  input?: AdminSettlementListInput | null | undefined;
+}>;
+
+
+export type AdminSettlementsQuery = { adminSettlements: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, periodStart: string, periodEnd: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, status: SettlementStatusType, paidAt: string | null, accountRegistered: boolean, createdAt: string }> } };
+
+export type AdminSettlementQueryVariables = Exact<{
+  settlementId: string | number;
+}>;
+
+
+export type AdminSettlementQuery = { adminSettlement: { id: string, storeId: string, storeName: string, periodStart: string, periodEnd: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, status: SettlementStatusType, paidAt: string | null, accountRegistered: boolean, createdAt: string, paidByLabel: string | null, paidNote: string | null, paidAccount: { accountHolder: string, accountNumberMasked: string, bank: { code: string, name: string } } | null, currentAccount: { storeId: string, accountHolder: string, accountNumber: string, accountNumberMasked: string, updatedByRole: OrderActorType, updatedAt: string, bank: { code: string, name: string } } | null, orders: Array<{ orderId: string, orderNumber: string, productName: string | null, status: OrderStatusType, commissionRateBps: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, settlementFinalizedAt: string }> } };
+
+export type AdminMarkSettlementPaidMutationVariables = Exact<{
+  input: AdminMarkSettlementPaidInput;
+}>;
+
+
+export type AdminMarkSettlementPaidMutation = { adminMarkSettlementPaid: { id: string, status: SettlementStatusType } };
+
+export type AdminMonthlyCommissionsQueryVariables = Exact<{
+  input: AdminMonthlyCommissionInput;
+}>;
+
+
+export type AdminMonthlyCommissionsQuery = { adminMonthlyCommissions: { month: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, stores: Array<{ storeId: string, storeName: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number }> } };
+
+export type AdminStoreSettlementAccountQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminStoreSettlementAccountQuery = { adminStoreSettlementAccount: { storeId: string, accountHolder: string, accountNumber: string, accountNumberMasked: string, updatedByRole: OrderActorType, updatedAt: string, bank: { code: string, name: string } } | null };
+
+export type AdminUpsertStoreSettlementAccountMutationVariables = Exact<{
+  input: AdminUpsertStoreSettlementAccountInput;
+}>;
+
+
+export type AdminUpsertStoreSettlementAccountMutation = { adminUpsertStoreSettlementAccount: { storeId: string } };
+
+export type AdminSettlementStorePickerQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminSettlementStorePickerQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminPaymentSettingQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminPaymentSettingQuery = { adminPaymentSetting: { commissionRateBps: number, depositAccountNumber: string | null, depositAccountHolder: string | null, updatedAt: string | null, depositBank: { code: string, name: string } | null } };
+
+export type AdminUpdatePaymentSettingMutationVariables = Exact<{
+  input: AdminUpdatePaymentSettingInput;
+}>;
+
+
+export type AdminUpdatePaymentSettingMutation = { adminUpdatePaymentSetting: { updatedAt: string | null } };
+
+export type PaymentBanksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PaymentBanksQuery = { paymentBanks: Array<{ code: string, name: string }> };
+
 export type AdminStoresQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
 }>;
@@ -1407,6 +1534,13 @@ export type AdminStoreQueryVariables = Exact<{
 
 
 export type AdminStoreQuery = { adminStore: { productCount: number, orderItemCount: number, store: { id: string, sellerAccountId: string, sellerLabel: string | null, storeName: string, storePhone: string, addressFull: string, addressCity: string | null, addressDistrict: string | null, addressNeighborhood: string | null, regionId: string | null, latitude: string | null, longitude: string | null, mapProvider: StoreMapProvider, websiteUrl: string | null, businessHoursText: string | null, profileImageUrl: string | null, greetingMessage: string | null, pickupSlotIntervalMinutes: number, minLeadTimeMinutes: number, maxDaysAhead: number, isActive: boolean, createdAt: string, updatedAt: string }, seller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus } } };
+
+export type AdminStoreInProgressOrderSummaryQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminStoreInProgressOrderSummaryQuery = { adminStoreInProgressOrderSummary: { totalCount: number, byStatus: Array<{ status: OrderStatusType, count: number }> } };
 
 export type AdminSetStoreActiveMutationVariables = Exact<{
   input: AdminSetStoreActiveInput;
@@ -2575,6 +2709,170 @@ export const AdminResetSellerPasswordDocument = new TypedDocumentString(`
   adminResetSellerPassword(input: $input)
 }
     `) as unknown as TypedDocumentString<AdminResetSellerPasswordMutation, AdminResetSellerPasswordMutationVariables>;
+export const AdminSettlementsDocument = new TypedDocumentString(`
+    query AdminSettlements($input: AdminSettlementListInput) {
+  adminSettlements(input: $input) {
+    items {
+      id
+      storeId
+      storeName
+      periodStart
+      periodEnd
+      orderCount
+      settlementBaseAmount
+      commissionAmount
+      payoutAmount
+      status
+      paidAt
+      accountRegistered
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSettlementsQuery, AdminSettlementsQueryVariables>;
+export const AdminSettlementDocument = new TypedDocumentString(`
+    query AdminSettlement($settlementId: ID!) {
+  adminSettlement(settlementId: $settlementId) {
+    id
+    storeId
+    storeName
+    periodStart
+    periodEnd
+    orderCount
+    settlementBaseAmount
+    commissionAmount
+    payoutAmount
+    status
+    paidAt
+    accountRegistered
+    createdAt
+    paidByLabel
+    paidNote
+    paidAccount {
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumberMasked
+    }
+    currentAccount {
+      storeId
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumber
+      accountNumberMasked
+      updatedByRole
+      updatedAt
+    }
+    orders {
+      orderId
+      orderNumber
+      productName
+      status
+      commissionRateBps
+      settlementBaseAmount
+      commissionAmount
+      payoutAmount
+      settlementFinalizedAt
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSettlementQuery, AdminSettlementQueryVariables>;
+export const AdminMarkSettlementPaidDocument = new TypedDocumentString(`
+    mutation AdminMarkSettlementPaid($input: AdminMarkSettlementPaidInput!) {
+  adminMarkSettlementPaid(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminMarkSettlementPaidMutation, AdminMarkSettlementPaidMutationVariables>;
+export const AdminMonthlyCommissionsDocument = new TypedDocumentString(`
+    query AdminMonthlyCommissions($input: AdminMonthlyCommissionInput!) {
+  adminMonthlyCommissions(input: $input) {
+    month
+    orderCount
+    settlementBaseAmount
+    commissionAmount
+    stores {
+      storeId
+      storeName
+      orderCount
+      settlementBaseAmount
+      commissionAmount
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminMonthlyCommissionsQuery, AdminMonthlyCommissionsQueryVariables>;
+export const AdminStoreSettlementAccountDocument = new TypedDocumentString(`
+    query AdminStoreSettlementAccount($storeId: ID!) {
+  adminStoreSettlementAccount(storeId: $storeId) {
+    storeId
+    bank {
+      code
+      name
+    }
+    accountHolder
+    accountNumber
+    accountNumberMasked
+    updatedByRole
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminStoreSettlementAccountQuery, AdminStoreSettlementAccountQueryVariables>;
+export const AdminUpsertStoreSettlementAccountDocument = new TypedDocumentString(`
+    mutation AdminUpsertStoreSettlementAccount($input: AdminUpsertStoreSettlementAccountInput!) {
+  adminUpsertStoreSettlementAccount(input: $input) {
+    storeId
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpsertStoreSettlementAccountMutation, AdminUpsertStoreSettlementAccountMutationVariables>;
+export const AdminSettlementStorePickerDocument = new TypedDocumentString(`
+    query AdminSettlementStorePicker($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSettlementStorePickerQuery, AdminSettlementStorePickerQueryVariables>;
+export const AdminPaymentSettingDocument = new TypedDocumentString(`
+    query AdminPaymentSetting {
+  adminPaymentSetting {
+    commissionRateBps
+    depositBank {
+      code
+      name
+    }
+    depositAccountNumber
+    depositAccountHolder
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminPaymentSettingQuery, AdminPaymentSettingQueryVariables>;
+export const AdminUpdatePaymentSettingDocument = new TypedDocumentString(`
+    mutation AdminUpdatePaymentSetting($input: AdminUpdatePaymentSettingInput!) {
+  adminUpdatePaymentSetting(input: $input) {
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdatePaymentSettingMutation, AdminUpdatePaymentSettingMutationVariables>;
+export const PaymentBanksDocument = new TypedDocumentString(`
+    query PaymentBanks {
+  paymentBanks {
+    code
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<PaymentBanksQuery, PaymentBanksQueryVariables>;
 export const AdminStoresDocument = new TypedDocumentString(`
     query AdminStores($input: AdminStoreListInput) {
   adminStores(input: $input) {
@@ -2636,6 +2934,17 @@ export const AdminStoreDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminStoreQuery, AdminStoreQueryVariables>;
+export const AdminStoreInProgressOrderSummaryDocument = new TypedDocumentString(`
+    query AdminStoreInProgressOrderSummary($storeId: ID!) {
+  adminStoreInProgressOrderSummary(storeId: $storeId) {
+    totalCount
+    byStatus {
+      status
+      count
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminStoreInProgressOrderSummaryQuery, AdminStoreInProgressOrderSummaryQueryVariables>;
 export const AdminSetStoreActiveDocument = new TypedDocumentString(`
     mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {
   adminSetStoreActive(input: $input) {

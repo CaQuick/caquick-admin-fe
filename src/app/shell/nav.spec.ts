@@ -11,6 +11,9 @@ describe('nav', () => {
     { path: '/notifications/send', want: '알림' },
     { path: '/banners/5', want: '배너' },
     { path: '/search-chips', want: '검색 칩' },
+    { path: '/settlements/monthly', want: '정산' },
+    { path: '/settlements/31', want: '정산' },
+    { path: '/settings', want: '결제 설정' },
   ])('하위 화면도 메뉴 제목을 따른다: $path → $want', ({ path, want }) => {
     expect(titleFor(path)).toBe(want);
   });

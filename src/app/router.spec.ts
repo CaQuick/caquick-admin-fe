@@ -55,6 +55,7 @@ describe('ID 검색 파라미터 정밀도', () => {
         '/_authed/_shell/reviews accountId',
         '/_authed/_shell/reviews reviewId',
         '/_authed/_shell/reviews storeId',
+        '/_authed/_shell/settlements/ storeId',
         '/_authed/_shell/stores/ regionId',
       ].sort(),
     );

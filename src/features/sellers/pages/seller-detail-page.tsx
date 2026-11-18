@@ -2,12 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { HistoryIcon } from 'lucide-react';
 
-import {
-  accountLabel,
-  AccountStatusActions,
-  AccountStatusPill,
-  ResetPasswordDialog,
-} from '@/features/accounts';
+import { accountLabel, AccountStatusPill, ResetPasswordDialog } from '@/features/accounts';
 import { messageFor } from '@/shared/api';
 import { formatKst } from '@/shared/lib/kst';
 import { Button } from '@/shared/ui/button';
@@ -17,6 +12,7 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { StatusPill } from '@/shared/ui/status-pill';
 
 import { invalidateSellers, resetSellerPassword, sellerDetailQueryOptions } from '../api/queries';
+import { SellerStatusActions } from '../components/seller-status-actions';
 import { StoreVisibilityPill } from '../components/store-visibility-pill';
 
 const BACK = { to: '/sellers' } as const;
@@ -66,10 +62,11 @@ export function SellerDetailPage({ accountId }: { accountId: string }) {
                 await refresh();
               }}
             />
-            <AccountStatusActions
+            <SellerStatusActions
               accountId={s.accountId}
               status={s.status}
               label={label}
+              store={s.store}
               onChanged={refresh}
             />
           </>
