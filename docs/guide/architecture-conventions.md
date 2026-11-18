@@ -40,6 +40,7 @@ src/
 - **mutation 뒤**에는 그 feature의 list·detail 키를 invalidate한다. 낙관적 업데이트는 쓰지 않는다 — 감사 대상 작업이라 서버 결과가 진실이다.
 - **목록**은 커서 방식(`items · totalCount · hasMore · nextCursor`). 필터·커서는 URL 검색 파라미터(zod)로 유지해 새로고침·공유가 된다.
 - **ID**는 문자열 그대로. `"0"`·빈 문자열을 truthy 검사로 버리지 않는다.
+- **enum 라벨**은 `Record<생성 enum, …>`로 둬 값이 늘면 tsc가 잡게 하고, 조회는 모르는 값에 원문으로 폴백한다. BE가 먼저 배포돼 새 값이 와도 화면이 죽지 않아야 한다.
 - **날짜**는 표시·입력 KST, 전송 ISO(UTC). 기간 필터의 경계는 KST 하루 시작·끝을 UTC로 바꿔 보낸다.
 
 ## 4. 인증

@@ -33,6 +33,7 @@ const AdminOrdersDocument = graphql(/* GraphQL */ `
         buyerPhone
         totalPrice
         createdAt
+        hasCustom
       }
       totalCount
       hasMore
@@ -81,16 +82,34 @@ const AdminOrderDocument = graphql(/* GraphQL */ `
           optionTitle
           priceDelta
         }
+        customMode
+        customPreviewImageUrl
+        customBaseImageUrl
+        customImages {
+          id
+          kind
+          imageUrl
+        }
         customTexts {
           id
           tokenKey
+          label
           defaultText
           valueText
+          posX
+          posY
+          width
+          height
+          textColor
+          textAlign
           sortOrder
         }
         freeEdits {
           id
-          cropImageUrl
+          posX
+          posY
+          width
+          height
           descriptionText
           sortOrder
           attachments {
@@ -248,9 +267,11 @@ export function buyerNameQueryOptions(accountId: string) {
   });
 }
 
+/** 사유 코드 선택은 아직 없어 '기타' + 입력한 메모로 보낸다 */
 export async function cancelOrder(queryClient: QueryClient, orderId: string, note: string) {
-  const result = (await gqlRequest(AdminCancelOrderDocument, { input: { orderId, note } }))
-    .adminCancelOrder;
+  const result = (
+    await gqlRequest(AdminCancelOrderDocument, { input: { orderId, reason: 'OTHER', note } })
+  ).adminCancelOrder;
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) }),
     queryClient.invalidateQueries({ queryKey: ordersKeys.lists() }),

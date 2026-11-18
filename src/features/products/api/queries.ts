@@ -27,7 +27,7 @@ const AdminProductsDocument = graphql(/* GraphQL */ `
         regularPrice
         salePrice
         currency
-        baseDesignImageUrl
+        thumbnailUrl
         isActive
         createdAt
         updatedAt
@@ -50,7 +50,7 @@ const AdminProductDocument = graphql(/* GraphQL */ `
         regularPrice
         salePrice
         currency
-        baseDesignImageUrl
+        customMode
         isActive
         createdAt
         updatedAt
@@ -79,8 +79,6 @@ const AdminProductDocument = graphql(/* GraphQL */ `
         isRequired
         minSelect
         maxSelect
-        optionRequiresDescription
-        optionRequiresImage
         sortOrder
         isActive
         optionItems {
@@ -91,19 +89,23 @@ const AdminProductDocument = graphql(/* GraphQL */ `
           priceDelta
           sortOrder
           isActive
+          threeDKey
         }
       }
       customTemplate {
         id
         baseImageUrl
-        isActive
+        freeEditEnabled
         textTokens {
           id
           tokenKey
+          label
           defaultText
           maxLength
           sortOrder
           isRequired
+          textColor
+          textAlign
         }
       }
     }

@@ -56,11 +56,17 @@ export type AdminBannerListInput = {
   placement?: BannerPlacement | null | undefined;
 };
 
-/** 주문 강제 취소 입력. */
+/** 주문 강제 취소 입력. 허용 범위는 adminOrder.cancelOptions를 따른다. */
 export type AdminCancelOrderInput = {
-  /** 취소 사유. 필수. 최대 494자('[관리자] ' 접두를 붙여 500자 이내로 이력에 남는다). 감사 로그에도 기록된다. */
-  note: string;
+  /** 취소 사정. cancelOptions.refundRule이 BY_FAULT면 필수이고, 그 밖에는 무시한다. */
+  fault?: OrderCancelFaultType | null | undefined;
+  /** 취소 메모. 선택, 최대 500자. 상태 이력과 감사 로그에 남는다. */
+  note?: string | null | undefined;
   orderId: string | number;
+  /** 취소 사유. 필수. cancelOptions.reasons 중 하나여야 한다. */
+  reason: OrderCancelReasonType;
+  /** 돌려줄 금액(원, 0~cancelOptions.paidAmount). fault가 BUYER일 때 필수이고, 그 밖에는 무시한다. */
+  refundAmount?: number | null | undefined;
 };
 
 /** 카테고리 목록 조회 조건. */
@@ -280,6 +286,8 @@ export type AdminOrderListInput = {
   cursor?: string | null | undefined;
   /** 주문 생성 시각 하한(이상). */
   fromCreatedAt?: string | null | undefined;
+  /** true면 진행 중 주문(입금 대기·접수·확정·제작 완료)만. 기본 false, null도 false(전체)로 본다. status와 함께 오면 AND다. */
+  inProgress?: boolean | null | undefined;
   /** 주문번호·주문자 이름·연락처 부분일치 검색. 최대 100자. */
   keyword?: string | null | undefined;
   /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
@@ -624,7 +632,7 @@ export type AuditActionType =
   /** 수정. */
   | 'UPDATE';
 
-/** 감사 로그가 가리키는 대상 종류. 판매자 화면(sellerAuditLogs)은 STORE·PRODUCT·ORDER·CONVERSATION·CHANGE_PASSWORD만 노출하고 필터 입력도 그 범위만 받는다. */
+/** 감사 로그가 가리키는 대상 종류. 판매자 화면(sellerAuditLogs)은 STORE·PRODUCT·ORDER·CONVERSATION·CHANGE_PASSWORD·SETTLEMENT_ACCOUNT만 노출하고 필터 입력도 그 범위만 받는다. */
 export type AuditTargetType =
   /** 계정(관리자·판매자 생성, 정지/복구, 비밀번호 초기화). */
   | 'ACCOUNT'
@@ -636,12 +644,18 @@ export type AuditTargetType =
   | 'CHANGE_PASSWORD'
   /** 구매자 문의 대화. */
   | 'CONVERSATION'
+  /** 입금 기록(반환 연결·주인 모를 입금 종결). */
+  | 'DEPOSIT_RECORD'
   /** 관리자 알림 발송. */
   | 'NOTIFICATION'
   /** 주문 상태 변경. */
   | 'ORDER'
+  /** 플랫폼 결제 설정(수수료율·입금 계좌). */
+  | 'PAYMENT_SETTING'
   /** 상품과 그 하위. */
   | 'PRODUCT'
+  /** 환불(완료 처리). */
+  | 'REFUND'
   /** 지역 마스터. */
   | 'REGION'
   /** 리뷰 강제 삭제. */
@@ -652,6 +666,10 @@ export type AuditTargetType =
   | 'REVIEW_REPORT'
   /** 검색 진입 화면 키워드 바로가기 칩. 순서 변경은 순서가 바뀐 칩마다 1건씩 남는다. */
   | 'SEARCH_KEYWORD_CHIP'
+  /** 주간 정산(송금 완료 처리). */
+  | 'SETTLEMENT'
+  /** 매장 정산 계좌(판매자 본인·관리자 대리 수정). 기록에는 계좌번호 끝 4자리만 남고, 판매자 감사 로그에도 보인다. */
+  | 'SETTLEMENT_ACCOUNT'
   /** 매장 설정·콘텐츠. */
   | 'STORE'
   /** 태그 마스터. */
@@ -718,6 +736,42 @@ export type CursorInput = {
   limit?: number | null | undefined;
 };
 
+/**
+ * 주문 커스텀 이미지 종류. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다.
+ * 3D 옆면은 옆면 고도 asin(0.4) 정사영이고 좌·우는 정면을 보는 사람 기준이다.
+ */
+export type CustomImageKindType =
+  /** 슬롯형 합성 이미지(바탕 + 문구, 구매자가 본 그대로). 대표 이미지다. */
+  | 'SLOT_COMPOSITE'
+  /** 3D 옆면 뒤(정면 반대). */
+  | 'THREE_D_BACK'
+  /** 3D 옆면 정면(yaw 0). */
+  | 'THREE_D_FRONT'
+  /** 3D 옆면 왼쪽. */
+  | 'THREE_D_LEFT'
+  /** 3D 옆면 오른쪽. */
+  | 'THREE_D_RIGHT'
+  /** 3D 윗면(위에서 내려다본 정사각). 대표 이미지다. */
+  | 'THREE_D_TOP';
+
+/** 상품의 커스텀 방식. 방식이 있는 상품은 구매자가 꾸민 내용 없이 주문할 수 없다. */
+export type CustomModeType =
+  /** 커스텀 없음. 옵션만 고르고 주문한다. */
+  | 'NONE'
+  /** 슬롯형. 판매자가 정한 바탕 이미지 위 문구 자리에 문구를 넣는다(자유 편집은 상품별 선택). */
+  | 'SLOT'
+  /** 3D. 모양·크기 등 옵션을 3D 케이크로 꾸민다. 자유 편집은 없다. */
+  | 'THREE_D';
+
+/** 문구 자리 안 글자 정렬. */
+export type CustomTextAlignType =
+  /** 가운데 정렬. */
+  | 'CENTER'
+  /** 왼쪽 정렬. */
+  | 'LEFT'
+  /** 오른쪽 정렬. */
+  | 'RIGHT';
+
 /** 소셜 로그인 Provider 종류 */
 export type IdentityProvider =
   /** 구글 OIDC. */
@@ -725,23 +779,59 @@ export type IdentityProvider =
   /** 카카오 OIDC. */
   | 'KAKAO';
 
+/** 확정·제작 완료 뒤 취소의 사정. 환불액이 갈린다(판매자 사정 = 전액, 구매자 사정 = 취소자가 정한 금액). */
+export type OrderCancelFaultType =
+  /** 구매자 사정. */
+  | 'BUYER'
+  /** 판매자 사정. */
+  | 'SELLER';
+
 /**
- * 주문 상태. 구매자·판매자 API가 공용으로 쓴다.
+ * 취소 사유. 값은 늘어날 수 있으니 모르는 값은 reasonLabel(또는 '기타')로 보여 준다.
+ * 판매자는 앞의 여섯 값, 관리자는 여기에 입금 대기 주문의 PAYMENT_NOT_RECEIVED, 구매자는 BUYER_REQUEST(서버가 정한다)를 쓴다.
+ */
+export type OrderCancelReasonType =
+  /** 구매자 요청. */
+  | 'BUYER_REQUEST'
+  /** 판매자가 확정 마감까지 확정하지 않아 자동 취소. */
+  | 'CONFIRM_TIMEOUT'
+  /** 제작할 수 없는 디자인. */
+  | 'DESIGN_NOT_FEASIBLE'
+  /** 부적절한 요청. */
+  | 'INAPPROPRIATE_REQUEST'
+  /** 기타. 결제 도입 전 취소 기록도 이 값이다. */
+  | 'OTHER'
+  /** 재료 소진. */
+  | 'OUT_OF_MATERIALS'
+  /** 미입금. 입금 기한이 지났거나 관리자가 입금이 없다고 판단한 입금 대기 주문. */
+  | 'PAYMENT_NOT_RECEIVED'
+  /** 일정 불가. */
+  | 'SCHEDULE_UNAVAILABLE';
+
+/**
+ * 주문 상태. 구매자·판매자·관리자 API가 공용으로 쓴다. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다.
  *
- * 전이는 `SUBMITTED → CONFIRMED → MADE → PICKED_UP` 한 방향이며 각 단계는 직전
- * 상태에서만 진입할 수 있다. `CANCELED`는 `PICKED_UP` 이전 세 상태에서만 가능하고,
- * 어떤 상태에서도 `SUBMITTED`로 되돌아갈 수 없다.
+ * 흐름은 `PENDING_PAYMENT → SUBMITTED → CONFIRMED → MADE → PICKED_UP`이며 어떤 상태에서도
+ * 앞 단계로 되돌아갈 수 없다. 판매자가 sellerUpdateOrderStatus로 바꿀 수 있는 전이는 `SUBMITTED → CONFIRMED`,
+ * `CONFIRMED → MADE`, `CONFIRMED·MADE → PICKED_UP·NO_SHOW`뿐이고, 취소는 주체별 취소 mutation(cancelMyOrder·sellerCancelOrder·adminCancelOrder)으로만 한다.
+ * 관리자도 adminCompleteOrderPickup으로 확정·제작 완료 주문을 픽업 완료할 수 있다.
+ * 시스템은 입금 기한(1시간)이 지난 입금 대기를 취소하고, 확정 마감이 지난 접수를 취소(전액 환불)하며,
+ * 픽업 시각 + 24시간이 지난 확정·제작 완료를 픽업 완료로 바꾼다. 판매자에게는 입금이 확인된(접수된) 주문만 보인다.
  */
 export type OrderStatusType =
-  /** 취소된 종료 상태. 취소 처리에는 사유(note)가 필수다. */
+  /** 취소된 종료 상태. 주체·사유·사정·환불은 주문 상세의 cancellation에 있다. */
   | 'CANCELED'
   /** 판매자가 주문을 확인·수락한 상태. 제작 대기. */
   | 'CONFIRMED'
   /** 판매자가 제작을 완료해 픽업을 기다리는 상태. "주문 생성됨"이 아니다. */
   | 'MADE'
+  /** 노쇼. 구매자가 픽업 시간에 오지 않아 판매자가 처리한 종료 상태. 환불 없음, 리뷰 불가. */
+  | 'NO_SHOW'
+  /** 입금 대기. 주문 직후 계좌이체 입금을 기다리는 상태이고, 판매자에게 보이지 않는다. */
+  | 'PENDING_PAYMENT'
   /** 구매자가 수령을 마친 종료 상태. 이후 상태 변경 불가. */
   | 'PICKED_UP'
-  /** 구매자가 주문을 넣은 직후의 초기 상태. 판매자 확인 대기. */
+  /** 입금이 확인돼 접수된 상태. 판매자 확인 대기. */
   | 'SUBMITTED';
 
 /** 리뷰 첨부 미디어 종류. */
@@ -782,11 +872,14 @@ export type StoreMapProvider =
 
 /**
  * 업로드 용도. 용도마다 저장 경로가 다르고, 저장 입력은 같은 용도로 발급된 URL만 받는다.
- * 역할별 허용 범위: 판매자 PRODUCT_IMAGE·STORE_IMAGE, 관리자 BANNER_IMAGE·STORE_IMAGE(밖이면 BAD_USER_INPUT).
+ * 역할별 허용 범위: 판매자 PRODUCT_IMAGE·STORE_IMAGE·CONVERSATION_IMAGE, 관리자 BANNER_IMAGE·STORE_IMAGE(밖이면 BAD_USER_INPUT).
+ * 최대 크기는 CONVERSATION_IMAGE 10MB, 그 밖의 용도 5MB다.
  */
 export type UploadPurpose =
   /** 플랫폼 배너 이미지(관리자). */
   | 'BANNER_IMAGE'
+  /** 채팅 첨부 이미지(판매자). sellerSendConversationMessage의 IMAGE 메시지가 이 용도 URL만 받는다. */
+  | 'CONVERSATION_IMAGE'
   /** 상품 이미지·커스텀 도안 바탕·옵션 선택지 이미지·커스텀 템플릿 바탕(판매자). */
   | 'PRODUCT_IMAGE'
   /** 매장 프로필(로고) 이미지(판매자·관리자). */
@@ -997,14 +1090,14 @@ export type AdminOrdersQueryVariables = Exact<{
 }>;
 
 
-export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, storeName: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string }> } };
+export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, storeName: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string, hasCustom: boolean }> } };
 
 export type AdminOrderQueryVariables = Exact<{
   orderId: string | number;
 }>;
 
 
-export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customTexts: Array<{ id: string, tokenKey: string, defaultText: string, valueText: string, sortOrder: number }>, freeEdits: Array<{ id: string, cropImageUrl: string, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null }> } };
+export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, customMode: CustomModeType, customPreviewImageUrl: string | null, customBaseImageUrl: string | null, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customImages: Array<{ id: string, kind: CustomImageKindType, imageUrl: string }>, customTexts: Array<{ id: string, tokenKey: string, label: string, defaultText: string, valueText: string | null, posX: number, posY: number, width: number, height: number, textColor: string, textAlign: CustomTextAlignType, sortOrder: number }>, freeEdits: Array<{ id: string, posX: number, posY: number, width: number, height: number, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null }> } };
 
 export type AdminOrdersStoreOptionsQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
@@ -1046,14 +1139,14 @@ export type AdminProductsQueryVariables = Exact<{
 }>;
 
 
-export type AdminProductsQuery = { adminProducts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
+export type AdminProductsQuery = { adminProducts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, thumbnailUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
 
 export type AdminProductQueryVariables = Exact<{
   productId: string | number;
 }>;
 
 
-export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }, categories: Array<{ id: string, categoryType: CategoryType, name: string, isActive: boolean }>, tags: Array<{ id: string, name: string }>, optionGroups: Array<{ id: string, name: string, description: string | null, isRequired: boolean, minSelect: number, maxSelect: number, optionRequiresDescription: boolean, optionRequiresImage: boolean, sortOrder: number, isActive: boolean, optionItems: Array<{ id: string, title: string, description: string | null, imageUrl: string | null, priceDelta: number, sortOrder: number, isActive: boolean }> }>, customTemplate: { id: string, baseImageUrl: string, isActive: boolean, textTokens: Array<{ id: string, tokenKey: string, defaultText: string, maxLength: number, sortOrder: number, isRequired: boolean }> } | null } };
+export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, customMode: CustomModeType, isActive: boolean, createdAt: string, updatedAt: string }, categories: Array<{ id: string, categoryType: CategoryType, name: string, isActive: boolean }>, tags: Array<{ id: string, name: string }>, optionGroups: Array<{ id: string, name: string, description: string | null, isRequired: boolean, minSelect: number, maxSelect: number, sortOrder: number, isActive: boolean, optionItems: Array<{ id: string, title: string, description: string | null, imageUrl: string | null, priceDelta: number, sortOrder: number, isActive: boolean, threeDKey: string | null }> }>, customTemplate: { id: string, baseImageUrl: string, freeEditEnabled: boolean, textTokens: Array<{ id: string, tokenKey: string, label: string, defaultText: string, maxLength: number, sortOrder: number, isRequired: boolean, textColor: string, textAlign: CustomTextAlignType }> } | null } };
 
 export type AdminProductStoreOptionsQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
@@ -1754,6 +1847,7 @@ export const AdminOrdersDocument = new TypedDocumentString(`
       buyerPhone
       totalPrice
       createdAt
+      hasCustom
     }
     totalCount
     hasMore
@@ -1801,16 +1895,34 @@ export const AdminOrderDocument = new TypedDocumentString(`
         optionTitle
         priceDelta
       }
+      customMode
+      customPreviewImageUrl
+      customBaseImageUrl
+      customImages {
+        id
+        kind
+        imageUrl
+      }
       customTexts {
         id
         tokenKey
+        label
         defaultText
         valueText
+        posX
+        posY
+        width
+        height
+        textColor
+        textAlign
         sortOrder
       }
       freeEdits {
         id
-        cropImageUrl
+        posX
+        posY
+        width
+        height
         descriptionText
         sortOrder
         attachments {
@@ -1892,7 +2004,7 @@ export const AdminProductsDocument = new TypedDocumentString(`
       regularPrice
       salePrice
       currency
-      baseDesignImageUrl
+      thumbnailUrl
       isActive
       createdAt
       updatedAt
@@ -1914,7 +2026,7 @@ export const AdminProductDocument = new TypedDocumentString(`
       regularPrice
       salePrice
       currency
-      baseDesignImageUrl
+      customMode
       isActive
       createdAt
       updatedAt
@@ -1943,8 +2055,6 @@ export const AdminProductDocument = new TypedDocumentString(`
       isRequired
       minSelect
       maxSelect
-      optionRequiresDescription
-      optionRequiresImage
       sortOrder
       isActive
       optionItems {
@@ -1955,19 +2065,23 @@ export const AdminProductDocument = new TypedDocumentString(`
         priceDelta
         sortOrder
         isActive
+        threeDKey
       }
     }
     customTemplate {
       id
       baseImageUrl
-      isActive
+      freeEditEnabled
       textTokens {
         id
         tokenKey
+        label
         defaultText
         maxLength
         sortOrder
         isRequired
+        textColor
+        textAlign
       }
     }
   }
