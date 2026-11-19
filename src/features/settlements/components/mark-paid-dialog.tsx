@@ -6,7 +6,7 @@ import { formatKrw } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/button';
 import { ReasonDialog } from '@/shared/ui/reason-dialog';
 
-import { invalidateSettlements, markSettlementPaid } from '../api/queries';
+import { markSettlementPaid } from '../api/queries';
 
 interface Props {
   settlementId: string;
@@ -30,11 +30,8 @@ export function MarkPaidDialog({ settlementId, payoutAmount, account }: Props) {
           toast.success('송금 완료로 처리했습니다.');
         } catch (e) {
           toast.error(messageFor(e));
-          // 다른 관리자가 먼저 처리했으면 닫고 처리자·시각을 다시 받아 보인다
-          if (e instanceof ApiError && e.classification === 'CONFLICT') {
-            await invalidateSettlements(queryClient);
-            return;
-          }
+          // 다른 관리자가 먼저 처리했으면 닫는다. 처리자·시각은 다시 읽은 상세가 보인다
+          if (e instanceof ApiError && e.classification === 'CONFLICT') return;
           throw e;
         }
       }}

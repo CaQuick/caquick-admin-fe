@@ -1,7 +1,7 @@
 import { ApiError } from '@/shared/api';
 
 import {
-  actorLabel,
+  REFUND_KIND_VALUES,
   isAmountInvalid,
   isAmountMismatch,
   isConflict,
@@ -10,8 +10,6 @@ import {
   nextTask,
   pickupTone,
   recordKindLabel,
-  refundKindLabel,
-  refundStatusMeta,
   taskBadges,
 } from './meta';
 
@@ -61,34 +59,21 @@ describe('taskBadges', () => {
   });
 });
 
+// 주체·환불 종류·환불 상태 라벨은 orders/meta.spec이 검사한다
 describe('라벨', () => {
   it.each([
-    [refundKindLabel, 'CANCEL', '취소 환불'],
-    [refundKindLabel, 'DEPOSIT_RETURN', '입금 반환'],
-    [recordKindLabel, 'RETURN', '반환'],
-    [recordKindLabel, 'UNIDENTIFIED', '종결'],
-    [actorLabel, 'BUYER', '구매자'],
-    [actorLabel, 'SELLER', '판매자'],
-    [actorLabel, 'ADMIN', '관리자'],
-    [actorLabel, 'SYSTEM', '자동'],
-  ])('%#: %s → %s', (fn, value, want) => {
-    expect(fn(value)).toBe(want);
+    ['RETURN', '반환'],
+    ['UNIDENTIFIED', '종결'],
+  ])('입금 기록 종류 %s → %s', (value, want) => {
+    expect(recordKindLabel(value)).toBe(want);
   });
 
   it.each(['NEW_VALUE', 'constructor', 'toString', ''])('모르는 값 "%s"는 원문으로 보인다', (v) => {
-    expect(refundKindLabel(v)).toBe(v);
     expect(recordKindLabel(v)).toBe(v);
-    expect(actorLabel(v)).toBe(v);
-    expect(refundStatusMeta(v)).toEqual({ label: v, tone: 'neutral' });
   });
 
-  it('환불 상태는 송금 대기만 주의 톤이다', () => {
-    expect(refundStatusMeta('AWAITING_ACCOUNT')).toEqual({
-      label: '계좌 입력 대기',
-      tone: 'neutral',
-    });
-    expect(refundStatusMeta('AWAITING_TRANSFER')).toEqual({ label: '송금 대기', tone: 'caution' });
-    expect(refundStatusMeta('COMPLETED')).toEqual({ label: '송금 완료', tone: 'positive' });
+  it('환불 종류 필터 값은 취소 환불 → 입금 반환 순이다', () => {
+    expect(REFUND_KIND_VALUES).toEqual(['CANCEL', 'DEPOSIT_RETURN']);
   });
 });
 

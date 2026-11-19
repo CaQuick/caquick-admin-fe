@@ -1,3 +1,6 @@
+export { invalidateSettlements } from './api/queries';
+export { AccountNumber } from './components/account-number';
+export { MarkPaidDialog } from './components/mark-paid-dialog';
 export { StoreSettlementAccountCard } from './components/store-settlement-account-card';
 export { MonthlyCommissionsPage } from './pages/monthly-commissions-page';
 export { PaymentSettingsPage } from './pages/payment-settings-page';

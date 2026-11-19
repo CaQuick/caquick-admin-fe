@@ -1,8 +1,6 @@
-import { CopyIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
-import { toast } from 'sonner';
 
-import { copyText } from '@/shared/lib/clipboard';
+import { AccountNumber } from '@/features/settlements';
 import { formatCount } from '@/shared/lib/format';
 import { Button } from '@/shared/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
@@ -43,7 +41,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-/** 송금할 계좌 전체 번호와 복사. 번호는 화면에만 두고 알림 문구에 넣지 않는다 */
+/** 송금할 계좌 전체 번호와 복사(정산 화면과 같은 AccountNumber) */
 export function AccountToCopy({
   bankName,
   accountNumber,
@@ -53,18 +51,9 @@ export function AccountToCopy({
   accountNumber: string;
   holder: string;
 }) {
-  const copy = async () => {
-    if (await copyText(accountNumber)) toast.success('계좌번호를 복사했습니다.');
-    else toast.error('복사하지 못했습니다. 계좌번호를 직접 옮겨 적어 주세요.');
-  };
   return (
-    <span className="flex flex-wrap items-center gap-2">
-      <span>
-        {bankName} <span className="font-mono">{accountNumber}</span> ({holder})
-      </span>
-      <Button type="button" variant="outline" size="xs" onClick={copy}>
-        <CopyIcon className="size-3" aria-hidden /> 계좌번호 복사
-      </Button>
+    <span>
+      {bankName} <AccountNumber value={accountNumber} /> ({holder})
     </span>
   );
 }

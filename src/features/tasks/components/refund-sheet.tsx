@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
+import { refundKindLabel, refundStatusMeta } from '@/features/orders';
 import { messageFor } from '@/shared/api';
 import { formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
@@ -10,7 +11,7 @@ import { ReasonDialog } from '@/shared/ui/reason-dialog';
 import { StatusPill } from '@/shared/ui/status-pill';
 
 import { type RefundDetail, refundQueryOptions, taskMutations } from '../api/queries';
-import { isConflict, loadDescription, refundKindLabel, refundStatusMeta } from '../meta';
+import { isConflict, loadDescription } from '../meta';
 import { AccountToCopy, DoneSection, Field, Fields, TaskSheet, type NextTask } from './task-sheet';
 
 interface Props {

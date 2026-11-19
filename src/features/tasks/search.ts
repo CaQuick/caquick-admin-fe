@@ -6,7 +6,6 @@ import {
   type AdminRefundListInput,
   type AdminSettlementListInput,
   type DepositRecordKindType,
-  type RefundKindType,
 } from '@/graphql/generated/graphql';
 import { parseYmd } from '@/shared/lib/kst';
 import {
@@ -16,7 +15,7 @@ import {
   optionalText,
 } from '@/shared/lib/list-search';
 
-import { RECORD_KINDS, REFUND_KINDS } from './meta';
+import { RECORD_KINDS, REFUND_KIND_VALUES } from './meta';
 
 /** GraphQL Int 상한 */
 const MAX_INT = 2_147_483_647;
@@ -52,10 +51,6 @@ export type DepositView = (typeof DEPOSIT_VIEWS)[number]['value'];
 const RECORD_KIND_VALUES = RECORD_KINDS.map((k) => k.value) as [
   DepositRecordKindType,
   ...DepositRecordKindType[],
-];
-const REFUND_KIND_VALUES = REFUND_KINDS.map((k) => k.value) as [
-  RefundKindType,
-  ...RefundKindType[],
 ];
 
 export const depositsSearchSchema = z.object({

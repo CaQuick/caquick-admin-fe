@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { orderStatusMeta } from '@/features/orders';
+import { actorLabel, orderStatusMeta } from '@/features/orders';
 import { ApiError, messageFor } from '@/shared/api';
 import { formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
@@ -25,7 +25,6 @@ import {
   toDepositReturnInput,
 } from '../forms';
 import {
-  actorLabel,
   isAmountInvalid,
   isAmountMismatch,
   isConflict,

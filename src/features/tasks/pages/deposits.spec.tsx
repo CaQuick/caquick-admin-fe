@@ -443,6 +443,26 @@ describe('처리 대기 — 입금', () => {
     );
   });
 
+  it('자동 취소된 주문은 취소 주체를 주문 화면과 같은 시스템으로 보인다', async () => {
+    backend([
+      order('14', {
+        status: 'CANCELED',
+        payment: { ...order('14').payment!, status: 'CANCELED' },
+        cancellation: {
+          actorType: 'SYSTEM',
+          reasonLabel: '미입금',
+          note: null,
+          canceledAt: '2026-11-19T02:00:00.000Z',
+        },
+      }),
+    ]);
+    boot('/tasks/deposits?orderId=14');
+    const s = await sheet(/주문 CQ-14/);
+    expect(await within(s).findByRole('status')).toHaveTextContent(
+      `취소 · 시스템 · 미입금 · ${formatKst('2026-11-19T02:00:00.000Z', true)}`,
+    );
+  });
+
   it('미입금 취소가 거절되면 다이얼로그를 열어 둔다', async () => {
     backend([order('12')]);
     server.use(

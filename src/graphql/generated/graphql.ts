@@ -1749,13 +1749,6 @@ export type AdminTasksSettlementQueryVariables = Exact<{
 
 export type AdminTasksSettlementQuery = { adminSettlement: { id: string, storeId: string, storeName: string, periodStart: string, periodEnd: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, status: SettlementStatusType, paidAt: string | null, accountRegistered: boolean, paidByLabel: string | null, paidNote: string | null, paidAccount: { accountHolder: string, accountNumberMasked: string, bank: { code: string, name: string } } | null, currentAccount: { accountHolder: string, accountNumber: string, bank: { code: string, name: string } } | null } };
 
-export type AdminTasksMarkSettlementPaidMutationVariables = Exact<{
-  input: AdminMarkSettlementPaidInput;
-}>;
-
-
-export type AdminTasksMarkSettlementPaidMutation = { adminMarkSettlementPaid: { id: string, status: SettlementStatusType } };
-
 export type AdminCategoriesQueryVariables = Exact<{
   input?: AdminCategoryListInput | null | undefined;
 }>;
@@ -3434,14 +3427,6 @@ export const AdminTasksSettlementDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminTasksSettlementQuery, AdminTasksSettlementQueryVariables>;
-export const AdminTasksMarkSettlementPaidDocument = new TypedDocumentString(`
-    mutation AdminTasksMarkSettlementPaid($input: AdminMarkSettlementPaidInput!) {
-  adminMarkSettlementPaid(input: $input) {
-    id
-    status
-  }
-}
-    `) as unknown as TypedDocumentString<AdminTasksMarkSettlementPaidMutation, AdminTasksMarkSettlementPaidMutationVariables>;
 export const AdminCategoriesDocument = new TypedDocumentString(`
     query AdminCategories($input: AdminCategoryListInput) {
   adminCategories(input: $input) {

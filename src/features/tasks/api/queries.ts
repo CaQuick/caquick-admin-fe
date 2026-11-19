@@ -1,5 +1,8 @@
 import { type QueryClient, queryOptions } from '@tanstack/react-query';
 
+import { invalidateDashboard } from '@/features/dashboard';
+import { invalidateOrders } from '@/features/orders';
+import { invalidateSettlements } from '@/features/settlements';
 import { graphql } from '@/graphql/generated';
 import {
   type AdminConfirmPaymentInput,
@@ -337,15 +340,6 @@ const AdminTasksSettlementDocument = graphql(/* GraphQL */ `
 `);
 export type SettlementDetail = AdminTasksSettlementQuery['adminSettlement'];
 
-const AdminTasksMarkSettlementPaidDocument = graphql(/* GraphQL */ `
-  mutation AdminTasksMarkSettlementPaid($input: AdminMarkSettlementPaidInput!) {
-    adminMarkSettlementPaid(input: $input) {
-      id
-      status
-    }
-  }
-`);
-
 const listOptions = {
   refetchInterval: TASK_POLL_MS,
   refetchOnWindowFocus: true,
@@ -443,14 +437,24 @@ export function orderOptionsQueryOptions(keyword: string) {
   });
 }
 
-/** 처리 뒤·충돌 뒤 건수·목록·단건을 다시 읽는다. 처리자·시각은 다시 읽은 단건이 보인다 */
-const refreshTasks = (qc: QueryClient) => qc.invalidateQueries({ queryKey: tasksKeys.all });
+/** 건수·목록·단건을 다시 읽게 한다. 처리 대기 건을 바꾸는 다른 화면(강제 취소·정산 송금 완료 등)도 부른다 */
+export const invalidateTasks = (qc: QueryClient) =>
+  qc.invalidateQueries({ queryKey: tasksKeys.all });
 
+/**
+ * 처리 뒤·충돌 뒤 다시 읽는다. 처리자·시각은 다시 읽은 단건이 보인다.
+ * 처리는 주문 상태·환불을 바꾸므로 주문·정산·대시보드도 다시 읽게 한다. 정산 송금 완료는 정산 feature가 맡는다
+ */
 async function run<T>(qc: QueryClient, request: Promise<T>): Promise<T> {
   try {
     return await request;
   } finally {
-    await refreshTasks(qc);
+    await Promise.all([
+      invalidateTasks(qc),
+      invalidateOrders(qc),
+      invalidateSettlements(qc),
+      invalidateDashboard(qc),
+    ]);
   }
 }
 
@@ -480,12 +484,5 @@ export const taskMutations = {
     run(
       qc,
       gqlRequest(AdminTasksCompleteRefundDocument, { input: { refundId, note: note || null } }),
-    ),
-  markSettlementPaid: (qc: QueryClient, settlementId: string, note: string) =>
-    run(
-      qc,
-      gqlRequest(AdminTasksMarkSettlementPaidDocument, {
-        input: { settlementId, note: note || null },
-      }),
     ),
 };

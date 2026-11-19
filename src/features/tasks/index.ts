@@ -1,3 +1,4 @@
+export { invalidateTasks } from './api/queries';
 export { TaskCountBadge, TasksTile } from './components/task-counts';
 export { DepositsTasksPage } from './pages/deposits-page';
 export { RefundsTasksPage } from './pages/refunds-page';

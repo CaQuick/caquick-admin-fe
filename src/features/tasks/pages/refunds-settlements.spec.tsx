@@ -463,7 +463,7 @@ describe('처리 대기 — 정산 송금', () => {
     ]);
     let input: unknown;
     server.use(
-      graphql.mutation('AdminTasksMarkSettlementPaid', ({ variables }) => {
+      graphql.mutation('AdminMarkSettlementPaid', ({ variables }) => {
         input = (variables as { input: unknown }).input;
         settlements.set('1', {
           ...settlements.get('1')!,
@@ -498,7 +498,7 @@ describe('처리 대기 — 정산 송금', () => {
   it('이미 송금 완료된 정산(409)이면 토스트를 보이고 다시 읽는다', async () => {
     const { settlements } = settlementBackend([settlement('1')]);
     server.use(
-      graphql.mutation('AdminTasksMarkSettlementPaid', () => {
+      graphql.mutation('AdminMarkSettlementPaid', () => {
         settlements.set('1', {
           ...settlements.get('1')!,
           status: 'PAID',
@@ -535,7 +535,7 @@ describe('처리 대기 — 정산 송금', () => {
   it('송금 완료가 입력 오류로 거절되면 확인 창을 열어 둔다', async () => {
     settlementBackend([settlement('1')]);
     server.use(
-      gqlError('AdminTasksMarkSettlementPaid', {
+      gqlError('AdminMarkSettlementPaid', {
         message: '메모가 너무 깁니다.',
         code: 'TEXT_TOO_LONG',
         classification: 'BAD_USER_INPUT',

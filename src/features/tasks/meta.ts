@@ -1,52 +1,31 @@
 import {
   type AdminTaskCountsQuery,
   type DepositRecordKindType,
-  type OrderActorType,
   type RefundKindType,
-  type RefundStatusType,
 } from '@/graphql/generated/graphql';
 import { ApiError, messageFor } from '@/shared/api';
 import { type PillTone } from '@/shared/ui/status-pill';
 
-// Record라 codegen enum에 값이 늘면 tsc가 잡는다. 모르는 값은 원문으로 보인다
-const REFUND_KIND: Record<RefundKindType, string> = {
-  CANCEL: '취소 환불',
-  DEPOSIT_RETURN: '입금 반환',
-};
-const REFUND_STATUS: Record<RefundStatusType, { label: string; tone: PillTone }> = {
-  AWAITING_ACCOUNT: { label: '계좌 입력 대기', tone: 'neutral' },
-  AWAITING_TRANSFER: { label: '송금 대기', tone: 'caution' },
-  COMPLETED: { label: '송금 완료', tone: 'positive' },
-};
+// Record라 codegen enum에 값이 늘면 tsc가 잡는다. 모르는 값은 원문으로 보인다.
+// 주체·환불 종류·환불 상태 라벨은 주문 화면과 한 벌이라 @/features/orders의 것을 쓴다
 const RECORD_KIND: Record<DepositRecordKindType, string> = {
   RETURN: '반환',
   UNIDENTIFIED: '종결',
 };
-const ACTOR: Record<OrderActorType, string> = {
-  BUYER: '구매자',
-  SELLER: '판매자',
-  ADMIN: '관리자',
-  SYSTEM: '자동',
-};
+// 환불 종류는 값(주소·칩 순서)만 둔다. 주소 스키마가 모듈 평가 때 쓰는데 주문 feature와 서로 import하는
+// 사이라, 평가 순서에 따라 그쪽 값이 아직 없을 수 있다
+const REFUND_KIND_KEYS: Record<RefundKindType, true> = { CANCEL: true, DEPOSIT_RETURN: true };
 
-const label = (table: Record<string, string>, value: string) =>
-  Object.hasOwn(table, value) ? table[value]! : value;
-
-export const REFUND_KINDS = (Object.keys(REFUND_KIND) as RefundKindType[]).map((value) => ({
-  value,
-  label: REFUND_KIND[value],
-}));
 export const RECORD_KINDS = (Object.keys(RECORD_KIND) as DepositRecordKindType[]).map((value) => ({
   value,
   label: RECORD_KIND[value],
 }));
-export const refundKindLabel = (v: string) => label(REFUND_KIND, v);
-export const recordKindLabel = (v: string) => label(RECORD_KIND, v);
-export const actorLabel = (v: string) => label(ACTOR, v);
-export const refundStatusMeta = (v: string) =>
-  Object.hasOwn(REFUND_STATUS, v)
-    ? REFUND_STATUS[v as RefundStatusType]
-    : { label: v, tone: 'neutral' as const };
+export const REFUND_KIND_VALUES = Object.keys(REFUND_KIND_KEYS) as [
+  RefundKindType,
+  ...RefundKindType[],
+];
+export const recordKindLabel = (v: string) =>
+  Object.hasOwn(RECORD_KIND, v) ? RECORD_KIND[v as DepositRecordKindType] : v;
 
 const PICKUP_SOON_MS = 3 * 3600_000;
 

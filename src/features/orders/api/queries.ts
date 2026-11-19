@@ -1,5 +1,6 @@
 import { type QueryClient, queryOptions } from '@tanstack/react-query';
 
+import { invalidateTasks } from '@/features/tasks';
 import { graphql } from '@/graphql/generated';
 import { type AdminCancelOrderInput, type AdminOrderListInput } from '@/graphql/generated/graphql';
 import { gqlRequest } from '@/shared/api';
@@ -348,7 +349,18 @@ export function buyerNameQueryOptions(accountId: string) {
   });
 }
 
-/** 처리했든 거절됐든(다른 곳에서 상태가 바뀐 경우 등) 상세·목록을 다시 불러 지금 상태와 선택지를 보인다 */
+/** 주문 목록·상세를 다시 읽게 한다. 주문 상태·환불을 바꾸는 다른 화면(처리 대기)이 부른다 */
+export async function invalidateOrders(queryClient: QueryClient) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ordersKeys.lists() }),
+    queryClient.invalidateQueries({ queryKey: ordersKeys.details() }),
+  ]);
+}
+
+/**
+ * 처리했든 거절됐든(다른 곳에서 상태가 바뀐 경우 등) 상세·목록을 다시 불러 지금 상태와 선택지를 보인다.
+ * 입금 대기 취소·환불 생성은 처리 대기 건수·목록도 바꾼다
+ */
 async function withRefresh<T>(queryClient: QueryClient, orderId: string, run: () => Promise<T>) {
   try {
     return await run();
@@ -356,6 +368,7 @@ async function withRefresh<T>(queryClient: QueryClient, orderId: string, run: ()
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) }),
       queryClient.invalidateQueries({ queryKey: ordersKeys.lists() }),
+      invalidateTasks(queryClient),
     ]);
   }
 }

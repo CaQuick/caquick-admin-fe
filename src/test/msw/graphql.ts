@@ -48,3 +48,19 @@ export function restOk<T>(path: string, body: T, status = 200) {
       : HttpResponse.json(body as Record<string, unknown>, { status }),
   );
 }
+
+/**
+ * operation별 성공 응답을 주고 요청 수를 센다(교차 무효화 검사용). 쿼리·mutation 모두 받는다.
+ * 핸들러는 부르는 쪽이 server.use로 건다.
+ */
+export function gqlCounted(answers: Record<string, Record<string, unknown>>) {
+  const counts: Record<string, number> = Object.fromEntries(
+    Object.keys(answers).map((op) => [op, 0]),
+  );
+  const handler = graphql.operation(({ operationName }) => {
+    if (!Object.hasOwn(answers, operationName)) return undefined;
+    counts[operationName]! += 1;
+    return HttpResponse.json({ data: answers[operationName] });
+  });
+  return { counts, handler };
+}

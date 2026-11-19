@@ -4,6 +4,7 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { refundStatusMeta } from '@/features/orders';
 import { messageFor } from '@/shared/api';
 import { formatCount, formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
@@ -31,14 +32,7 @@ import { DepositOrderSheet } from '../components/deposit-order-sheet';
 import { LinkDepositDialog } from '../components/link-deposit-dialog';
 import { TasksHeader } from '../components/task-counts';
 import { toUnidentifiedDepositInput } from '../forms';
-import {
-  RECORD_KINDS,
-  isPast,
-  nextTask,
-  pickupTone,
-  recordKindLabel,
-  refundStatusMeta,
-} from '../meta';
+import { RECORD_KINDS, isPast, nextTask, pickupTone, recordKindLabel } from '../meta';
 import {
   DEPOSIT_VIEWS,
   type DepositView,

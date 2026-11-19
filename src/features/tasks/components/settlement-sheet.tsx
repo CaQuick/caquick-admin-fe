@@ -1,15 +1,13 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { toast } from 'sonner';
 
-import { messageFor } from '@/shared/api';
+import { MarkPaidDialog } from '@/features/settlements';
 import { formatCount, formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { Button } from '@/shared/ui/button';
-import { ReasonDialog } from '@/shared/ui/reason-dialog';
 
-import { type SettlementDetail, settlementQueryOptions, taskMutations } from '../api/queries';
-import { isConflict, loadDescription } from '../meta';
+import { type SettlementDetail, settlementQueryOptions } from '../api/queries';
+import { loadDescription } from '../meta';
 import { AccountToCopy, DoneSection, Field, Fields, TaskSheet, type NextTask } from './task-sheet';
 
 interface Props {
@@ -62,18 +60,7 @@ function SettlementBody({
   next: NextTask;
   onNext: (id: string) => void;
 }) {
-  const qc = useQueryClient();
   const account = s.currentAccount;
-
-  const markPaid = async (note: string) => {
-    try {
-      await taskMutations.markSettlementPaid(qc, s.id, note);
-      toast.success(`${s.storeName} 정산을 송금 완료로 처리했습니다.`);
-    } catch (e) {
-      toast.error(messageFor(e));
-      if (!isConflict(e)) throw e;
-    }
-  };
 
   return (
     <>
@@ -121,19 +108,19 @@ function SettlementBody({
               정산 계좌가 없어 송금 완료로 처리할 수 없어요.
             </span>
           )}
-          <ReasonDialog
-            trigger={<Button disabled={!account}>송금 완료</Button>}
-            title="송금 완료로 처리할까요?"
-            description={
-              account
-                ? `${account.bank.name} ${account.accountNumber}(${account.accountHolder})로 ${formatKrw(s.payoutAmount)}을 송금했나요?`
-                : undefined
-            }
-            reasonLabel="메모"
-            reasonRequired={false}
-            confirmLabel="송금 완료"
-            onConfirm={markPaid}
-          />
+          {account ? (
+            <MarkPaidDialog
+              settlementId={s.id}
+              payoutAmount={s.payoutAmount}
+              account={{
+                bankName: account.bank.name,
+                accountNumber: account.accountNumber,
+                accountHolder: account.accountHolder,
+              }}
+            />
+          ) : (
+            <Button disabled>송금 완료</Button>
+          )}
         </div>
       )}
     </>

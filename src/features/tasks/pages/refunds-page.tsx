@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 
+import { refundKindLabel } from '@/features/orders';
 import { messageFor } from '@/shared/api';
 import { formatCount, formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
@@ -14,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { type RefundRow, refundsQueryOptions, taskCountsQueryOptions } from '../api/queries';
 import { RefundSheet } from '../components/refund-sheet';
 import { TasksHeader } from '../components/task-counts';
-import { REFUND_KINDS, nextTask, refundKindLabel } from '../meta';
+import { REFUND_KIND_VALUES, nextTask } from '../meta';
 import {
   REFUND_VIEWS,
   type RefundsSearch,
@@ -121,7 +122,10 @@ export function RefundsTasksPage({ search, onSearchChange }: Props) {
             </TabsList>
           </Tabs>
           <div role="group" aria-label="환불 종류" className="flex gap-1">
-            {[{ value: undefined, label: '전체' }, ...REFUND_KINDS].map((k) => (
+            {[
+              { value: undefined, label: '전체' },
+              ...REFUND_KIND_VALUES.map((value) => ({ value, label: refundKindLabel(value) })),
+            ].map((k) => (
               <Button
                 key={k.label}
                 type="button"
