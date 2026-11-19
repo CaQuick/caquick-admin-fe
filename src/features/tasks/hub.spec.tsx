@@ -9,7 +9,12 @@ import { forgetSearches } from '@/shared/lib/list-return';
 import { gqlOk, restOk } from '@/test/msw/graphql';
 import { server } from '@/test/msw/server';
 
-import { taskCountsQueryOptions } from './api/queries';
+import {
+  refundQueryOptions,
+  settlementQueryOptions,
+  taskCountsQueryOptions,
+  taskOrderQueryOptions,
+} from './api/queries';
 
 const me = {
   accountId: '1',
@@ -91,6 +96,45 @@ describe('처리 대기 허브', () => {
         window.dispatchEvent(new Event('visibilitychange'));
       });
       await vi.waitFor(() => expect(reads).toBe(3));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('열린 시트의 상세(주문·환불·정산)도 60초마다 다시 읽는다', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const reads = { order: 0, refund: 0, settlement: 0 };
+      server.use(
+        graphql.query('AdminTasksOrder', () => {
+          reads.order += 1;
+          return HttpResponse.json({ data: { adminOrder: null } });
+        }),
+        graphql.query('AdminTasksRefund', () => {
+          reads.refund += 1;
+          return HttpResponse.json({ data: { adminRefund: null } });
+        }),
+        graphql.query('AdminTasksSettlement', () => {
+          reads.settlement += 1;
+          return HttpResponse.json({ data: { adminSettlement: null } });
+        }),
+      );
+      function Details() {
+        useQuery(taskOrderQueryOptions('1'));
+        useQuery(refundQueryOptions('2'));
+        useQuery(settlementQueryOptions('3'));
+        return null;
+      }
+      render(
+        <QueryClientProvider client={createQueryClient()}>
+          <Details />
+        </QueryClientProvider>,
+      );
+      await vi.waitFor(() => expect(reads).toEqual({ order: 1, refund: 1, settlement: 1 }));
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      await vi.waitFor(() => expect(reads).toEqual({ order: 2, refund: 2, settlement: 2 }));
     } finally {
       vi.useRealTimers();
     }

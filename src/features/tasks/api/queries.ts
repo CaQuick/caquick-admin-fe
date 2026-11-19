@@ -340,7 +340,8 @@ const AdminTasksSettlementDocument = graphql(/* GraphQL */ `
 `);
 export type SettlementDetail = AdminTasksSettlementQuery['adminSettlement'];
 
-const listOptions = {
+/** 처리 대기는 다른 관리자·구매자가 같은 건을 바꾼다 — 목록과 열린 시트의 상세를 같은 주기로 다시 읽는다 */
+const pollOptions = {
   refetchInterval: TASK_POLL_MS,
   refetchOnWindowFocus: true,
 } as const;
@@ -360,7 +361,7 @@ export function pendingPaymentsQueryOptions(input: AdminPendingPaymentListInput)
     queryKey: tasksKeys.pendingPayments(input),
     queryFn: async () =>
       (await gqlRequest(AdminTasksPendingPaymentsDocument, { input })).adminPendingPayments,
-    ...listOptions,
+    ...pollOptions,
   });
 }
 
@@ -369,6 +370,7 @@ export function taskOrderQueryOptions(orderId: string) {
     queryKey: tasksKeys.order(orderId),
     queryFn: async () => (await gqlRequest(AdminTasksOrderDocument, { orderId })).adminOrder,
     retry: false,
+    ...pollOptions,
   });
 }
 
@@ -377,7 +379,7 @@ export function depositRecordsQueryOptions(input: AdminDepositRecordListInput) {
     queryKey: tasksKeys.depositRecords(input),
     queryFn: async () =>
       (await gqlRequest(AdminTasksDepositRecordsDocument, { input })).adminDepositRecords,
-    ...listOptions,
+    ...pollOptions,
   });
 }
 
@@ -385,7 +387,7 @@ export function refundsQueryOptions(input: AdminRefundListInput) {
   return queryOptions({
     queryKey: tasksKeys.refunds(input),
     queryFn: async () => (await gqlRequest(AdminTasksRefundsDocument, { input })).adminRefunds,
-    ...listOptions,
+    ...pollOptions,
   });
 }
 
@@ -394,6 +396,7 @@ export function refundQueryOptions(refundId: string) {
     queryKey: tasksKeys.refund(refundId),
     queryFn: async () => (await gqlRequest(AdminTasksRefundDocument, { refundId })).adminRefund,
     retry: false,
+    ...pollOptions,
   });
 }
 
@@ -402,7 +405,7 @@ export function settlementsQueryOptions(input: AdminSettlementListInput) {
     queryKey: tasksKeys.settlements(input),
     queryFn: async () =>
       (await gqlRequest(AdminTasksSettlementsDocument, { input })).adminSettlements,
-    ...listOptions,
+    ...pollOptions,
   });
 }
 
@@ -412,6 +415,7 @@ export function settlementQueryOptions(settlementId: string) {
     queryFn: async () =>
       (await gqlRequest(AdminTasksSettlementDocument, { settlementId })).adminSettlement,
     retry: false,
+    ...pollOptions,
   });
 }
 
