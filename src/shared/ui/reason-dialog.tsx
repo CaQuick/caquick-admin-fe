@@ -17,6 +17,8 @@ interface Props {
   trigger: ReactNode;
   title: string;
   description?: ReactNode;
+  /** 사유 칸 위에 덧붙일 내용(경고 등). 열려 있을 때만 그린다 */
+  children?: ReactNode;
   reasonLabel?: string;
   /** false면 사유를 비워도 된다 */
   reasonRequired?: boolean;
@@ -32,6 +34,7 @@ export function ReasonDialog({
   trigger,
   title,
   description,
+  children,
   reasonLabel = '사유',
   reasonRequired = true,
   maxLength = 500,
@@ -66,6 +69,7 @@ export function ReasonDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
+        {children}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reason-dialog-input">
             {reasonLabel}

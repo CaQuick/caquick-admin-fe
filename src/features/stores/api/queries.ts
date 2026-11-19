@@ -12,6 +12,8 @@ const storesKeys = {
   lists: () => [...storesKeys.all, 'list'] as const,
   list: (input: AdminStoreListInput) => [...storesKeys.lists(), input] as const,
   detail: (storeId: string) => [...storesKeys.all, 'detail', storeId] as const,
+  inProgressOrders: (storeId: string) =>
+    [...storesKeys.all, 'in-progress-orders', storeId] as const,
 };
 
 const AdminStoresDocument = graphql(/* GraphQL */ `
@@ -77,6 +79,18 @@ const AdminStoreDocument = graphql(/* GraphQL */ `
   }
 `);
 
+const AdminStoreInProgressOrderSummaryDocument = graphql(/* GraphQL */ `
+  query AdminStoreInProgressOrderSummary($storeId: ID!) {
+    adminStoreInProgressOrderSummary(storeId: $storeId) {
+      totalCount
+      byStatus {
+        status
+        count
+      }
+    }
+  }
+`);
+
 const AdminSetStoreActiveDocument = graphql(/* GraphQL */ `
   mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {
     adminSetStoreActive(input: $input) {
@@ -107,6 +121,17 @@ export function storeDetailQueryOptions(storeId: string) {
   return queryOptions({
     queryKey: storesKeys.detail(storeId),
     queryFn: async () => (await gqlRequest(AdminStoreDocument, { storeId })).adminStore,
+  });
+}
+
+/** 숨기기·정지 경고용. 다이얼로그를 열 때마다 새로 센다 */
+export function storeInProgressOrdersQueryOptions(storeId: string) {
+  return queryOptions({
+    queryKey: storesKeys.inProgressOrders(storeId),
+    queryFn: async () =>
+      (await gqlRequest(AdminStoreInProgressOrderSummaryDocument, { storeId }))
+        .adminStoreInProgressOrderSummary,
+    staleTime: 0,
   });
 }
 

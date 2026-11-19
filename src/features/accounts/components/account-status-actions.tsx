@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 
 import { type AccountStatus } from '@/graphql/generated/graphql';
@@ -28,10 +28,21 @@ interface Props {
   label: string;
   /** 성공 뒤 호출자의 캐시 무효화 */
   onChanged: () => Promise<void> | void;
+  /** 정지 다이얼로그에 덧붙일 내용(판매자: 진행 주문 경고·매장도 숨기기) */
+  suspendExtra?: ReactNode;
+  /** 정지 성공 뒤 이어서 할 일. 실패 안내는 스스로 하고 던지지 않는다 — 정지는 이미 됐다 */
+  afterSuspend?: (reason: string) => Promise<void>;
 }
 
 /** USER·SELLER 공용 정지/정지 해제. 정지는 사유 필수(감사 로그), 해제는 확인만. */
-export function AccountStatusActions({ accountId, status, label, onChanged }: Props) {
+export function AccountStatusActions({
+  accountId,
+  status,
+  label,
+  onChanged,
+  suspendExtra,
+  afterSuspend,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,8 +73,9 @@ export function AccountStatusActions({ accountId, status, label, onChanged }: Pr
     setBusy(true);
     try {
       await suspendAccount(accountId, trimmed);
-      await onChanged();
       toast.success(`${label} 계정을 정지했습니다.`);
+      await afterSuspend?.(trimmed);
+      await onChanged();
       setOpen(false);
       setReason('');
     } catch (e) {
@@ -86,6 +98,7 @@ export function AccountStatusActions({ accountId, status, label, onChanged }: Pr
             즉시 로그아웃되고 앱·판매자 센터를 이용할 수 없게 됩니다. 사유는 감사 로그에 남습니다.
           </DialogDescription>
         </DialogHeader>
+        {suspendExtra}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="suspend-reason">정지 사유 (필수)</Label>
           <Textarea

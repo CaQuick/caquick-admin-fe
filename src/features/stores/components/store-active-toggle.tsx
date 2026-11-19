@@ -7,6 +7,7 @@ import { Button } from '@/shared/ui/button';
 import { ReasonDialog } from '@/shared/ui/reason-dialog';
 
 import { setStoreActive } from '../api/queries';
+import { InProgressOrdersWarning } from './in-progress-orders-warning';
 
 export function StoreActiveToggle({
   storeId,
@@ -48,6 +49,8 @@ export function StoreActiveToggle({
           throw e;
         }
       }}
-    />
+    >
+      {!show && <InProgressOrdersWarning storeId={storeId} />}
+    </ReasonDialog>
   );
 }

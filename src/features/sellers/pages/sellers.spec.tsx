@@ -295,6 +295,135 @@ describe('판매자', () => {
     );
   });
 
+  /** 판매자 정지 흐름: 상세·진행 주문 요약·정지·매장 숨기기 요청을 잡는다 */
+  function suspendFlow(
+    opts: { storeActive?: boolean; hide?: 'ok' | 'fail'; inProgress?: number } = {},
+  ) {
+    const calls: { op: string; input: unknown }[] = [];
+    let status = 'ACTIVE';
+    let storeActive = opts.storeActive ?? true;
+    const base = seller('20');
+    server.use(
+      graphql.query('AdminSeller', () =>
+        HttpResponse.json({
+          data: {
+            adminSeller: { ...base, status, store: { ...base.store, isActive: storeActive } },
+          },
+        }),
+      ),
+      gqlOk('AdminStoreInProgressOrderSummary', {
+        adminStoreInProgressOrderSummary: {
+          totalCount: opts.inProgress ?? 0,
+          byStatus: opts.inProgress ? [{ status: 'SUBMITTED', count: opts.inProgress }] : [],
+        },
+      }),
+      graphql.mutation('AdminSuspendAccount', ({ variables }) => {
+        calls.push({ op: 'suspend', input: (variables as { input: unknown }).input });
+        status = 'SUSPENDED';
+        return HttpResponse.json({
+          data: { adminSuspendAccount: { accountId: '20', accountType: 'SELLER', status } },
+        });
+      }),
+      graphql.mutation('AdminReinstateAccount', () => {
+        status = 'ACTIVE';
+        return HttpResponse.json({
+          data: { adminReinstateAccount: { accountId: '20', accountType: 'SELLER', status } },
+        });
+      }),
+      graphql.mutation('AdminSetStoreActive', ({ variables }) => {
+        calls.push({ op: 'hide', input: (variables as { input: unknown }).input });
+        if (opts.hide === 'fail') {
+          return HttpResponse.json({
+            data: null,
+            errors: [
+              {
+                message: '매장을 찾을 수 없습니다.',
+                extensions: {
+                  code: 'STORE_NOT_FOUND',
+                  classification: 'NOT_FOUND',
+                  statusCode: 404,
+                },
+              },
+            ],
+          });
+        }
+        storeActive = false;
+        return HttpResponse.json({ data: { adminSetStoreActive: { id: '17', isActive: false } } });
+      }),
+    );
+    boot('/sellers/20');
+    return calls;
+  }
+
+  async function openSuspend() {
+    await userEvent.click(await screen.findByRole('button', { name: '계정 정지' }));
+    return screen.findByRole('dialog');
+  }
+
+  it('정지: 진행 주문을 경고하고 매장도 숨기기(기본 켬)면 정지 뒤 같은 사유로 매장을 숨긴다', async () => {
+    const success = vi.spyOn(toast, 'success');
+    const calls = suspendFlow({ inProgress: 2 });
+    const dialog = await openSuspend();
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      '진행 중인 주문 2건(접수 2)이 있습니다. 자동으로 취소되지 않으니 건별로 처리하세요.',
+    );
+    expect(within(dialog).getByRole('checkbox', { name: '매장도 숨기기' })).toBeChecked();
+    await userEvent.type(within(dialog).getByLabelText('정지 사유 (필수)'), '계약 위반');
+    await userEvent.click(within(dialog).getByRole('button', { name: '계정 정지' }));
+    await vi.waitFor(() =>
+      expect(calls).toEqual([
+        { op: 'suspend', input: { accountId: '20', reason: '계약 위반' } },
+        { op: 'hide', input: { storeId: '17', isActive: false, reason: '계약 위반' } },
+      ]),
+    );
+    expect(await screen.findByRole('button', { name: '정지 해제' })).toBeInTheDocument();
+    expect(await screen.findByText('숨김')).toBeInTheDocument();
+    expect(success).toHaveBeenCalledWith('박사장(seller20) 계정을 정지했습니다.');
+  });
+
+  it('정지: 매장 숨기기가 실패하면 토스트로 알리고 정지는 그대로 둔다', async () => {
+    const error = vi.spyOn(toast, 'error');
+    const calls = suspendFlow({ hide: 'fail' });
+    const dialog = await openSuspend();
+    // 0건이면 경고가 없다
+    expect(within(dialog).queryByText(/진행 중인 주문/)).not.toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText('정지 사유 (필수)'), '계약 위반');
+    await userEvent.click(within(dialog).getByRole('button', { name: '계정 정지' }));
+    await vi.waitFor(() =>
+      expect(error).toHaveBeenCalledWith(
+        '계정은 정지했지만 매장을 숨기지 못했습니다. 매장을 찾을 수 없습니다.',
+      ),
+    );
+    expect(calls.map((c) => c.op)).toEqual(['suspend', 'hide']);
+    expect(await screen.findByRole('button', { name: '정지 해제' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('정지: 매장도 숨기기를 끄면 매장을 건드리지 않고, 해제 뒤 다시 정지할 때는 다시 켜져 있다', async () => {
+    const calls = suspendFlow();
+    const dialog = await openSuspend();
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: '매장도 숨기기' }));
+    await userEvent.type(within(dialog).getByLabelText('정지 사유 (필수)'), '계약 위반');
+    await userEvent.click(within(dialog).getByRole('button', { name: '계정 정지' }));
+    await userEvent.click(await screen.findByRole('button', { name: '정지 해제' }));
+    expect(calls.map((c) => c.op)).toEqual(['suspend']);
+
+    const confirm = await screen.findByRole('alertdialog');
+    await userEvent.click(within(confirm).getByRole('button', { name: '정지 해제' }));
+    const again = await openSuspend();
+    expect(within(again).getByRole('checkbox', { name: '매장도 숨기기' })).toBeChecked();
+  });
+
+  it('정지: 이미 숨긴 매장이면 매장도 숨기기를 두지 않는다', async () => {
+    const calls = suspendFlow({ storeActive: false });
+    const dialog = await openSuspend();
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText('정지 사유 (필수)'), '계약 위반');
+    await userEvent.click(within(dialog).getByRole('button', { name: '계정 정지' }));
+    expect(await screen.findByRole('button', { name: '정지 해제' })).toBeInTheDocument();
+    expect(calls.map((c) => c.op)).toEqual(['suspend']);
+  });
+
   it('없는 판매자는 NOT_FOUND와 목록 링크', async () => {
     server.use(
       gqlError('AdminSeller', {
