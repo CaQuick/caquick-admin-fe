@@ -90,6 +90,7 @@ const codeOf = (e: unknown) => (e instanceof ApiError ? e.code : null);
 export const isConflict = (e: unknown) => e instanceof ApiError && e.classification === 'CONFLICT';
 export const isAmountMismatch = (e: unknown) => codeOf(e) === 'DEPOSIT_AMOUNT_MISMATCH';
 export const isAmountInvalid = (e: unknown) => codeOf(e) === 'DEPOSIT_AMOUNT_INVALID';
+export const isPickupPassed = (e: unknown) => codeOf(e) === 'PAYMENT_PICKUP_PASSED';
 
 /** 단건 읽기 상태 문구. 없는 ID는 404로 오므로 오류 문구를 그대로 보인다 */
 export function loadDescription(isLoading: boolean, error: Error | null, ready: string): string {

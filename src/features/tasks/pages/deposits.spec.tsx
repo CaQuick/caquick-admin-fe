@@ -247,6 +247,45 @@ describe('처리 대기 — 입금', () => {
     expect(within(s).getByText('남은 건이 없습니다.')).toBeInTheDocument();
   });
 
+  it('화면은 픽업 전이어도 서버가 픽업 지남(409)으로 거절하면 확인 폼을 안내로 바꾼다', async () => {
+    const { orders } = backend([order('12', { pickupAt: at(60_000) })]);
+    let confirms = 0;
+    server.use(
+      graphql.mutation('AdminTasksConfirmPayment', () => {
+        confirms += 1;
+        return HttpResponse.json({
+          data: null,
+          errors: [
+            {
+              message:
+                '픽업 시각이 지난 주문은 입금 확인할 수 없어요. 미입금 취소 뒤 반환 대상으로 연결해 주세요.',
+              extensions: {
+                code: 'PAYMENT_PICKUP_PASSED',
+                classification: 'CONFLICT',
+                statusCode: 409,
+              },
+            },
+          ],
+        });
+      }),
+    );
+    boot('/tasks/deposits?orderId=12');
+    const s = await sheet(/주문 CQ-12/);
+    expect(within(s).getByText('3시간 미만')).toBeInTheDocument();
+    await userEvent.type(within(s).getByLabelText('입금액(원) (필수)'), '30000');
+    await userEvent.click(within(s).getByRole('button', { name: '입금 확인' }));
+
+    expect(await within(s).findByRole('note')).toHaveTextContent(
+      '픽업 시각이 지난 주문은 입금 확인할 수 없어요. 미입금 취소 뒤 반환 대상으로 연결해 주세요.',
+    );
+    expect(within(s).getByText('픽업 지남')).toBeInTheDocument();
+    expect(within(s).queryByRole('form', { name: '입금 확인' })).not.toBeInTheDocument();
+    expect(within(s).getByRole('button', { name: '미입금 취소' })).toBeInTheDocument();
+    expect(confirms).toBe(1);
+    // 다시 읽은 주문은 여전히 입금 대기다
+    expect(orders.get('12')!.status).toBe('PENDING_PAYMENT');
+  });
+
   it('입금액이 결제 금액과 다르면 오류 문구와 함께 반환 연결을 입력한 금액으로 미리 채워 연다', async () => {
     backend([order('12')]);
     let returnInput: unknown;
@@ -359,7 +398,12 @@ describe('처리 대기 — 입금', () => {
   });
 
   it('픽업이 지난 주문은 확인을 막고 미입금 취소로 닫는다', async () => {
-    const { orders } = backend([order('12', { pickupAt: at(-60_000) })]);
+    const { orders } = backend([
+      order('12', {
+        pickupAt: at(-60_000),
+        payment: { ...order('12').payment!, expiresAt: at(-2 * H) },
+      }),
+    ]);
     let cancelInput: unknown;
     server.use(
       graphql.mutation('AdminTasksCancelUnpaid', ({ variables }) => {
@@ -384,6 +428,8 @@ describe('처리 대기 — 입금', () => {
       '픽업 시각이 지난 주문은 입금 확인할 수 없어요. 미입금 취소 뒤 반환 대상으로 연결해 주세요.',
     );
     expect(within(s).getByText('픽업 지남')).toBeInTheDocument();
+    // '입금했어요'를 누른 주문이라 기한이 지나도 기한 지남은 달지 않는다
+    expect(within(s).queryByText('기한 지남')).not.toBeInTheDocument();
     expect(within(s).queryByRole('button', { name: '입금 확인' })).not.toBeInTheDocument();
 
     await userEvent.click(within(s).getByRole('button', { name: '미입금 취소' }));
@@ -495,13 +541,16 @@ describe('처리 대기 — 입금', () => {
       pickupAt: at(-H),
       payment: { ...order('22').payment!, expiresAt: at(-2 * H) },
     });
-    const later = order('23', { payment: { ...order('23').payment!, buyerClaimedAt: null } });
+    const later = order('23', {
+      payment: { ...order('23').payment!, buyerClaimedAt: null, expiresAt: at(-60_000) },
+    });
     const { calls } = backend([soon, late, later]);
     boot('/tasks/deposits');
     const soonRow = await screen.findByRole('row', { name: /CQ-21/ });
     expect(within(soonRow).getByText('3시간 미만')).toBeInTheDocument();
+    // '입금했어요'를 누른 주문은 기한이 멈춰 픽업 지남만 단다
     const lateRow = screen.getByRole('row', { name: /CQ-22/ });
-    expect(within(lateRow).getAllByText('지남')).toHaveLength(2);
+    expect(within(lateRow).getAllByText('지남')).toHaveLength(1);
     // 확인 요청 보기는 '입금했어요'를 누른 주문만
     expect(screen.queryByRole('button', { name: 'CQ-23' })).not.toBeInTheDocument();
     expect(await screen.findByRole('tab', { name: '확인 요청 2' })).toHaveAttribute(
@@ -512,6 +561,9 @@ describe('처리 대기 — 입금', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: '입금 대기 3' }));
     expect(await screen.findByRole('button', { name: 'CQ-23' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('row', { name: /CQ-23/ })).getByText('지남'),
+    ).toBeInTheDocument();
     expect(calls.list.at(-1)).toMatchObject({ claimedOnly: false });
 
     await userEvent.type(screen.getByLabelText('검색어'), '김입금{Enter}');
@@ -522,7 +574,9 @@ describe('처리 대기 — 입금', () => {
     );
 
     await userEvent.click(screen.getByRole('button', { name: 'CQ-23' }));
-    expect(await sheet(/주문 CQ-23/)).toHaveTextContent('누르지 않음');
+    const s = await sheet(/주문 CQ-23/);
+    expect(s).toHaveTextContent('누르지 않음');
+    expect(within(s).getByText('기한 지남')).toBeInTheDocument();
   });
 
   it('입금 기록 보기는 반환·종결을 보이고 종결 기록을 주문에 연결한다', async () => {
@@ -839,9 +893,11 @@ describe('처리 대기 — 입금', () => {
         });
       }),
     );
-    boot('/tasks/deposits?view=records');
+    boot('/tasks/deposits?view=records&amount=5000');
     await screen.findByRole('tab', { name: '확인 요청 0' });
     const r = await screen.findByRole('row', { name: /홍길동/ });
+    // 입금 기록 보기에 없는 금액 필터는 초기화 대상으로 세지 않는다
+    expect(screen.queryByRole('button', { name: '초기화' })).not.toBeInTheDocument();
     await userEvent.click(within(r).getByRole('button', { name: '주문에 연결' }));
     await screen.findByRole('dialog', { name: '주문에 연결' });
     await userEvent.keyboard('{Escape}');

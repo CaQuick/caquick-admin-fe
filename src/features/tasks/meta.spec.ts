@@ -5,6 +5,7 @@ import {
   isAmountInvalid,
   isAmountMismatch,
   isConflict,
+  isPickupPassed,
   loadDescription,
   nextTask,
   pickupTone,
@@ -101,11 +102,13 @@ describe('오류 분류', () => {
     expect(isConflict(new Error('x'))).toBe(false);
   });
 
-  it('입금액 오류 코드를 구분한다', () => {
+  it('입금 확인 거절 코드를 구분한다', () => {
     expect(isAmountMismatch(err('BAD_USER_INPUT', 'DEPOSIT_AMOUNT_MISMATCH'))).toBe(true);
     expect(isAmountMismatch(err('BAD_USER_INPUT', 'DEPOSIT_AMOUNT_INVALID'))).toBe(false);
     expect(isAmountInvalid(err('BAD_USER_INPUT', 'DEPOSIT_AMOUNT_INVALID'))).toBe(true);
     expect(isAmountInvalid('DEPOSIT_AMOUNT_INVALID')).toBe(false);
+    expect(isPickupPassed(err('CONFLICT', 'PAYMENT_PICKUP_PASSED'))).toBe(true);
+    expect(isPickupPassed(err('CONFLICT', 'PAYMENT_NOT_PENDING'))).toBe(false);
   });
 
   it('단건 읽기 문구는 오류 → 읽는 중 → 요약 순이다', () => {

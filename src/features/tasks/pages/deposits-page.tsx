@@ -91,9 +91,10 @@ export function DepositsTasksPage({ search, onSearchChange }: Props) {
           keyword={view === 'records' ? undefined : (search.depositorName ?? '')}
           keywordPlaceholder="입금자명"
           onKeywordSubmit={(v) => patch({ depositorName: v || undefined })}
-          hasActiveFilters={[search.amount, search.depositorName, search.kind].some(
-            (v) => v !== undefined,
-          )}
+          hasActiveFilters={(view === 'records'
+            ? [search.kind]
+            : [search.amount, search.depositorName]
+          ).some((v) => v !== undefined)}
           onReset={() => onSearchChange({ view: search.view, limit: search.limit })}
         >
           <Tabs
@@ -256,7 +257,10 @@ function PaymentsTable({
       cell: ({ row }) => (
         <span className="flex items-center gap-1.5">
           {formatKst(row.original.expiresAt)}
-          {isPast(row.original.expiresAt, now) && <StatusPill tone="negative">지남</StatusPill>}
+          {/* '입금했어요'를 누른 주문은 기한이 멈춰 자동 취소되지 않는다 */}
+          {!row.original.buyerClaimedAt && isPast(row.original.expiresAt, now) && (
+            <StatusPill tone="negative">지남</StatusPill>
+          )}
         </span>
       ),
     },

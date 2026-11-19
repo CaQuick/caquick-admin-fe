@@ -1,4 +1,4 @@
-import { type QueryClient, keepPreviousData, queryOptions } from '@tanstack/react-query';
+import { type QueryClient, queryOptions } from '@tanstack/react-query';
 
 import { graphql } from '@/graphql/generated';
 import {
@@ -23,7 +23,7 @@ import { MAX_KEYWORD_LENGTH } from '@/shared/lib/list-search';
 import { type EntityOption } from '@/shared/ui/entity-picker';
 
 /** 건수·목록 폴링 주기. 디스코드 알림은 다시 올 수 있어 건수와 목록을 진실로 둔다 */
-export const TASK_POLL_MS = 60_000;
+const TASK_POLL_MS = 60_000;
 
 const tasksKeys = {
   all: ['tasks'] as const,
@@ -346,9 +346,7 @@ const AdminTasksMarkSettlementPaidDocument = graphql(/* GraphQL */ `
   }
 `);
 
-// 폴링 목록은 다시 받는 동안 이전 행을 유지한다
 const listOptions = {
-  placeholderData: keepPreviousData,
   refetchInterval: TASK_POLL_MS,
   refetchOnWindowFocus: true,
 } as const;

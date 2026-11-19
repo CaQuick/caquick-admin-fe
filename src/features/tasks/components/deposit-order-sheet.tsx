@@ -30,6 +30,7 @@ import {
   isAmountMismatch,
   isConflict,
   isPast,
+  isPickupPassed,
   loadDescription,
   pickupTone,
 } from '../meta';
@@ -102,14 +103,17 @@ function OrderBody({
   onNext: (id: string) => void;
 }) {
   const qc = useQueryClient();
-  const [now] = useState(() => new Date());
+  // 열어 둔 사이 시각이 지나도 다시 그릴 때 강조가 따라오도록 매번 잰다
+  const now = new Date();
+  // 서버가 픽업 지남으로 거절했으면 화면 시각과 관계없이 확인을 막는다
+  const [pickupPassed, setPickupPassed] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnDefaults, setReturnDefaults] = useState<{ amount?: string; notice?: string }>({});
   // 이번에 연결한 반환들의 환불. 시트가 모달이라 토스트 안 버튼은 누를 수 없어 시트 안에 둔다
   const [returnedRefundIds, setReturnedRefundIds] = useState<string[]>([]);
   const p = order.payment;
   const pending = order.status === 'PENDING_PAYMENT' && p?.status === 'PENDING';
-  const tone = pickupTone(order.pickupAt, now);
+  const tone = pickupPassed ? 'negative' : pickupTone(order.pickupAt, now);
 
   const openReturn = (amount?: string, notice?: string) => {
     setReturnDefaults({ amount, notice });
@@ -145,7 +149,8 @@ function OrderBody({
         {p && (
           <Field label="입금 기한">
             {formatKst(p.expiresAt, true)}
-            {pending && isPast(p.expiresAt, now) && (
+            {/* '입금했어요'를 누른 주문은 기한이 멈춰 자동 취소되지 않는다 */}
+            {pending && !p.buyerClaimedAt && isPast(p.expiresAt, now) && (
               <StatusPill tone="negative" className="ml-2">
                 기한 지남
               </StatusPill>
@@ -185,6 +190,7 @@ function OrderBody({
           <ConfirmForm
             order={order}
             onMismatch={(amount, message) => openReturn(amount, message)}
+            onPickupPassed={() => setPickupPassed(true)}
           />
         )
       ) : (
@@ -247,9 +253,11 @@ function OrderBody({
 function ConfirmForm({
   order,
   onMismatch,
+  onPickupPassed,
 }: {
   order: TaskOrder;
   onMismatch: (amount: string, message: string) => void;
+  onPickupPassed: () => void;
 }) {
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -271,6 +279,8 @@ function ConfirmForm({
         onMismatch(String(parseWon(v.depositedAmount)), message);
       } else if (isAmountInvalid(e)) {
         form.setError('depositedAmount', { type: 'server', message });
+      } else if (isPickupPassed(e)) {
+        onPickupPassed();
       } else if (e instanceof ApiError && e.classification === 'BAD_USER_INPUT') {
         setError(message);
       } else {
