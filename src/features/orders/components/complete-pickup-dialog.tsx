@@ -34,6 +34,7 @@ export function CompletePickupDialog({
           await completeOrderPickup(queryClient, orderId, note);
           toast.success(`${orderNumber} 주문을 픽업 완료로 처리했습니다.`);
         } catch (e) {
+          // 거절되면 이미 다른 상태라 재조회로 버튼과 다이얼로그가 사라지므로 토스트로 알린다
           const known = e instanceof ApiError && e.code ? MESSAGES[e.code] : undefined;
           toast.error(known ?? messageFor(e));
           throw e;

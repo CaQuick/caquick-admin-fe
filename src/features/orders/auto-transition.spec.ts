@@ -1,6 +1,6 @@
 import { type OrderStatusType } from '@/graphql/generated/graphql';
 
-import { autoTransitionNote } from './auto-transition';
+import { autoTransitionNote, storeHiddenOf } from './auto-transition';
 
 const payment = (buyerClaimedAt: string | null) => ({
   method: 'BANK_TRANSFER' as const,
@@ -58,10 +58,30 @@ describe('autoTransitionNote', () => {
       true,
       '매장이 숨김이라 11-20 14:00에 자동 픽업 완료되지 않습니다. 픽업 완료나 강제 취소로 직접 처리하세요.',
     ],
+    [
+      '매장 숨김 여부를 아직 모르면 자동 픽업 완료를 단정하지 않는다',
+      order('CONFIRMED', { autoPickupAt: AT }),
+      null,
+      '11-20 14:00에 자동 픽업 완료 예정입니다. 매장이 숨김이면 자동으로 처리되지 않습니다.',
+    ],
     ['결제 도입 전 입금 대기는 없음', order('PENDING_PAYMENT', { payment: null }), false, null],
     ['결제 도입 전 접수(마감 null)는 없음', order('SUBMITTED'), false, null],
     ['종료 상태는 없음', order('PICKED_UP'), false, null],
   ])('%s', (_, o, hidden, note) => {
     expect(autoTransitionNote(o, hidden)).toBe(note);
+  });
+});
+
+describe('storeHiddenOf', () => {
+  const active = { isActive: true };
+  it.each([
+    ['처음 조회 중', { isSuccess: false, isFetching: true }, null],
+    ['처음 조회 실패', { isSuccess: false, isFetching: false }, null],
+    ['옛 값을 다시 조회 중', { data: active, isSuccess: true, isFetching: true }, null],
+    ['옛 값이 있는데 다시 조회 실패', { data: active, isSuccess: false, isFetching: false }, null],
+    ['노출 매장', { data: active, isSuccess: true, isFetching: false }, false],
+    ['숨김 매장', { data: { isActive: false }, isSuccess: true, isFetching: false }, true],
+  ])('%s', (_, q, hidden) => {
+    expect(storeHiddenOf(q)).toBe(hidden);
   });
 });

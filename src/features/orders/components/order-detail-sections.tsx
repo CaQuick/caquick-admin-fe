@@ -10,7 +10,7 @@ import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 
 import { storeRefQueryOptions } from '../api/queries';
-import { autoTransitionNote } from '../auto-transition';
+import { autoTransitionNote, storeHiddenOf } from '../auto-transition';
 import { actorLabel, cancelFaultLabel, cancelReasonLabel } from '../meta';
 import { ORDER_STATUS, orderStatusMeta } from '../status';
 import { OrderItemCustom } from './order-item-custom';
@@ -35,13 +35,15 @@ export function OrderProgress({ order }: { order: OrderDetail }) {
   const store = useQuery({
     ...storeRefQueryOptions(storeId ?? ''),
     enabled: storeId !== undefined,
+    // 매장 화면의 숨김 전환은 이 캐시를 무효화하지 않아 열 때마다 다시 확인한다
+    refetchOnMount: 'always',
   });
   // 결제 도입 전 주문은 접수에서 시작했다
   const steps = order.payment ? STEPS : STEPS.slice(1);
   const ended = ENDED[order.status];
   const endedAt = ended && (order[ended.at] as string | null);
   const currentIdx = steps.findIndex((s) => s.value === order.status);
-  const note = autoTransitionNote(order, store.data?.isActive === false);
+  const note = autoTransitionNote(order, storeHiddenOf(store));
   return (
     <Card>
       <CardHeader>

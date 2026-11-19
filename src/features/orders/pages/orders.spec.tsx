@@ -227,6 +227,30 @@ const canceledBy = (refundAmount: number) => ({
   },
 });
 
+const pendingPayment = {
+  ...submitted,
+  status: 'PENDING_PAYMENT',
+  submittedAt: null,
+  statusHistories: [],
+  payment: {
+    ...detail.payment,
+    status: 'PENDING',
+    confirmedAt: null,
+    confirmSource: null,
+    confirmedByLabel: null,
+  },
+  cancelOptions: {
+    cancelable: true,
+    reasons: ['PAYMENT_NOT_RECEIVED', 'OTHER'],
+    refundRule: 'NO_REFUND',
+    paidAmount: 0,
+  },
+  confirmDeadlineAt: null,
+  expectedPayoutAmount: null,
+};
+const AUTO_PICKUP_UNKNOWN =
+  '09-29 14:00에 자동 픽업 완료 예정입니다. 매장이 숨김이면 자동으로 처리되지 않습니다.';
+
 /** 매장·구매자 이름 조회 기본 응답. 테스트가 뒤에 등록한 핸들러가 이긴다 */
 function useNameLookups() {
   server.use(
@@ -753,6 +777,9 @@ describe('주문 상세', () => {
         fault: 'SELLER',
       }),
     );
+    // 입력 오류가 아닌 거절은 폼이 아니라 토스트로 알린다
+    expect(await screen.findByText('테스트는 다이얼로그를 남긴다')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
 
     await userEvent.click(within(dialog).getByRole('radio', { name: '구매자 사정' }));
     const amount = within(dialog).getByLabelText('환불 금액 (필수)');
@@ -785,29 +812,7 @@ describe('주문 상세', () => {
   it('입금 대기 주문은 미입금 사유로 환불 없이 취소하고 입금 기한을 안내한다', async () => {
     let cancelInput: unknown;
     server.use(
-      gqlOk('AdminOrder', {
-        adminOrder: {
-          ...submitted,
-          status: 'PENDING_PAYMENT',
-          submittedAt: null,
-          statusHistories: [],
-          payment: {
-            ...detail.payment,
-            status: 'PENDING',
-            confirmedAt: null,
-            confirmSource: null,
-            confirmedByLabel: null,
-          },
-          cancelOptions: {
-            cancelable: true,
-            reasons: ['PAYMENT_NOT_RECEIVED', 'OTHER'],
-            refundRule: 'NO_REFUND',
-            paidAmount: 0,
-          },
-          confirmDeadlineAt: null,
-          expectedPayoutAmount: null,
-        },
-      }),
+      gqlOk('AdminOrder', { adminOrder: pendingPayment }),
       graphql.mutation('AdminCancelOrder', ({ variables }) => {
         cancelInput = (variables as { input: unknown }).input;
         return HttpResponse.json({ data: { adminCancelOrder: { id: '1', status: 'CANCELED' } } });
@@ -972,8 +977,10 @@ describe('주문 상세', () => {
     expect(within(settle).getByText('43,200원')).toBeInTheDocument();
     expect(within(settle).getByText('묶이기 전')).toBeInTheDocument();
     expect(within(settle).queryByText('수수료')).not.toBeInTheDocument();
-    expect(screen.getByRole('note', { name: '자동 처리 예정' })).toHaveTextContent(
-      '09-29 14:00에 자동으로 픽업 완료됩니다.',
+    await vi.waitFor(() =>
+      expect(screen.getByRole('note', { name: '자동 처리 예정' })).toHaveTextContent(
+        '09-29 14:00에 자동으로 픽업 완료됩니다.',
+      ),
     );
     expect(screen.queryByText('요청 사항')).not.toBeInTheDocument();
     expect(screen.queryByText('픽업 일시 변경')).not.toBeInTheDocument();
@@ -993,6 +1000,48 @@ describe('주문 상세', () => {
         '매장이 숨김이라 09-29 14:00에 자동 픽업 완료되지 않습니다. 픽업 완료나 강제 취소로 직접 처리하세요.',
       ),
     );
+  });
+
+  it('매장 조회가 끝나기 전에는 자동 픽업 완료를 단정하지 않는다', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      graphql.query('AdminOrdersStoreName', async () => {
+        await gate;
+        return HttpResponse.json({
+          data: { adminStore: { store: { id: '17', storeName: '달빛 케이크', isActive: false } } },
+        });
+      }),
+    );
+    boot('/orders/1');
+    const note = await screen.findByRole('note', { name: '자동 처리 예정' });
+    expect(note).toHaveTextContent(AUTO_PICKUP_UNKNOWN);
+    release();
+    await vi.waitFor(() => expect(note).toHaveTextContent(/^매장이 숨김이라/));
+  });
+
+  it('상세를 다시 열면 매장 숨김 여부를 다시 확인한다', async () => {
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      gqlOk('AdminOrders', {
+        adminOrders: { items: [row('1')], totalCount: 1, hasMore: false, nextCursor: null },
+      }),
+    );
+    boot('/orders/1');
+    const note = () => screen.getByRole('note', { name: '자동 처리 예정' });
+    await vi.waitFor(() =>
+      expect(note()).toHaveTextContent('09-29 14:00에 자동으로 픽업 완료됩니다.'),
+    );
+    // 그사이 매장 화면에서 숨겼다
+    server.use(
+      gqlOk('AdminOrdersStoreName', {
+        adminStore: { store: { id: '17', storeName: '달빛 케이크', isActive: false } },
+      }),
+    );
+    await userEvent.click(screen.getByRole('link', { name: '목록으로' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'CQ-2609-1' }));
+    await vi.waitFor(() => expect(note()).toHaveTextContent(/^매장이 숨김이라/));
   });
 
   it('취소 주문은 취소·환불 카드와 확정된 정산을, 요청 사항·픽업 변경 이력을 보인다', async () => {
@@ -1371,16 +1420,72 @@ describe('주문 상세', () => {
     expect(screen.queryByText('확인')).not.toBeInTheDocument();
   });
 
-  it('취소 실패는 토스트로 알리고 다이얼로그는 남긴 채 상세를 다시 불러온다', async () => {
+  it('선택지 밖 사유로 거절되면 폼 위에 알리고 다시 받은 선택지에 맞춰 사유를 비운다', async () => {
     let detailCalls = 0;
     server.use(
       graphql.query('AdminOrder', () => {
         detailCalls += 1;
-        return HttpResponse.json({ data: { adminOrder: submitted } });
+        // 그사이 다른 관리자가 입금을 확인해 접수가 됐다
+        return HttpResponse.json({
+          data: { adminOrder: detailCalls === 1 ? pendingPayment : submitted },
+        });
       }),
       gqlError('AdminCancelOrder', {
-        message: '이미 픽업된 주문',
-        code: 'ORDER_NOT_CANCELABLE',
+        message: '이 주문에는 선택할 수 없는 취소 사유입니다.',
+        code: 'CANCEL_REASON_NOT_ALLOWED',
+        classification: 'BAD_USER_INPUT',
+        statusCode: 400,
+      }),
+    );
+    boot('/orders/1');
+    await userEvent.click(await screen.findByRole('button', { name: '강제 취소' }));
+    const dialog = await screen.findByRole('dialog');
+    const reason = () => within(dialog).getByRole('combobox', { name: '취소 사유' });
+    await userEvent.click(reason());
+    await userEvent.click(screen.getByRole('option', { name: '미입금' }));
+    await userEvent.type(within(dialog).getByLabelText('메모 (선택)'), '입금 안 됨');
+    await userEvent.click(within(dialog).getByRole('button', { name: '강제 취소' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      '이 주문에는 선택할 수 없는 취소 사유입니다.',
+    );
+    await vi.waitFor(() =>
+      expect(within(dialog).getByRole('status')).toHaveTextContent(
+        '결제액 48,000원을 전액 환불합니다.',
+      ),
+    );
+    expect(detailCalls).toBe(2);
+    expect(reason()).toHaveTextContent('사유 선택');
+    expect(within(dialog).getByRole('button', { name: '강제 취소' })).toBeDisabled();
+
+    // 입력을 바꾸면 알림을 지운다
+    await userEvent.click(reason());
+    await userEvent.click(screen.getByRole('option', { name: '기타' }));
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: '강제 취소' })).toBeEnabled();
+
+    // 닫았다 다시 열면 새로 입력받는다
+    const footer = dialog.querySelector<HTMLElement>('[data-slot="dialog-footer"]')!;
+    await userEvent.click(within(footer).getByRole('button', { name: '닫기' }));
+    await userEvent.click(screen.getByRole('button', { name: '강제 취소' }));
+    const reopened = await screen.findByRole('dialog');
+    expect(within(reopened).getByRole('combobox', { name: '취소 사유' })).toHaveTextContent(
+      '사유 선택',
+    );
+    expect(within(reopened).getByLabelText('메모 (선택)')).toHaveValue('');
+  });
+
+  it('취소할 수 없게 된 주문은 토스트로 알리고 다이얼로그는 버튼과 함께 사라진다', async () => {
+    let detailCalls = 0;
+    server.use(
+      graphql.query('AdminOrder', () => {
+        detailCalls += 1;
+        return HttpResponse.json({
+          data: { adminOrder: detailCalls === 1 ? submitted : canceledBy(48000) },
+        });
+      }),
+      gqlError('AdminCancelOrder', {
+        message: '현재 상태에서는 주문을 취소할 수 없습니다.',
+        code: 'ORDER_NOT_CANCELLABLE',
         classification: 'BAD_USER_INPUT',
         statusCode: 400,
       }),
@@ -1391,9 +1496,90 @@ describe('주문 상세', () => {
     await userEvent.click(within(dialog).getByRole('combobox', { name: '취소 사유' }));
     await userEvent.click(screen.getByRole('option', { name: '기타' }));
     await userEvent.click(within(dialog).getByRole('button', { name: '강제 취소' }));
-    expect(await screen.findByText('이미 픽업된 주문')).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    await vi.waitFor(() => expect(detailCalls).toBe(2));
+    expect(
+      await screen.findByText('현재 상태에서는 주문을 취소할 수 없습니다.'),
+    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: '강제 취소' })).not.toBeInTheDocument();
+    expect(detailCalls).toBe(2);
+  });
+
+  it('픽업 완료 메모는 BE처럼 앞뒤 공백을 뺀 코드 포인트로 500자까지 받는다', async () => {
+    server.use(gqlOk('AdminOrder', { adminOrder: detail }));
+    boot('/orders/1');
+    await userEvent.click(await screen.findByRole('button', { name: '픽업 완료' }));
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: '픽업 완료' });
+    await userEvent.click(within(dialog).getByLabelText('메모 (선택)'));
+    await userEvent.paste(` ${'🎂'.repeat(500)}`);
+    expect(within(dialog).getByText('500 / 500')).toBeInTheDocument();
+    expect(confirm).toBeEnabled();
+    await userEvent.paste('🎂');
+    expect(within(dialog).getByText('501 / 500')).toBeInTheDocument();
+    expect(confirm).toBeDisabled();
+  });
+
+  /** 목록 → 상세에서 처리한 뒤 '목록으로' 돌아갈 때까지 목록 조회 횟수 */
+  async function listCallsAfter(handle: () => Promise<void>) {
+    let listCalls = 0;
+    server.use(
+      graphql.query('AdminOrders', () => {
+        listCalls += 1;
+        return HttpResponse.json({
+          data: {
+            adminOrders: { items: [row('1')], totalCount: 1, hasMore: false, nextCursor: null },
+          },
+        });
+      }),
+    );
+    boot('/orders');
+    await userEvent.click(await screen.findByRole('link', { name: 'CQ-2609-1' }));
+    await handle();
+    expect(listCalls).toBe(1);
+    await userEvent.click(screen.getByRole('link', { name: '목록으로' }));
+    await screen.findByText('전체 1건');
+    return () => listCalls;
+  }
+
+  it('강제 취소가 성공하면 목록으로 돌아갈 때 목록을 다시 불러온다', async () => {
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: submitted }),
+      graphql.mutation('AdminCancelOrder', () =>
+        HttpResponse.json({ data: { adminCancelOrder: { id: '1', status: 'CANCELED' } } }),
+      ),
+    );
+    const listCalls = await listCallsAfter(async () => {
+      await userEvent.click(await screen.findByRole('button', { name: '강제 취소' }));
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('combobox', { name: '취소 사유' }));
+      await userEvent.click(screen.getByRole('option', { name: '기타' }));
+      await userEvent.click(within(dialog).getByRole('button', { name: '강제 취소' }));
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+    await vi.waitFor(() => expect(listCalls()).toBe(2));
+  });
+
+  it('픽업 완료가 거절돼도 목록으로 돌아갈 때 목록을 다시 불러온다', async () => {
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      gqlError('AdminCompleteOrderPickup', {
+        message: '허용되지 않는 주문 상태 전이입니다.',
+        code: 'INVALID_ORDER_STATUS_TRANSITION',
+        classification: 'BAD_USER_INPUT',
+        statusCode: 400,
+      }),
+    );
+    const listCalls = await listCallsAfter(async () => {
+      await userEvent.click(await screen.findByRole('button', { name: '픽업 완료' }));
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: '픽업 완료' }));
+      // 앞 케이스의 토스트가 남아 있을 수 있다
+      expect(
+        await screen.findAllByText('지금 상태에서는 픽업 완료로 처리할 수 없습니다.'),
+      ).not.toHaveLength(0);
+      await userEvent.keyboard('{Escape}');
+    });
+    await vi.waitFor(() => expect(listCalls()).toBe(2));
   });
 
   it('없는 주문은 NOT_FOUND 문구와 목록 링크', async () => {

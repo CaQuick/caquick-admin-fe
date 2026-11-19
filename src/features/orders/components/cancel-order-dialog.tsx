@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { messageFor } from '@/shared/api';
+import { ApiError, messageFor } from '@/shared/api';
 import { formatKrw } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
@@ -50,7 +50,13 @@ export function CancelOrderDialog({
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<CancelForm>(EMPTY_CANCEL_FORM);
   const [busy, setBusy] = useState(false);
-  const set = (patch: Partial<CancelForm>) => setForm((f) => ({ ...f, ...patch }));
+  const [error, setError] = useState<string | null>(null);
+  const set = (patch: Partial<CancelForm>) => {
+    setError(null);
+    setForm((f) => ({ ...f, ...patch }));
+  };
+  // 거절 뒤 재조회로 선택지에서 빠진 사유는 고르지 않은 것으로 보인다
+  const reason = options.reasons.find((r) => r === form.reason) ?? '';
   const built = buildCancelInput(orderId, options, form);
   const summary = cancelSummary(options, form);
   const noteLen = noteLength(form.note);
@@ -61,20 +67,34 @@ export function CancelOrderDialog({
   const submit = async () => {
     if (!('input' in built)) return;
     setBusy(true);
+    setError(null);
     try {
       await cancelOrder(queryClient, built.input);
       toast.success(`${orderNumber} 주문을 취소했습니다.`);
       setOpen(false);
-      setForm(EMPTY_CANCEL_FORM);
     } catch (e) {
-      toast.error(messageFor(e));
+      // 입력 오류는 폼 위에. 취소 불가는 재조회로 다이얼로그가 버튼과 함께 사라지므로 토스트로 알린다
+      const inForm =
+        e instanceof ApiError &&
+        e.classification === 'BAD_USER_INPUT' &&
+        e.code !== 'ORDER_NOT_CANCELLABLE';
+      if (inForm) setError(messageFor(e));
+      else toast.error(messageFor(e));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        // 거절 뒤 선택지가 바뀌었을 수 있어 열 때마다 새로 입력받는다
+        if (o) setForm(EMPTY_CANCEL_FORM);
+        setError(null);
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline" className="border-negative text-negative-foreground">
           강제 취소
@@ -89,10 +109,18 @@ export function CancelOrderDialog({
             없습니다.
           </DialogDescription>
         </DialogHeader>
+        {error && (
+          <p
+            role="alert"
+            className="rounded-md bg-negative-soft px-3 py-2 text-sm text-negative-foreground"
+          >
+            {error}
+          </p>
+        )}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="cancel-reason">취소 사유 (필수)</Label>
-            <Select value={form.reason} onValueChange={(reason) => set({ reason })}>
+            <Select value={reason} onValueChange={(r) => set({ reason: r })}>
               <SelectTrigger id="cancel-reason" aria-label="취소 사유" className="w-full">
                 <SelectValue placeholder="사유 선택" />
               </SelectTrigger>

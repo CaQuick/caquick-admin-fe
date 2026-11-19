@@ -43,7 +43,9 @@ export function ReasonDialog({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const trimmed = reason.trim();
-  const invalid = (reasonRequired && trimmed.length === 0) || trimmed.length > maxLength;
+  // BE처럼 코드 포인트로 센다(이모지도 1자)
+  const length = [...trimmed].length;
+  const invalid = (reasonRequired && length === 0) || length > maxLength;
   const submit = async () => {
     setBusy(true);
     try {
@@ -74,12 +76,11 @@ export function ReasonDialog({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            maxLength={maxLength + 50}
           />
           <span
-            className={`text-xs tabular-nums ${trimmed.length > maxLength ? 'text-negative-foreground' : 'text-muted-foreground'}`}
+            className={`text-xs tabular-nums ${length > maxLength ? 'text-negative-foreground' : 'text-muted-foreground'}`}
           >
-            {trimmed.length} / {maxLength}
+            {length} / {maxLength}
           </span>
         </div>
         <DialogFooter>
