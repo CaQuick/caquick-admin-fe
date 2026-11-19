@@ -218,7 +218,6 @@ export function monthlyCommissionsQueryOptions(month: string) {
     queryFn: async () =>
       (await gqlRequest(AdminMonthlyCommissionsDocument, { input: { month } }))
         .adminMonthlyCommissions,
-    placeholderData: (prev) => prev,
   });
 }
 

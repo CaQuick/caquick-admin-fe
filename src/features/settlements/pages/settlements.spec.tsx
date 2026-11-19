@@ -330,12 +330,15 @@ describe('정산·결제 설정', () => {
     expect(screen.getByRole('link', { name: '목록으로' })).toBeInTheDocument();
   });
 
-  it('월 수수료: 월 합계와 매장별 표, 이전·다음 달로 옮긴다', async () => {
+  it('월 수수료: 월 합계와 매장별 표, 이전·다음 달로 옮기고 새 달을 받는 동안 이전 달 금액을 보이지 않는다', async () => {
     const months: string[] = [];
+    let releaseOctober!: () => void;
+    const october = new Promise<void>((resolve) => (releaseOctober = resolve));
     server.use(
-      graphql.query('AdminMonthlyCommissions', ({ variables }) => {
+      graphql.query('AdminMonthlyCommissions', async ({ variables }) => {
         const { month } = (variables as { input: { month: string } }).input;
         months.push(month);
+        if (month === '2026-10') await october;
         return HttpResponse.json({
           data: {
             adminMonthlyCommissions:
@@ -376,6 +379,10 @@ describe('정산·결제 설정', () => {
     expect(screen.getByLabelText('집계 월')).toHaveValue('2026-11');
 
     await userEvent.click(screen.getByRole('button', { name: '이전 달' }));
+    await vi.waitFor(() => expect(screen.getByLabelText('집계 월')).toHaveValue('2026-10'));
+    expect(screen.queryByText('55,500원')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '루미 케이크' })).not.toBeInTheDocument();
+    releaseOctober();
     expect(await screen.findByText('이 달에 정산이 확정된 주문이 없습니다.')).toBeInTheDocument();
     expect(window.location.search).toBe('?month=2026-10');
     expect(months).toEqual(['2026-11', '2026-10']);
