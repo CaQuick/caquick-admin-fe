@@ -588,10 +588,19 @@ describe('처리 대기 — 입금', () => {
 
     await userEvent.type(screen.getByLabelText('검색어'), '김입금{Enter}');
     await vi.waitFor(() => expect(calls.list.at(-1)).toMatchObject({ depositorName: '김입금' }));
-    await userEvent.type(screen.getByRole('textbox', { name: '금액' }), '30000{Enter}');
+    // 금액은 쉼표를 허용하고, Int 범위를 넘으면 필터를 조용히 버리지 않고 알린다
+    await userEvent.type(screen.getByRole('textbox', { name: '금액' }), '30,000{Enter}');
     await vi.waitFor(() =>
       expect(calls.list.at(-1)).toMatchObject({ amount: 30000, depositorName: '김입금' }),
     );
+    expect(window.location.search).toContain('amount=30000');
+    const listCalls = calls.list.length;
+    const amountBox = screen.getByRole('textbox', { name: '금액' });
+    await userEvent.clear(amountBox);
+    await userEvent.type(amountBox, '2147483648{Enter}');
+    expect(await screen.findByText('원 단위 금액으로 입력해 주세요.')).toBeInTheDocument();
+    expect(calls.list).toHaveLength(listCalls);
+    expect(window.location.search).toContain('amount=30000');
 
     await userEvent.click(screen.getByRole('button', { name: 'CQ-23' }));
     const s = await sheet(/주문 CQ-23/);

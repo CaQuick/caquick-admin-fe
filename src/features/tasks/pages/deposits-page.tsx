@@ -39,6 +39,7 @@ import {
   type DepositsSearch,
   type DepositsSearchInput,
   depositView,
+  parseWon,
   toDepositRecordInput,
   toPendingPaymentInput,
 } from '../search';
@@ -134,7 +135,11 @@ export function DepositsTasksPage({ search, onSearchChange }: Props) {
                 label="금액"
                 placeholder="원"
                 value={search.amount}
-                onCommit={(amount) => patch({ amount })}
+                validate={(v) => parseWon(v) !== null}
+                invalidMessage="원 단위 금액으로 입력해 주세요."
+                onCommit={(amount) =>
+                  patch({ amount: amount === undefined ? undefined : String(parseWon(amount)) })
+                }
               />
             </FilterField>
           )}
