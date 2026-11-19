@@ -55,7 +55,11 @@ describe('ID 검색 파라미터 정밀도', () => {
         '/_authed/_shell/reviews accountId',
         '/_authed/_shell/reviews reviewId',
         '/_authed/_shell/reviews storeId',
+        '/_authed/_shell/settlements/ storeId',
         '/_authed/_shell/stores/ regionId',
+        '/_authed/_shell/tasks/deposits orderId',
+        '/_authed/_shell/tasks/refunds refundId',
+        '/_authed/_shell/tasks/settlements settlementId',
       ].sort(),
     );
   });

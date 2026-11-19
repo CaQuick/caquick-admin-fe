@@ -38,8 +38,10 @@ src/
 - **요청**은 `gqlRequest(Document, variables)`(`@/shared/api`) 하나로. 인증 헤더·쿠키·401 갱신·에러 정규화(`ApiError`)를 여기서 끝낸다. REST는 `authRequest`.
 - **쿼리 키**는 feature별 팩토리(`ordersKeys.list(filters)`, `ordersKeys.detail(id)`)로만 만든다. 문자열 리터럴 키 금지.
 - **mutation 뒤**에는 그 feature의 list·detail 키를 invalidate한다. 낙관적 업데이트는 쓰지 않는다 — 감사 대상 작업이라 서버 결과가 진실이다.
+- 다른 feature의 화면도 바꾸는 mutation(처리 대기 처리 → 주문·정산·대시보드, 강제 취소·정산 송금 완료 → 처리 대기)은 상대 배럴의 `invalidate*` helper를 부른다. 키는 소유 feature만 만든다. 서로 부르는 feature는 순환 import가 되므로 상대 export를 모듈 평가 때(최상위 상수·zod 스키마) 쓰지 않는다.
 - **목록**은 커서 방식(`items · totalCount · hasMore · nextCursor`). 필터·커서는 URL 검색 파라미터(zod)로 유지해 새로고침·공유가 된다.
 - **ID**는 문자열 그대로. `"0"`·빈 문자열을 truthy 검사로 버리지 않는다.
+- **enum 라벨**은 `Record<생성 enum, …>`로 둬 값이 늘면 tsc가 잡게 하고, 조회는 모르는 값에 원문으로 폴백한다. BE가 먼저 배포돼 새 값이 와도 화면이 죽지 않아야 한다.
 - **날짜**는 표시·입력 KST, 전송 ISO(UTC). 기간 필터의 경계는 KST 하루 시작·끝을 UTC로 바꿔 보낸다.
 
 ## 4. 인증

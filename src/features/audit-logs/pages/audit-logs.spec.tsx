@@ -131,6 +131,8 @@ describe('감사 로그', () => {
     ['BANNER', '배너 #5', '/banners/5'],
     ['REVIEW', '리뷰 #5', '/reviews?reviewId=5&deleted=true'],
     ['REVIEW_REPORT', '신고 #5', '/reports/5'],
+    ['REFUND', '환불 #5', '/tasks/refunds?refundId=5'],
+    ['DEPOSIT_RECORD', '입금 기록 #5', '/tasks/deposits?view=records'],
     ['ACCOUNT', '계정 #5', null],
     ['CHANGE_PASSWORD', '비밀번호 변경 #5', null],
     ['CATEGORY', '카테고리 #5', null],
@@ -139,6 +141,10 @@ describe('감사 로그', () => {
     ['REVIEW_COMMENT', '리뷰 댓글 #5', null],
     ['NOTIFICATION', '알림 #5', null],
     ['CONVERSATION', '대화 #5', null],
+    ['SETTLEMENT', '정산 #5', '/settlements/5'],
+    ['PAYMENT_SETTING', '결제 설정 #5', '/settings'],
+    // 계좌 행 번호라 화면이 없어 기록의 매장(17)으로 간다
+    ['SETTLEMENT_ACCOUNT', '정산 계좌 #5', '/stores/17'],
   ])('대상 %s는 "%s" → %s', async (targetType, text, href) => {
     server.use(
       gqlOk('AdminAuditLogs', {
@@ -154,6 +160,21 @@ describe('감사 로그', () => {
     const cell = await screen.findByText(text);
     if (href === null) expect(cell.closest('a')).toBeNull();
     else expect(decodeURIComponent(cell.closest('a')!.getAttribute('href')!)).toBe(href);
+  });
+
+  it('매장이 없는 정산 계좌 기록은 글자만 보인다', async () => {
+    server.use(
+      gqlOk('AdminAuditLogs', {
+        adminAuditLogs: {
+          items: [{ ...log, targetType: 'SETTLEMENT_ACCOUNT', targetId: '5', storeId: null }],
+          totalCount: 1,
+          hasMore: false,
+          nextCursor: null,
+        },
+      }),
+    );
+    boot('/audit-logs');
+    expect((await screen.findByText('정산 계좌 #5')).closest('a')).toBeNull();
   });
 
   it.each([
@@ -316,6 +337,21 @@ describe('감사 로그', () => {
           updatedAt: '2026-09-27T02:34:00.000Z',
           items: [],
           statusHistories: [],
+          requestNote: null,
+          payment: null,
+          refunds: [],
+          cancellation: null,
+          cancelOptions: { cancelable: false, reasons: [], refundRule: null, paidAmount: 0 },
+          confirmDeadlineAt: null,
+          autoPickupAt: null,
+          noShowAt: null,
+          pickupChanges: [],
+          commissionRateBps: 0,
+          expectedPayoutAmount: null,
+          settlementBaseAmount: null,
+          commissionAmount: null,
+          settlementFinalizedAt: null,
+          settlementId: null,
         },
       }),
     );

@@ -1,4 +1,5 @@
 import { type AdminProductQuery } from '@/graphql/generated/graphql';
+import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { StatusPill } from '@/shared/ui/status-pill';
 
@@ -81,6 +82,11 @@ function OptionGroupItem({ group: g }: { group: OptionGroup }) {
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-1.5">
                   <span className="font-medium">{item.title}</span>
+                  {item.threeDKey && (
+                    <Badge variant="outline" className="font-mono" title="3D 연결 키">
+                      3D {item.threeDKey}
+                    </Badge>
+                  )}
                   {!item.isActive && <StatusPill tone="neutral">숨김</StatusPill>}
                 </span>
                 {item.description && (

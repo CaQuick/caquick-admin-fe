@@ -2,28 +2,48 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
 import { AccountStatusPill, BuyerRef } from '@/features/accounts';
-import { type AdminOrderQuery } from '@/graphql/generated/graphql';
+import { type AdminOrderQuery, type OrderStatusType } from '@/graphql/generated/graphql';
 import { formatKrw } from '@/shared/lib/format';
 import { formatKst } from '@/shared/lib/kst';
 import { cn } from '@/shared/lib/utils';
+import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 
-import { storeNameQueryOptions } from '../api/queries';
+import { storeRefQueryOptions } from '../api/queries';
+import { autoTransitionNote, storeHiddenOf } from '../auto-transition';
+import { actorLabel, cancelFaultLabel, cancelReasonLabel } from '../meta';
 import { ORDER_STATUS, orderStatusMeta } from '../status';
+import { OrderItemCustom } from './order-item-custom';
 
 export type OrderDetail = AdminOrderQuery['adminOrder'];
 
-const STEPS = ORDER_STATUS.filter((s) => s.value !== 'CANCELED');
-const STEP_AT: Record<string, keyof OrderDetail> = {
+const STEP_AT: Partial<Record<OrderStatusType, keyof OrderDetail>> = {
+  PENDING_PAYMENT: 'createdAt',
   SUBMITTED: 'submittedAt',
   CONFIRMED: 'confirmedAt',
   MADE: 'madeAt',
   PICKED_UP: 'pickedUpAt',
 };
+const STEPS = ORDER_STATUS.filter((s) => s.value in STEP_AT);
+const ENDED: Partial<Record<OrderStatusType, { label: string; at: keyof OrderDetail }>> = {
+  CANCELED: { label: '취소됨', at: 'canceledAt' },
+  NO_SHOW: { label: '노쇼', at: 'noShowAt' },
+};
 
 export function OrderProgress({ order }: { order: OrderDetail }) {
-  const canceled = order.status === 'CANCELED';
-  const currentIdx = STEPS.findIndex((s) => s.value === order.status);
+  const storeId = order.items[0]?.storeId;
+  const store = useQuery({
+    ...storeRefQueryOptions(storeId ?? ''),
+    enabled: storeId !== undefined,
+    // 매장 화면의 숨김 전환은 이 캐시를 무효화하지 않아 열 때마다 다시 확인한다
+    refetchOnMount: 'always',
+  });
+  // 결제 도입 전 주문은 접수에서 시작했다
+  const steps = order.payment ? STEPS : STEPS.slice(1);
+  const ended = ENDED[order.status];
+  const endedAt = ended && (order[ended.at] as string | null);
+  const currentIdx = steps.findIndex((s) => s.value === order.status);
+  const note = autoTransitionNote(order, storeHiddenOf(store));
   return (
     <Card>
       <CardHeader>
@@ -33,16 +53,16 @@ export function OrderProgress({ order }: { order: OrderDetail }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {canceled && (
+        {ended && (
           <p className="mb-3 text-sm font-medium text-negative-foreground">
-            취소됨 · {order.canceledAt ? formatKst(order.canceledAt, true) : ''}
+            {ended.label} · {endedAt ? formatKst(endedAt, true) : ''}
           </p>
         )}
         <ol className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
-          {STEPS.map((s, i) => {
+          {steps.map((s, i) => {
             const at = order[STEP_AT[s.value]!] as string | null;
             const done = at !== null;
-            const now = i === currentIdx && !canceled;
+            const now = i === currentIdx;
             return (
               <li
                 key={s.value}
@@ -69,70 +89,31 @@ export function OrderProgress({ order }: { order: OrderDetail }) {
             );
           })}
         </ol>
+        {note && (
+          <p
+            role="note"
+            aria-label="자동 처리 예정"
+            className="mt-3 rounded-md bg-surface-tint px-3 py-2 text-xs text-muted-foreground"
+          >
+            {note}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-type FreeEdit = OrderDetail['items'][number]['freeEdits'][number];
-
 /** 품목에는 매장명 스냅샷이 없어 현재 매장 이름을 불러 보인다. 못 불러오면 #ID */
 function StoreLink({ storeId }: { storeId: string }) {
-  const name = useQuery(storeNameQueryOptions(storeId));
+  const store = useQuery(storeRefQueryOptions(storeId));
   return (
     <Link
       to="/stores/$storeId"
       params={{ storeId }}
       className="text-primary-soft-foreground hover:underline"
     >
-      매장 {name.data ?? `#${storeId}`}
+      매장 {store.data?.storeName ?? `#${storeId}`}
     </Link>
-  );
-}
-
-const bySortOrder = (a: { sortOrder: number }, b: { sortOrder: number }) =>
-  a.sortOrder - b.sortOrder;
-
-/** 자유 편집 1건: 편집 이미지, 요청 문구 전문, 첨부 이미지. 이미지는 새 탭에서 원본으로 연다 */
-function FreeEditRow({ edit }: { edit: FreeEdit }) {
-  const n = edit.sortOrder + 1;
-  const attachments = [...edit.attachments].sort(bySortOrder);
-  return (
-    <li className="flex gap-3 rounded-md border p-2 text-xs">
-      <a href={edit.cropImageUrl} target="_blank" rel="noreferrer" className="shrink-0">
-        <img
-          src={edit.cropImageUrl}
-          alt={`자유 편집 ${n} 이미지`}
-          className="size-16 rounded-md border object-cover"
-        />
-      </a>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div>
-          <div className="text-muted-foreground">요청 문구</div>
-          <p className="break-words whitespace-pre-wrap">
-            {edit.descriptionText.trim() ? edit.descriptionText : '요청 문구가 없습니다.'}
-          </p>
-        </div>
-        {attachments.length > 0 && (
-          <div>
-            <div className="text-muted-foreground">첨부 이미지 {attachments.length}장</div>
-            <ul aria-label={`자유 편집 ${n} 첨부 이미지`} className="mt-1 flex flex-wrap gap-1.5">
-              {attachments.map((a, i) => (
-                <li key={a.id}>
-                  <a href={a.imageUrl} target="_blank" rel="noreferrer" className="block">
-                    <img
-                      src={a.imageUrl}
-                      alt={`자유 편집 ${n} 첨부 ${i + 1}`}
-                      className="size-12 rounded-md border object-cover"
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </li>
   );
 }
 
@@ -180,23 +161,7 @@ export function OrderItems({ order }: { order: OrderDetail }) {
                     ))}
                   </div>
                 )}
-                {it.customTexts.length > 0 && (
-                  <div className="mt-1 text-xs">
-                    {it.customTexts.map((c) => (
-                      <span key={c.id} className="mr-3">
-                        문구 “{c.valueText}”
-                        <span className="text-muted-foreground"> (기본 {c.defaultText})</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {it.freeEdits.length > 0 && (
-                  <ul className="mt-2 flex flex-col gap-2">
-                    {it.freeEdits.map((f) => (
-                      <FreeEditRow key={f.id} edit={f} />
-                    ))}
-                  </ul>
-                )}
+                <OrderItemCustom item={it} />
               </div>
               <div className="text-right font-semibold tabular-nums">
                 {formatKrw(it.itemSubtotalPrice)}
@@ -274,19 +239,73 @@ export function OrderHistory({ order }: { order: OrderDetail }) {
                 aria-hidden
               />
               <div>
-                <div>
-                  {h.fromStatus ? orderStatusMeta(h.fromStatus).label : '—'} →{' '}
-                  <b>{orderStatusMeta(h.toStatus).label}</b>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span>
+                    {h.fromStatus ? orderStatusMeta(h.fromStatus).label : '—'} →{' '}
+                    <b>{orderStatusMeta(h.toStatus).label}</b>
+                  </span>
+                  <Badge variant="outline">{actorLabel(h.actorType)}</Badge>
                 </div>
                 <div className="text-muted-foreground tabular-nums">
                   {formatKst(h.changedAt, true)}
                 </div>
+                {h.cancelReason && (
+                  <div>
+                    사유 {cancelReasonLabel(h.cancelReason)}
+                    {h.cancelFault && ` · ${cancelFaultLabel(h.cancelFault)}`}
+                    {h.refundAmount !== null && ` · 환불 ${formatKrw(h.refundAmount)}`}
+                  </div>
+                )}
                 {h.note && (
                   <div className="mt-1 inline-block rounded-md bg-surface-tint px-2 py-1">
                     {h.note}
                   </div>
                 )}
               </div>
+            </li>
+          ))}
+        </ol>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function OrderRequestNote({ note }: { note: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">요청 사항</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm break-words whitespace-pre-wrap">{note}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** 판매자 픽업 일시 변경 이력. 오래된 순 */
+export function OrderPickupChanges({ changes }: { changes: OrderDetail['pickupChanges'] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">픽업 일시 변경</CardTitle>
+        <CardDescription className="text-xs">판매자 변경 · {changes.length}건</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ol className="flex flex-col gap-2 text-xs">
+          {changes.map((c) => (
+            <li key={c.id}>
+              <div className="tabular-nums">
+                {formatKst(c.fromPickupAt, true)} → <b>{formatKst(c.toPickupAt, true)}</b>
+              </div>
+              <div className="text-muted-foreground tabular-nums">
+                변경 {formatKst(c.changedAt, true)}
+              </div>
+              {c.note && (
+                <div className="mt-1 inline-block rounded-md bg-surface-tint px-2 py-1">
+                  {c.note}
+                </div>
+              )}
             </li>
           ))}
         </ol>

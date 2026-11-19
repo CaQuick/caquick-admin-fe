@@ -11,24 +11,19 @@ import {
 } from 'recharts';
 
 import { orderStatusMeta } from '@/features/orders';
-import { type OrderStatusType } from '@/graphql/generated/graphql';
 import { formatCount } from '@/shared/lib/format';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 
+import { ORDER_COUNT_KEYS } from '../order-count-keys';
 import { type DashboardSummary } from './types';
 
-// 라벨은 주문 화면과 한 벌(주문 확정 등)
-const STATUS: { key: keyof DashboardSummary['orderCounts']; status: OrderStatusType }[] = [
-  { key: 'submitted', status: 'SUBMITTED' },
-  { key: 'confirmed', status: 'CONFIRMED' },
-  { key: 'made', status: 'MADE' },
-  { key: 'pickedUp', status: 'PICKED_UP' },
-  { key: 'canceled', status: 'CANCELED' },
-];
+// 흐름 밖에서 끝난 상태는 회색으로 가른다
+const MUTED = new Set(['noShow', 'canceled']);
 
-/** 기간 내 주문 상태 분포. 단일 계열(진행 단계)이라 색 1개, 취소만 회색. 표는 스크린리더·색각 보조용. */
+/** 기간 내 주문 상태 분포. 단일 계열(진행 단계)이라 색 1개, 노쇼·취소만 회색. 표는 스크린리더·색각 보조용. */
 export function OrderStatusChart({ summary }: { summary: DashboardSummary }) {
-  const data = STATUS.map((s) => ({
+  // 라벨은 주문 화면과 한 벌(주문 확정 등)
+  const data = ORDER_COUNT_KEYS.map((s) => ({
     key: s.key,
     label: orderStatusMeta(s.status).label,
     count: summary.orderCounts[s.key],
@@ -73,10 +68,7 @@ export function OrderStatusChart({ summary }: { summary: DashboardSummary }) {
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={56}>
                 {data.map((d) => (
-                  <Cell
-                    key={d.key}
-                    fill={d.key === 'canceled' ? 'var(--chart-4)' : 'var(--chart-1)'}
-                  />
+                  <Cell key={d.key} fill={MUTED.has(d.key) ? 'var(--chart-4)' : 'var(--chart-1)'} />
                 ))}
                 <LabelList
                   dataKey="count"

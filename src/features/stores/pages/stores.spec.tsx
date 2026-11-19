@@ -131,10 +131,28 @@ async function searchAddress() {
 const districtPicker = () => screen.getByRole('combobox', { name: '지역 시·군·구' });
 const GEOCODED = '주소로 좌표를 채웠습니다. 지도에서 핀 위치를 확인해 주세요.';
 
+const noInProgress = { totalCount: 0, byStatus: [] };
+const settlementAccount = {
+  storeId: '17',
+  bank: { code: '004', name: 'KB국민은행' },
+  accountHolder: '박사장',
+  accountNumber: '110123456789',
+  accountNumberMasked: '****6789',
+  updatedByRole: 'ADMIN',
+  updatedAt: '2026-11-10T01:00:00.000Z',
+};
+
 describe('매장', () => {
-  beforeEach(() =>
-    useAuthStore.setState({ status: 'unknown', accessToken: null, mustChangePassword: false }),
-  );
+  beforeEach(() => {
+    useAuthStore.setState({ status: 'unknown', accessToken: null, mustChangePassword: false });
+    // 개요의 정산 계좌 카드·숨기기 경고 기본값. 테스트가 server.use로 덮어쓴다
+    server.use(
+      gqlOk('AdminStoreSettlementAccount', { adminStoreSettlementAccount: null }),
+      gqlOk('AdminStoreInProgressOrderSummary', {
+        adminStoreInProgressOrderSummary: noInProgress,
+      }),
+    );
+  });
   afterEach(() => {
     delete window.kakao;
     delete window.naver;
@@ -237,6 +255,8 @@ describe('매장', () => {
     await userEvent.click(screen.getByRole('button', { name: '매장 숨기기' }));
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('루미 케이크를 숨길까요?');
+    // 진행 주문이 0건이면 경고가 없다
+    expect(within(dialog).queryByText(/진행 중인 주문/)).not.toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: '숨기기' }));
     await vi.waitFor(() =>
       expect(setInput).toEqual({ storeId: '17', isActive: false, reason: null }),
@@ -620,6 +640,201 @@ describe('매장', () => {
     await screen.findByRole('region', { name: '매장 위치 지도' });
     window.navermap_authFailure!();
     expect(await screen.findByText(/지도 인증에 실패했습니다/)).toBeInTheDocument();
+  });
+
+  it('숨기기: 진행 주문이 있으면 상태별 건수와 진행 주문 목록 링크로 경고하되 막지 않는다', async () => {
+    let setInput: unknown;
+    server.use(
+      gqlOk('AdminStore', { adminStore: detail() }),
+      gqlOk('AdminStoreInProgressOrderSummary', {
+        adminStoreInProgressOrderSummary: {
+          totalCount: 3,
+          byStatus: [
+            { status: 'SUBMITTED', count: 2 },
+            { status: 'MADE', count: 1 },
+          ],
+        },
+      }),
+      graphql.mutation('AdminSetStoreActive', ({ variables }) => {
+        setInput = (variables as { input: unknown }).input;
+        return HttpResponse.json({ data: { adminSetStoreActive: { id: '17', isActive: false } } });
+      }),
+    );
+    boot('/stores/17');
+    await userEvent.click(await screen.findByRole('button', { name: '매장 숨기기' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      '진행 중인 주문 3건(접수 2 · 제작 완료 1)이 있습니다. 자동으로 취소되지 않으니 건별로 처리하세요.',
+    );
+    expect(
+      decodeURIComponent(
+        within(dialog).getByRole('link', { name: '진행 주문 보기' }).getAttribute('href') ?? '',
+      ),
+    ).toBe('/orders?storeId=17&inProgress=true');
+    await userEvent.click(within(dialog).getByRole('button', { name: '숨기기' }));
+    await vi.waitFor(() =>
+      expect(setInput).toEqual({ storeId: '17', isActive: false, reason: null }),
+    );
+  });
+
+  it('숨기기: 진행 주문 수를 못 받아도 안내만 하고 숨길 수 있다', async () => {
+    server.use(
+      gqlOk('AdminStore', { adminStore: detail() }),
+      gqlError('AdminStoreInProgressOrderSummary', {
+        message: '서버 오류',
+        classification: 'INTERNAL_SERVER_ERROR',
+      }),
+    );
+    boot('/stores/17');
+    await userEvent.click(await screen.findByRole('button', { name: '매장 숨기기' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      await within(dialog).findByText(
+        '진행 중인 주문 수를 확인하지 못했습니다.',
+        {},
+        { timeout: 5000 },
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: '숨기기' })).toBeEnabled();
+  });
+
+  it('숨김 매장을 다시 노출할 때는 진행 주문을 묻지 않는다', async () => {
+    let asked = 0;
+    server.use(
+      gqlOk('AdminStore', { adminStore: detail(false) }),
+      graphql.query('AdminStoreInProgressOrderSummary', () => {
+        asked += 1;
+        return HttpResponse.json({ data: { adminStoreInProgressOrderSummary: noInProgress } });
+      }),
+    );
+    boot('/stores/17');
+    await userEvent.click(await screen.findByRole('button', { name: '매장 다시 노출' }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent('다시 노출할까요?');
+    expect(asked).toBe(0);
+  });
+
+  it('정산 계좌: 원문과 복사 버튼을 보이고 사유와 함께 대리 수정한다', async () => {
+    let current: typeof settlementAccount | null = null;
+    let upsertInput: unknown;
+    server.use(
+      gqlOk('AdminStore', { adminStore: detail() }),
+      gqlOk('AdminPaymentBanks', {
+        paymentBanks: [
+          { code: '004', name: 'KB국민은행' },
+          { code: '088', name: '신한은행' },
+        ],
+      }),
+      graphql.query('AdminStoreSettlementAccount', () =>
+        HttpResponse.json({ data: { adminStoreSettlementAccount: current } }),
+      ),
+      graphql.mutation('AdminUpsertStoreSettlementAccount', ({ variables }) => {
+        upsertInput = (variables as { input: unknown }).input;
+        current = { ...settlementAccount, bank: { code: '088', name: '신한은행' } };
+        return HttpResponse.json({
+          data: { adminUpsertStoreSettlementAccount: { storeId: '17' } },
+        });
+      }),
+    );
+    boot('/stores/17');
+    expect(await screen.findByText(/등록된 정산 계좌가 없어/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '등록' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('판매자 감사 로그에도 보입니다');
+    await userEvent.click(within(dialog).getByRole('combobox', { name: '은행' }));
+    await userEvent.click(await screen.findByRole('option', { name: '신한은행' }));
+    await userEvent.type(within(dialog).getByLabelText('계좌번호'), '110-123-456789');
+    await userEvent.type(within(dialog).getByLabelText('예금주'), '박사장');
+    await userEvent.type(within(dialog).getByLabelText('변경 사유 (필수)'), '판매자 전화 요청');
+    await userEvent.click(within(dialog).getByRole('button', { name: '저장' }));
+    await vi.waitFor(() =>
+      expect(upsertInput).toEqual({
+        storeId: '17',
+        bankCode: '088',
+        accountNumber: '110123456789',
+        accountHolder: '박사장',
+        reason: '판매자 전화 요청',
+      }),
+    );
+    expect(await screen.findByText('110123456789')).toBeInTheDocument();
+    expect(screen.getByText('신한은행')).toBeInTheDocument();
+    expect(screen.getByText(/^관리자 · /)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '계좌번호 복사' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '변경' })).toBeInTheDocument();
+  });
+
+  it('정산 계좌: 등록하고 정산 상세로 돌아가면 바로 송금 완료를 누를 수 있다', async () => {
+    let current: typeof settlementAccount | null = null;
+    server.use(
+      gqlOk('AdminStore', { adminStore: detail() }),
+      gqlOk('AdminPaymentBanks', { paymentBanks: [{ code: '004', name: 'KB국민은행' }] }),
+      graphql.query('AdminStoreSettlementAccount', () =>
+        HttpResponse.json({ data: { adminStoreSettlementAccount: current } }),
+      ),
+      graphql.query('AdminSettlement', () =>
+        HttpResponse.json({
+          data: {
+            adminSettlement: {
+              id: '31',
+              storeId: '17',
+              storeName: '루미 케이크',
+              periodStart: '2026-11-09',
+              periodEnd: '2026-11-15',
+              orderCount: 0,
+              settlementBaseAmount: 0,
+              commissionAmount: 0,
+              payoutAmount: 0,
+              status: 'PENDING',
+              paidAt: null,
+              accountRegistered: current !== null,
+              createdAt: '2026-11-16T20:00:00.000Z',
+              paidByLabel: null,
+              paidNote: null,
+              paidAccount: null,
+              currentAccount: current,
+              orders: [],
+            },
+          },
+        }),
+      ),
+      graphql.mutation('AdminUpsertStoreSettlementAccount', () => {
+        current = settlementAccount;
+        return HttpResponse.json({
+          data: { adminUpsertStoreSettlementAccount: { storeId: '17' } },
+        });
+      }),
+    );
+    boot('/settlements/31');
+    expect(await screen.findByRole('button', { name: '송금 완료' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('link', { name: '매장에서 계좌 등록' }));
+    await userEvent.click(await screen.findByRole('button', { name: '등록' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('combobox', { name: '은행' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'KB국민은행' }));
+    await userEvent.type(within(dialog).getByLabelText('계좌번호'), '110123456789');
+    await userEvent.type(within(dialog).getByLabelText('예금주'), '박사장');
+    await userEvent.type(within(dialog).getByLabelText('변경 사유 (필수)'), '판매자 전화 요청');
+    await userEvent.click(within(dialog).getByRole('button', { name: '저장' }));
+    expect(await screen.findByText('110123456789')).toBeInTheDocument();
+
+    // staleTime 안이라 정산을 무효화하지 않으면 미등록 캐시를 그대로 보인다
+    window.history.back();
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: '송금 완료' })).toBeEnabled());
+    expect(screen.queryByRole('link', { name: '매장에서 계좌 등록' })).not.toBeInTheDocument();
+  });
+
+  it('정산 계좌를 못 받으면 카드에 이유를 보이고 등록 버튼을 두지 않는다', async () => {
+    server.use(
+      gqlOk('AdminStore', { adminStore: detail() }),
+      gqlError('AdminStoreSettlementAccount', {
+        message: '복호화 실패',
+        code: 'ACCOUNT_DECRYPT_FAILED',
+        classification: 'INTERNAL_SERVER_ERROR',
+        statusCode: 500,
+      }),
+    );
+    boot('/stores/17');
+    expect(await screen.findByText('복호화 실패', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '등록' })).not.toBeInTheDocument();
   });
 
   it('없는 매장은 NOT_FOUND', async () => {

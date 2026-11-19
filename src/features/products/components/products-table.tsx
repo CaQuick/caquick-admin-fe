@@ -16,8 +16,8 @@ const columns: ColumnDef<ProductRow, unknown>[] = [
     cell: ({ row }) => (
       <span className="flex items-center gap-2.5">
         <span className="size-9 shrink-0 overflow-hidden rounded-md border bg-surface-tint">
-          {row.original.baseDesignImageUrl && (
-            <img src={row.original.baseDesignImageUrl} alt="" className="size-full object-cover" />
+          {row.original.thumbnailUrl && (
+            <img src={row.original.thumbnailUrl} alt="" className="size-full object-cover" />
           )}
         </span>
         <Link

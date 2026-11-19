@@ -5,7 +5,15 @@ import { actorTypeLabel, targetLabel } from '../meta';
 const linkClass = 'text-primary-soft-foreground hover:underline';
 
 /** 대상 종류별 화면으로 잇는다. 상세 화면이 없는 종류(계정·분류·지역·알림 등)는 글자만 보인다 */
-export function TargetLink({ targetType, targetId }: { targetType: string; targetId: string }) {
+export function TargetLink({
+  targetType,
+  targetId,
+  storeId,
+}: {
+  targetType: string;
+  targetId: string;
+  storeId?: string | null;
+}) {
   const text = `${targetLabel(targetType)} #${targetId}`;
   switch (targetType) {
     case 'ORDER':
@@ -42,6 +50,44 @@ export function TargetLink({ targetType, targetId }: { targetType: string; targe
     case 'REVIEW_REPORT':
       return (
         <Link to="/reports/$reportId" params={{ reportId: targetId }} className={linkClass}>
+          {text}
+        </Link>
+      );
+    case 'SETTLEMENT':
+      return (
+        <Link
+          to="/settlements/$settlementId"
+          params={{ settlementId: targetId }}
+          className={linkClass}
+        >
+          {text}
+        </Link>
+      );
+    case 'PAYMENT_SETTING':
+      return (
+        <Link to="/settings" className={linkClass}>
+          {text}
+        </Link>
+      );
+    case 'SETTLEMENT_ACCOUNT':
+      // targetId는 계좌 행 번호라 화면이 없다. 계좌는 매장 상세에서 본다
+      return storeId == null ? (
+        <span>{text}</span>
+      ) : (
+        <Link to="/stores/$storeId" params={{ storeId }} className={linkClass}>
+          {text}
+        </Link>
+      );
+    case 'REFUND':
+      return (
+        <Link to="/tasks/refunds" search={{ refundId: targetId }} className={linkClass}>
+          {text}
+        </Link>
+      );
+    case 'DEPOSIT_RECORD':
+      // 입금 기록은 단건 조회가 없어 목록으로 연다
+      return (
+        <Link to="/tasks/deposits" search={{ view: 'records' }} className={linkClass}>
           {text}
         </Link>
       );

@@ -22,7 +22,15 @@ const summary = {
   to: 'y',
   newUserCount: 128,
   newSellerCount: 3,
-  orderCounts: { submitted: 21, confirmed: 34, made: 18, pickedUp: 78, canceled: 12 },
+  orderCounts: {
+    pendingPayment: 5,
+    submitted: 21,
+    confirmed: 34,
+    made: 18,
+    pickedUp: 78,
+    noShow: 2,
+    canceled: 12,
+  },
   orderAmountSum: 4812000,
   activeStoreCount: 42,
   activeProductCount: 517,
@@ -66,7 +74,7 @@ describe('DashboardPage', () => {
     );
     boot();
     expect(await screen.findByText('4,812,000원')).toBeInTheDocument();
-    expect(screen.getByText('주문 163건')).toBeInTheDocument();
+    expect(screen.getByText('주문 170건')).toBeInTheDocument();
     expect(screen.getByText('7건')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '처리 필요' })).toHaveAttribute('href', '/reports');
     const table = screen.getByRole('table', { name: '주문 상태별 건수' });
@@ -91,10 +99,12 @@ describe('DashboardPage', () => {
   );
 
   it.each([
+    ['입금 대기', '5건'],
     ['접수', '21건'],
     ['주문 확정', '34건'],
     ['제작 완료', '18건'],
     ['픽업 완료', '78건'],
+    ['노쇼', '2건'],
     ['취소', '12건'],
   ])('상태 분포 표에서 %s는 %s', async (label, count) => {
     server.use(
@@ -107,9 +117,24 @@ describe('DashboardPage', () => {
     expect(header.closest('tr')).toHaveTextContent(`${label}${count}`);
   });
 
+  it('상태 분포는 흐름 순서 뒤에 종료 상태로 7개 상태를 모두 싣고 주문 금액은 입금 대기를 뺀다', async () => {
+    server.use(
+      gqlOk('AdminDashboardSummary', { adminDashboardSummary: summary }),
+      gqlOk('AdminSearchKeywordSnapshot', { adminSearchKeywordSnapshot: snapshot }),
+    );
+    boot();
+    const table = await screen.findByRole('table', { name: '주문 상태별 건수' });
+    expect(
+      within(table)
+        .getAllByRole('rowheader')
+        .map((h) => h.textContent),
+    ).toEqual(['입금 대기', '접수', '주문 확정', '제작 완료', '픽업 완료', '노쇼', '취소']);
+    expect(screen.getByText('주문 금액 (취소·입금 대기 제외)')).toBeInTheDocument();
+  });
+
   // CardHeader는 grid라 flex-row를 덧붙여도 한 줄이 되지 않았다. 보조 문구는 CardDescription 자리에 둔다
   it.each([
-    ['주문 상태 분포', '기간 내 주문 163건'],
+    ['주문 상태 분포', '기간 내 주문 170건'],
     ['검색어 순위', '09-27 17:00 기준 집계'],
   ])('%s 카드의 보조 문구는 카드 설명 자리에 있다', async (title, caption) => {
     server.use(

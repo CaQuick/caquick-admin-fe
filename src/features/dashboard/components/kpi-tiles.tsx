@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { formatCount, formatKrw } from '@/shared/lib/format';
 import { Card } from '@/shared/ui/card';
 
+import { orderCountTotal } from '../order-count-keys';
 import { type DashboardSummary } from './types';
 
 function Tile({
@@ -36,12 +37,11 @@ function Tile({
 }
 
 export function KpiTiles({ summary }: { summary: DashboardSummary }) {
-  const c = summary.orderCounts;
-  const orderTotal = c.submitted + c.confirmed + c.made + c.pickedUp + c.canceled;
+  const orderTotal = orderCountTotal(summary.orderCounts);
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Tile
-        label="주문 금액 (취소 제외)"
+        label="주문 금액 (취소·입금 대기 제외)"
         value={formatKrw(summary.orderAmountSum)}
         note={`주문 ${formatCount(orderTotal)}건`}
       />

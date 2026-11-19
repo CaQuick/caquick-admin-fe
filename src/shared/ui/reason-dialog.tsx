@@ -17,6 +17,8 @@ interface Props {
   trigger: ReactNode;
   title: string;
   description?: ReactNode;
+  /** 사유 칸 위에 덧붙일 내용(경고 등). 열려 있을 때만 그린다 */
+  children?: ReactNode;
   reasonLabel?: string;
   /** false면 사유를 비워도 된다 */
   reasonRequired?: boolean;
@@ -32,6 +34,7 @@ export function ReasonDialog({
   trigger,
   title,
   description,
+  children,
   reasonLabel = '사유',
   reasonRequired = true,
   maxLength = 500,
@@ -43,7 +46,9 @@ export function ReasonDialog({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const trimmed = reason.trim();
-  const invalid = (reasonRequired && trimmed.length === 0) || trimmed.length > maxLength;
+  // BE처럼 코드 포인트로 센다(이모지도 1자)
+  const length = [...trimmed].length;
+  const invalid = (reasonRequired && length === 0) || length > maxLength;
   const submit = async () => {
     setBusy(true);
     try {
@@ -64,6 +69,7 @@ export function ReasonDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
+        {children}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="reason-dialog-input">
             {reasonLabel}
@@ -74,12 +80,11 @@ export function ReasonDialog({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            maxLength={maxLength + 50}
           />
           <span
-            className={`text-xs tabular-nums ${trimmed.length > maxLength ? 'text-negative-foreground' : 'text-muted-foreground'}`}
+            className={`text-xs tabular-nums ${length > maxLength ? 'text-negative-foreground' : 'text-muted-foreground'}`}
           >
-            {trimmed.length} / {maxLength}
+            {length} / {maxLength}
           </span>
         </div>
         <DialogFooter>

@@ -1,11 +1,12 @@
-import { queryOptions } from '@tanstack/react-query';
+import { type QueryClient, queryOptions } from '@tanstack/react-query';
 
 import { graphql } from '@/graphql/generated';
 import { gqlRequest } from '@/shared/api';
 
 const dashboardKeys = {
   all: ['dashboard'] as const,
-  summary: (from: string, to: string) => [...dashboardKeys.all, 'summary', from, to] as const,
+  summaries: () => [...dashboardKeys.all, 'summary'] as const,
+  summary: (from: string, to: string) => [...dashboardKeys.summaries(), from, to] as const,
   keywords: (rankedAt: string | null, limit: number) =>
     [...dashboardKeys.all, 'keywords', rankedAt, limit] as const,
 };
@@ -18,10 +19,12 @@ const AdminDashboardSummaryDocument = graphql(/* GraphQL */ `
       newUserCount
       newSellerCount
       orderCounts {
+        pendingPayment
         submitted
         confirmed
         made
         pickedUp
+        noShow
         canceled
       }
       orderAmountSum
@@ -63,3 +66,7 @@ export function searchKeywordQueryOptions(rankedAt: string | null = null, limit 
         .adminSearchKeywordSnapshot,
   });
 }
+
+/** 기간 요약(주문 상태별 건수 등)을 다시 읽게 한다. 주문 상태를 바꾸는 다른 화면(처리 대기)이 부른다 */
+export const invalidateDashboard = (queryClient: QueryClient) =>
+  queryClient.invalidateQueries({ queryKey: dashboardKeys.summaries() });

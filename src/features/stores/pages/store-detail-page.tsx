@@ -4,6 +4,7 @@ import { ExternalLinkIcon, HistoryIcon } from 'lucide-react';
 
 import { AccountStatusPill } from '@/features/accounts';
 import { RegionName } from '@/features/regions';
+import { StoreSettlementAccountCard } from '@/features/settlements';
 import { messageFor } from '@/shared/api';
 import { parseCoordPair } from '@/shared/lib/coords';
 import { formatCount } from '@/shared/lib/format';
@@ -123,6 +124,7 @@ export function StoreDetailPage({ storeId }: { storeId: string }) {
               </dl>
             </CardContent>
           </Card>
+          <StoreSettlementAccountCard storeId={store.id} className="lg:col-span-2" />
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-sm">매장 정보</CardTitle>

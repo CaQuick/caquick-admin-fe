@@ -9,6 +9,9 @@ interface Props {
   /** URL 기준 현재 값 */
   value: string | undefined;
   onCommit: (v: string | undefined) => void;
+  /** 기본은 ID 숫자 검사. 금액처럼 규칙이 다른 필터는 자기 파서로 검사한다 */
+  validate?: (v: string) => boolean;
+  invalidMessage?: string;
 }
 
 /** 목록의 ID 필터. Enter나 포커스 이동으로 적용한다. 숫자가 아니면 커밋하지 않고 입력을 남긴 채 알린다(조용히 버리지 않는다). */
@@ -17,14 +20,21 @@ export function IdFilterInput(props: Props) {
   return <IdField key={props.value ?? ''} {...props} />;
 }
 
-function IdField({ label, placeholder = label, value, onCommit }: Props) {
+function IdField({
+  label,
+  placeholder = label,
+  value,
+  onCommit,
+  validate = isIdText,
+  invalidMessage = '숫자만 입력해 주세요.',
+}: Props) {
   const [invalid, setInvalid] = useState(false);
   const errorId = useId();
   // 마지막으로 적용한 값. 같으면 다시 커밋하지 않는다: Enter 뒤 blur가 한 번 더 오고, 커밋은 목록 커서를 처음으로 돌린다
   const committed = useRef(value);
   const commit = (raw: string) => {
     const v = raw.trim() || undefined;
-    if (v !== undefined && !isIdText(v)) return setInvalid(true);
+    if (v !== undefined && !validate(v)) return setInvalid(true);
     if (v === committed.current) return;
     committed.current = v;
     onCommit(v);
@@ -49,7 +59,7 @@ function IdField({ label, placeholder = label, value, onCommit }: Props) {
       />
       {invalid && (
         <span id={errorId} role="alert" className="text-xs text-negative-foreground">
-          숫자만 입력해 주세요.
+          {invalidMessage}
         </span>
       )}
     </span>

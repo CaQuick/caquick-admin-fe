@@ -56,11 +56,17 @@ export type AdminBannerListInput = {
   placement?: BannerPlacement | null | undefined;
 };
 
-/** 주문 강제 취소 입력. */
+/** 주문 강제 취소 입력. 허용 범위는 adminOrder.cancelOptions를 따른다. */
 export type AdminCancelOrderInput = {
-  /** 취소 사유. 필수. 최대 494자('[관리자] ' 접두를 붙여 500자 이내로 이력에 남는다). 감사 로그에도 기록된다. */
-  note: string;
+  /** 취소 사정. cancelOptions.refundRule이 BY_FAULT면 필수이고, 그 밖에는 무시한다. */
+  fault?: OrderCancelFaultType | null | undefined;
+  /** 취소 메모. 선택, 최대 500자. 상태 이력과 감사 로그에 남는다. */
+  note?: string | null | undefined;
   orderId: string | number;
+  /** 취소 사유. 필수. cancelOptions.reasons 중 하나여야 한다. */
+  reason: OrderCancelReasonType;
+  /** 돌려줄 금액(원, 0~cancelOptions.paidAmount). fault가 BUYER일 때 필수이고, 그 밖에는 무시한다. */
+  refundAmount?: number | null | undefined;
 };
 
 /** 카테고리 목록 조회 조건. */
@@ -69,6 +75,29 @@ export type AdminCategoryListInput = {
   categoryType?: CategoryType | null | undefined;
   /** 비활성 포함 여부. 기본 false. */
   includeInactive?: boolean | null | undefined;
+};
+
+/** 주문 픽업 완료 입력. 확정·제작 완료 주문만 처리할 수 있다. */
+export type AdminCompleteOrderPickupInput = {
+  /** 처리 메모. 선택, 최대 500자. 상태 이력과 감사 로그에 남는다. */
+  note?: string | null | undefined;
+  orderId: string | number;
+};
+
+/** 환불 송금 완료 입력. */
+export type AdminCompleteRefundInput = {
+  /** 처리 메모(선택, 500자 이하). 환불 기록에 남는다. */
+  note?: string | null | undefined;
+  refundId: string | number;
+};
+
+/** 입금 확인 입력. */
+export type AdminConfirmPaymentInput = {
+  /** 은행 앱에서 본 입금액(원, 0 이상 정수). 결제 금액과 같아야 확인된다(0원 주문은 0). */
+  depositedAmount: number;
+  /** 처리 메모(선택, 500자 이하). 결제 기록에 남는다. */
+  note?: string | null | undefined;
+  orderId: string | number;
 };
 
 /** 관리자 계정 생성 입력. */
@@ -123,6 +152,19 @@ export type AdminCreateCategoryInput = {
   name: string;
   /** 노출 순서. 미지정 시 0. */
   sortOrder?: number | null | undefined;
+};
+
+/** 입금 반환 연결 입력. */
+export type AdminCreateDepositReturnInput = {
+  /** 은행 앱에서 본 입금액(원, 1 이상). 이 금액 전액을 돌려준다. */
+  amount: number;
+  /** 은행 앱에 보인 입금 일시(선택). */
+  depositedAt?: string | null | undefined;
+  /** 은행 앱에 보인 입금자명(1~50자). */
+  depositorName: string;
+  /** 처리 메모(선택, 500자 이하). */
+  note?: string | null | undefined;
+  orderId: string | number;
 };
 
 /** 지역 생성 입력. */
@@ -237,6 +279,35 @@ export type AdminDeleteReviewInput = {
   reviewId: string | number;
 };
 
+/** 입금 기록 목록 조회 조건. */
+export type AdminDepositRecordListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 종류 필터. null이면 전체. */
+  kind?: DepositRecordKindType | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+};
+
+/** 종결 기록을 반환 대상으로 바꾸는 입력. */
+export type AdminLinkUnidentifiedDepositInput = {
+  depositRecordId: string | number;
+  orderId: string | number;
+};
+
+/** 송금 완료 입력. */
+export type AdminMarkSettlementPaidInput = {
+  /** 송금 메모(선택, 500자 이하). 정산과 감사 로그에 남는다. */
+  note?: string | null | undefined;
+  settlementId: string | number;
+};
+
+/** 월 수수료 집계 조건. */
+export type AdminMonthlyCommissionInput = {
+  /** 집계 월(KST). "YYYY-MM" 형식. 예: "2026-11". */
+  month: string;
+};
+
 /** 알림 발송 이력 조회 조건. 모든 필터는 AND로 결합된다. */
 export type AdminNotificationBroadcastListInput = {
   /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
@@ -280,6 +351,8 @@ export type AdminOrderListInput = {
   cursor?: string | null | undefined;
   /** 주문 생성 시각 하한(이상). */
   fromCreatedAt?: string | null | undefined;
+  /** true면 진행 중 주문(입금 대기·접수·확정·제작 완료)만. 기본 false, null도 false(전체)로 본다. status와 함께 오면 AND다. */
+  inProgress?: boolean | null | undefined;
   /** 주문번호·주문자 이름·연락처 부분일치 검색. 최대 100자. */
   keyword?: string | null | undefined;
   /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
@@ -290,6 +363,20 @@ export type AdminOrderListInput = {
   storeId?: string | number | null | undefined;
   /** 주문 생성 시각 상한(이하). */
   toCreatedAt?: string | null | undefined;
+};
+
+/** 입금 확인 대기 목록 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminPendingPaymentListInput = {
+  /** 결제 금액(원) 일치 필터. 은행 앱에서 본 입금액으로 주문을 찾는다. null이면 전체. */
+  amount?: number | null | undefined;
+  /** true면 구매자가 '입금했어요'를 누른 주문만. 기본 false, null도 false(전체)로 본다. */
+  claimedOnly?: boolean | null | undefined;
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. claimedOnly를 바꾸면 커서를 버리고 첫 페이지부터 다시 조회한다. */
+  cursor?: string | null | undefined;
+  /** 입금자명 부분일치 필터(최대 50자). 공백만 보내거나 null이면 전체. */
+  depositorName?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
 };
 
 /** 상품 목록 조회 조건. */
@@ -304,6 +391,30 @@ export type AdminProductListInput = {
   limit?: number | null | undefined;
   /** 소속 매장 ID 필터. 미지정 시 전체. */
   storeId?: string | number | null | undefined;
+};
+
+/** 주인 모를 입금 종결 기록 입력. */
+export type AdminRecordUnidentifiedDepositInput = {
+  /** 은행 앱에서 본 입금액(원, 1 이상). */
+  amount: number;
+  /** 은행 앱에 보인 입금 일시(선택). */
+  depositedAt?: string | null | undefined;
+  /** 은행 앱에 보인 입금자명(1~50자). */
+  depositorName: string;
+  /** 종결 사유 메모(필수, 500자 이하). */
+  note: string;
+};
+
+/** 환불 목록 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminRefundListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
+  cursor?: string | null | undefined;
+  /** 종류 필터. null이면 전체. */
+  kind?: RefundKindType | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 진행 상태 필터. null이면 전체. */
+  status?: RefundStatusType | null | undefined;
 };
 
 /** 지역 목록 조회 조건. */
@@ -457,6 +568,20 @@ export type AdminSetStoreActiveInput = {
   storeId: string | number;
 };
 
+/** 주간 정산 목록 조회 조건. 모든 필터는 AND로 결합된다. */
+export type AdminSettlementListInput = {
+  /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. 필터를 바꾸면 커서를 버리고 첫 페이지부터 다시 조회한다. */
+  cursor?: string | null | undefined;
+  /** 한 번에 가져올 개수. 기본 20, 1~100만 허용하며 벗어나면 BAD_USER_INPUT. */
+  limit?: number | null | undefined;
+  /** 정산 기간 시작일(월요일, KST, YYYY-MM-DD) 필터. 관리자 알림 링크의 periodStart와 같다. null이면 전체. */
+  periodStart?: string | null | undefined;
+  /** 송금 상태 필터. null이면 전체. */
+  status?: SettlementStatusType | null | undefined;
+  /** 매장 필터. null이면 전체. */
+  storeId?: string | number | null | undefined;
+};
+
 /** 매장 목록 조회 조건. */
 export type AdminStoreListInput = {
   /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
@@ -531,6 +656,20 @@ export type AdminUpdateCategoryInput = {
   sortOrder?: number | null | undefined;
 };
 
+/** 결제 설정 변경 입력. 보낸 필드만 바꾼다. */
+export type AdminUpdatePaymentSettingInput = {
+  /** 판매 수수료율(bp). 0~10000 정수. 생략·null이면 그대로 둔다. */
+  commissionRateBps?: number | null | undefined;
+  /** 케이퀵 입금 계좌 예금주(1~50자). 생략·null이면 그대로 둔다. */
+  depositAccountHolder?: string | null | undefined;
+  /** 케이퀵 입금 계좌번호. 하이픈을 빼고 숫자 8~20자리여야 하며 숫자만 저장한다. 생략·null이면 그대로 둔다. */
+  depositAccountNumber?: string | null | undefined;
+  /** 케이퀵 입금 계좌 은행 코드(paymentBanks의 code). 생략·null이면 그대로 둔다. */
+  depositBankCode?: string | null | undefined;
+  /** 변경 사유(필수, 500자 이하). 감사 로그에 남는다. */
+  reason: string;
+};
+
 /** 지역 수정 입력. 전달한 필드만 변경된다. */
 export type AdminUpdateRegionInput = {
   /** 중심 위도. null이면 제거. */
@@ -601,6 +740,19 @@ export type AdminUpdateTagInput = {
   tagId: string | number;
 };
 
+/** 매장 정산 계좌 등록·변경 입력(관리자 대리 수정). */
+export type AdminUpsertStoreSettlementAccountInput = {
+  /** 예금주(1~50자). */
+  accountHolder: string;
+  /** 계좌번호. 하이픈을 빼고 숫자 8~20자리여야 하며 숫자만 저장한다. */
+  accountNumber: string;
+  /** 은행 코드(paymentBanks의 code). */
+  bankCode: string;
+  /** 변경 사유(필수, 500자 이하). 감사 로그에 남는다. */
+  reason: string;
+  storeId: string | number;
+};
+
 /** 구매자 목록 조회 조건. */
 export type AdminUserListInput = {
   /** 이전 응답의 nextCursor. 첫 페이지는 생략한다. */
@@ -624,7 +776,7 @@ export type AuditActionType =
   /** 수정. */
   | 'UPDATE';
 
-/** 감사 로그가 가리키는 대상 종류. 판매자 화면(sellerAuditLogs)은 STORE·PRODUCT·ORDER·CONVERSATION·CHANGE_PASSWORD만 노출하고 필터 입력도 그 범위만 받는다. */
+/** 감사 로그가 가리키는 대상 종류. 판매자 화면(sellerAuditLogs)은 STORE·PRODUCT·ORDER·CONVERSATION·CHANGE_PASSWORD·SETTLEMENT_ACCOUNT만 노출하고 필터 입력도 그 범위만 받는다. */
 export type AuditTargetType =
   /** 계정(관리자·판매자 생성, 정지/복구, 비밀번호 초기화). */
   | 'ACCOUNT'
@@ -636,12 +788,18 @@ export type AuditTargetType =
   | 'CHANGE_PASSWORD'
   /** 구매자 문의 대화. */
   | 'CONVERSATION'
+  /** 입금 기록(반환 연결·주인 모를 입금 종결). */
+  | 'DEPOSIT_RECORD'
   /** 관리자 알림 발송. */
   | 'NOTIFICATION'
   /** 주문 상태 변경. */
   | 'ORDER'
+  /** 플랫폼 결제 설정(수수료율·입금 계좌). */
+  | 'PAYMENT_SETTING'
   /** 상품과 그 하위. */
   | 'PRODUCT'
+  /** 환불(완료 처리). */
+  | 'REFUND'
   /** 지역 마스터. */
   | 'REGION'
   /** 리뷰 강제 삭제. */
@@ -652,6 +810,10 @@ export type AuditTargetType =
   | 'REVIEW_REPORT'
   /** 검색 진입 화면 키워드 바로가기 칩. 순서 변경은 순서가 바뀐 칩마다 1건씩 남는다. */
   | 'SEARCH_KEYWORD_CHIP'
+  /** 주간 정산(송금 완료 처리). */
+  | 'SETTLEMENT'
+  /** 매장 정산 계좌(판매자 본인·관리자 대리 수정). 기록에는 계좌번호 끝 4자리만 남고, 판매자 감사 로그에도 보인다. */
+  | 'SETTLEMENT_ACCOUNT'
   /** 매장 설정·콘텐츠. */
   | 'STORE'
   /** 태그 마스터. */
@@ -701,6 +863,15 @@ export type BannerPlacement =
   /** 예약값. 이 자리를 읽는 구매자 쿼리가 없어 등록해도 노출되지 않는다. */
   | 'STORE';
 
+/** 지금 상태에서 취소할 때의 환불 규칙. */
+export type CancelRefundRuleType =
+  /** 사정에 따라: 판매자 사정은 전액, 구매자 사정은 0~결제액 중 입력한 금액(확정·제작 완료). */
+  | 'BY_FAULT'
+  /** 결제액 전액 환불(접수). */
+  | 'FULL_REFUND'
+  /** 환불 없음(입금 대기). */
+  | 'NO_REFUND';
+
 /** 상품 카테고리 분류. */
 export type CategoryType =
   /** 상황·이벤트 기준 분류(생일, 기념일 등). 홈 화면 칩에는 이 분류만 노출된다. */
@@ -718,6 +889,49 @@ export type CursorInput = {
   limit?: number | null | undefined;
 };
 
+/**
+ * 주문 커스텀 이미지 종류. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다.
+ * 3D 옆면은 옆면 고도 asin(0.4) 정사영이고 좌·우는 정면을 보는 사람 기준이다.
+ */
+export type CustomImageKindType =
+  /** 슬롯형 합성 이미지(바탕 + 문구, 구매자가 본 그대로). 대표 이미지다. */
+  | 'SLOT_COMPOSITE'
+  /** 3D 옆면 뒤(정면 반대). */
+  | 'THREE_D_BACK'
+  /** 3D 옆면 정면(yaw 0). */
+  | 'THREE_D_FRONT'
+  /** 3D 옆면 왼쪽. */
+  | 'THREE_D_LEFT'
+  /** 3D 옆면 오른쪽. */
+  | 'THREE_D_RIGHT'
+  /** 3D 윗면(위에서 내려다본 정사각). 대표 이미지다. */
+  | 'THREE_D_TOP';
+
+/** 상품의 커스텀 방식. 방식이 있는 상품은 구매자가 꾸민 내용 없이 주문할 수 없다. */
+export type CustomModeType =
+  /** 커스텀 없음. 옵션만 고르고 주문한다. */
+  | 'NONE'
+  /** 슬롯형. 판매자가 정한 바탕 이미지 위 문구 자리에 문구를 넣는다(자유 편집은 상품별 선택). */
+  | 'SLOT'
+  /** 3D. 모양·크기 등 옵션을 3D 케이크로 꾸민다. 자유 편집은 없다. */
+  | 'THREE_D';
+
+/** 문구 자리 안 글자 정렬. */
+export type CustomTextAlignType =
+  /** 가운데 정렬. */
+  | 'CENTER'
+  /** 왼쪽 정렬. */
+  | 'LEFT'
+  /** 오른쪽 정렬. */
+  | 'RIGHT';
+
+/** 입금 기록 종류. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type DepositRecordKindType =
+  /** 주문에 연결해 돌려주는 입금. 같은 금액의 입금 반환 환불이 함께 있다. */
+  | 'RETURN'
+  /** 주인을 알 수 없어 메모로 종결한 입금. */
+  | 'UNIDENTIFIED';
+
 /** 소셜 로그인 Provider 종류 */
 export type IdentityProvider =
   /** 구글 OIDC. */
@@ -725,24 +939,110 @@ export type IdentityProvider =
   /** 카카오 OIDC. */
   | 'KAKAO';
 
+/** 주문·결제·정산 기록을 남긴 주체. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type OrderActorType =
+  /** 관리자. */
+  | 'ADMIN'
+  /** 구매자. */
+  | 'BUYER'
+  /** 판매자. */
+  | 'SELLER'
+  /** 시스템 자동 처리. */
+  | 'SYSTEM';
+
+/** 확정·제작 완료 뒤 취소의 사정. 환불액이 갈린다(판매자 사정 = 전액, 구매자 사정 = 취소자가 정한 금액). */
+export type OrderCancelFaultType =
+  /** 구매자 사정. */
+  | 'BUYER'
+  /** 판매자 사정. */
+  | 'SELLER';
+
 /**
- * 주문 상태. 구매자·판매자 API가 공용으로 쓴다.
+ * 취소 사유. 값은 늘어날 수 있으니 모르는 값은 reasonLabel(또는 '기타')로 보여 준다.
+ * 판매자는 앞의 여섯 값, 관리자는 여기에 입금 대기 주문의 PAYMENT_NOT_RECEIVED, 구매자는 BUYER_REQUEST(서버가 정한다)를 쓴다.
+ */
+export type OrderCancelReasonType =
+  /** 구매자 요청. */
+  | 'BUYER_REQUEST'
+  /** 판매자가 확정 마감까지 확정하지 않아 자동 취소. */
+  | 'CONFIRM_TIMEOUT'
+  /** 제작할 수 없는 디자인. */
+  | 'DESIGN_NOT_FEASIBLE'
+  /** 부적절한 요청. */
+  | 'INAPPROPRIATE_REQUEST'
+  /** 기타. 결제 도입 전 취소 기록도 이 값이다. */
+  | 'OTHER'
+  /** 재료 소진. */
+  | 'OUT_OF_MATERIALS'
+  /** 미입금. 입금 기한이 지났거나 관리자가 입금이 없다고 판단한 입금 대기 주문. */
+  | 'PAYMENT_NOT_RECEIVED'
+  /** 일정 불가. */
+  | 'SCHEDULE_UNAVAILABLE';
+
+/**
+ * 주문 상태. 구매자·판매자·관리자 API가 공용으로 쓴다. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다.
  *
- * 전이는 `SUBMITTED → CONFIRMED → MADE → PICKED_UP` 한 방향이며 각 단계는 직전
- * 상태에서만 진입할 수 있다. `CANCELED`는 `PICKED_UP` 이전 세 상태에서만 가능하고,
- * 어떤 상태에서도 `SUBMITTED`로 되돌아갈 수 없다.
+ * 흐름은 `PENDING_PAYMENT → SUBMITTED → CONFIRMED → MADE → PICKED_UP`이며 어떤 상태에서도
+ * 앞 단계로 되돌아갈 수 없다. 판매자가 sellerUpdateOrderStatus로 바꿀 수 있는 전이는 `SUBMITTED → CONFIRMED`,
+ * `CONFIRMED → MADE`, `CONFIRMED·MADE → PICKED_UP·NO_SHOW`뿐이고, 취소는 주체별 취소 mutation(cancelMyOrder·sellerCancelOrder·adminCancelOrder)으로만 한다.
+ * 관리자도 adminCompleteOrderPickup으로 확정·제작 완료 주문을 픽업 완료할 수 있다.
+ * 시스템은 입금 기한(1시간)이 지난 입금 대기를 취소하고, 확정 마감이 지난 접수를 취소(전액 환불)하며,
+ * 픽업 시각 + 24시간이 지난 확정·제작 완료를 픽업 완료로 바꾼다. 판매자에게는 입금이 확인된(접수된) 주문만 보인다.
  */
 export type OrderStatusType =
-  /** 취소된 종료 상태. 취소 처리에는 사유(note)가 필수다. */
+  /** 취소된 종료 상태. 주체·사유·사정·환불은 주문 상세의 cancellation에 있다. */
   | 'CANCELED'
   /** 판매자가 주문을 확인·수락한 상태. 제작 대기. */
   | 'CONFIRMED'
   /** 판매자가 제작을 완료해 픽업을 기다리는 상태. "주문 생성됨"이 아니다. */
   | 'MADE'
+  /** 노쇼. 구매자가 픽업 시간에 오지 않아 판매자가 처리한 종료 상태. 환불 없음, 리뷰 불가. */
+  | 'NO_SHOW'
+  /** 입금 대기. 주문 직후 계좌이체 입금을 기다리는 상태이고, 판매자에게 보이지 않는다. */
+  | 'PENDING_PAYMENT'
   /** 구매자가 수령을 마친 종료 상태. 이후 상태 변경 불가. */
   | 'PICKED_UP'
-  /** 구매자가 주문을 넣은 직후의 초기 상태. 판매자 확인 대기. */
+  /** 입금이 확인돼 접수된 상태. 판매자 확인 대기. */
   | 'SUBMITTED';
+
+/** 입금을 확인한 경로. */
+export type PaymentConfirmSourceType =
+  /** 관리자가 은행 앱에서 확인. */
+  | 'ADMIN'
+  /** 입금 알림 자동 매칭. 아직 쓰지 않는다. */
+  | 'AUTO';
+
+/** 결제 수단. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type PaymentMethodType =
+  /** 계좌이체(케이퀵 계좌로 입금). */
+  | 'BANK_TRANSFER'
+  /** 토스 결제. 아직 쓰지 않는다. */
+  | 'TOSS';
+
+/** 결제 상태. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type PaymentStatusType =
+  /** 입금 전에 주문이 취소됨. */
+  | 'CANCELED'
+  /** 입금 확인됨. 주문이 나중에 취소돼도 이 값으로 남고 돌려줄 돈은 환불이 맡는다. */
+  | 'CONFIRMED'
+  /** 입금 대기. */
+  | 'PENDING';
+
+/** 환불 종류. */
+export type RefundKindType =
+  /** 주문 취소 환불. */
+  | 'CANCEL'
+  /** 주문과 별개로 들어온 입금을 돌려주는 반환. */
+  | 'DEPOSIT_RETURN';
+
+/** 환불 진행 상태. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type RefundStatusType =
+  /** 구매자의 환불 계좌 입력 대기. */
+  | 'AWAITING_ACCOUNT'
+  /** 계좌가 입력돼 케이퀵 송금 대기. */
+  | 'AWAITING_TRANSFER'
+  /** 송금 완료. */
+  | 'COMPLETED';
 
 /** 리뷰 첨부 미디어 종류. */
 export type ReviewMediaType =
@@ -771,6 +1071,13 @@ export type ReviewReportStatus =
   /** 처리됨(대상 삭제). */
   | 'RESOLVED';
 
+/** 주간 정산 상태. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type SettlementStatusType =
+  /** 송금 완료. */
+  | 'PAID'
+  /** 케이퀵의 매장 송금 대기. */
+  | 'PENDING';
+
 /** 매장 지도 연동 provider. 구매자·판매자 API가 공용으로 쓴다. */
 export type StoreMapProvider =
   /** 카카오맵 딥링크를 쓴다. */
@@ -782,11 +1089,14 @@ export type StoreMapProvider =
 
 /**
  * 업로드 용도. 용도마다 저장 경로가 다르고, 저장 입력은 같은 용도로 발급된 URL만 받는다.
- * 역할별 허용 범위: 판매자 PRODUCT_IMAGE·STORE_IMAGE, 관리자 BANNER_IMAGE·STORE_IMAGE(밖이면 BAD_USER_INPUT).
+ * 역할별 허용 범위: 판매자 PRODUCT_IMAGE·STORE_IMAGE·CONVERSATION_IMAGE, 관리자 BANNER_IMAGE·STORE_IMAGE(밖이면 BAD_USER_INPUT).
+ * 최대 크기는 CONVERSATION_IMAGE 10MB, 그 밖의 용도 5MB다.
  */
 export type UploadPurpose =
   /** 플랫폼 배너 이미지(관리자). */
   | 'BANNER_IMAGE'
+  /** 채팅 첨부 이미지(판매자). sellerSendConversationMessage의 IMAGE 메시지가 이 용도 URL만 받는다. */
+  | 'CONVERSATION_IMAGE'
   /** 상품 이미지·커스텀 도안 바탕·옵션 선택지 이미지·커스텀 템플릿 바탕(판매자). */
   | 'PRODUCT_IMAGE'
   /** 매장 프로필(로고) 이미지(판매자·관리자). */
@@ -950,7 +1260,7 @@ export type AdminDashboardSummaryQueryVariables = Exact<{
 }>;
 
 
-export type AdminDashboardSummaryQuery = { adminDashboardSummary: { from: string, to: string, newUserCount: number, newSellerCount: number, orderAmountSum: number, activeStoreCount: number, activeProductCount: number, pendingReportCount: number, orderCounts: { submitted: number, confirmed: number, made: number, pickedUp: number, canceled: number } } };
+export type AdminDashboardSummaryQuery = { adminDashboardSummary: { from: string, to: string, newUserCount: number, newSellerCount: number, orderAmountSum: number, activeStoreCount: number, activeProductCount: number, pendingReportCount: number, orderCounts: { pendingPayment: number, submitted: number, confirmed: number, made: number, pickedUp: number, noShow: number, canceled: number } } };
 
 export type AdminSearchKeywordSnapshotQueryVariables = Exact<{
   input?: AdminSearchKeywordSnapshotInput | null | undefined;
@@ -997,14 +1307,14 @@ export type AdminOrdersQueryVariables = Exact<{
 }>;
 
 
-export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, storeName: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string }> } };
+export type AdminOrdersQuery = { adminOrders: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, orderNumber: string, accountId: string, storeId: string | null, storeName: string | null, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string, hasCustom: boolean }> } };
 
 export type AdminOrderQueryVariables = Exact<{
   orderId: string | number;
 }>;
 
 
-export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customTexts: Array<{ id: string, tokenKey: string, defaultText: string, valueText: string, sortOrder: number }>, freeEdits: Array<{ id: string, cropImageUrl: string, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null }> } };
+export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, requestNote: string | null, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, confirmDeadlineAt: string | null, autoPickupAt: string | null, noShowAt: string | null, commissionRateBps: number, expectedPayoutAmount: number | null, settlementBaseAmount: number | null, commissionAmount: number | null, settlementFinalizedAt: string | null, settlementId: string | null, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, payment: { method: PaymentMethodType, status: PaymentStatusType, amount: number, depositorName: string, depositAccountNumber: string, depositAccountHolder: string, expiresAt: string, buyerClaimedAt: string | null, confirmedAt: string | null, confirmSource: PaymentConfirmSourceType | null, confirmedByLabel: string | null, confirmNote: string | null, depositBank: { code: string, name: string } } | null, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, customMode: CustomModeType, customPreviewImageUrl: string | null, customBaseImageUrl: string | null, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customImages: Array<{ id: string, kind: CustomImageKindType, imageUrl: string }>, customTexts: Array<{ id: string, tokenKey: string, label: string, defaultText: string, valueText: string | null, posX: number, posY: number, width: number, height: number, textColor: string, textAlign: CustomTextAlignType, sortOrder: number }>, freeEdits: Array<{ id: string, posX: number, posY: number, width: number, height: number, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null, actorType: OrderActorType, cancelReason: OrderCancelReasonType | null, cancelFault: OrderCancelFaultType | null, refundAmount: number | null }>, refunds: Array<{ id: string, kind: RefundKindType, amount: number, status: RefundStatusType, accountHolder: string | null, accountNumberMasked: string | null, requestedAt: string, accountSubmittedAt: string | null, completedAt: string | null, bank: { code: string, name: string } | null }>, cancellation: { actorType: OrderActorType, reason: OrderCancelReasonType, reasonLabel: string, note: string | null, fault: OrderCancelFaultType | null, refundAmount: number, refundStatus: RefundStatusType | null, refundCompletedAt: string | null, canceledAt: string } | null, cancelOptions: { cancelable: boolean, reasons: Array<OrderCancelReasonType>, refundRule: CancelRefundRuleType | null, paidAmount: number }, pickupChanges: Array<{ id: string, fromPickupAt: string, toPickupAt: string, changedAt: string, note: string | null }> } };
 
 export type AdminOrdersStoreOptionsQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
@@ -1025,7 +1335,7 @@ export type AdminOrdersStoreNameQueryVariables = Exact<{
 }>;
 
 
-export type AdminOrdersStoreNameQuery = { adminStore: { store: { id: string, storeName: string } } };
+export type AdminOrdersStoreNameQuery = { adminStore: { store: { id: string, storeName: string, isActive: boolean } } };
 
 export type AdminOrdersBuyerNameQueryVariables = Exact<{
   accountId: string | number;
@@ -1041,19 +1351,26 @@ export type AdminCancelOrderMutationVariables = Exact<{
 
 export type AdminCancelOrderMutation = { adminCancelOrder: { id: string, status: OrderStatusType } };
 
+export type AdminCompleteOrderPickupMutationVariables = Exact<{
+  input: AdminCompleteOrderPickupInput;
+}>;
+
+
+export type AdminCompleteOrderPickupMutation = { adminCompleteOrderPickup: { id: string, status: OrderStatusType } };
+
 export type AdminProductsQueryVariables = Exact<{
   input?: AdminProductListInput | null | undefined;
 }>;
 
 
-export type AdminProductsQuery = { adminProducts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
+export type AdminProductsQuery = { adminProducts: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, thumbnailUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }> } };
 
 export type AdminProductQueryVariables = Exact<{
   productId: string | number;
 }>;
 
 
-export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, baseDesignImageUrl: string | null, isActive: boolean, createdAt: string, updatedAt: string }, categories: Array<{ id: string, categoryType: CategoryType, name: string, isActive: boolean }>, tags: Array<{ id: string, name: string }>, optionGroups: Array<{ id: string, name: string, description: string | null, isRequired: boolean, minSelect: number, maxSelect: number, optionRequiresDescription: boolean, optionRequiresImage: boolean, sortOrder: number, isActive: boolean, optionItems: Array<{ id: string, title: string, description: string | null, imageUrl: string | null, priceDelta: number, sortOrder: number, isActive: boolean }> }>, customTemplate: { id: string, baseImageUrl: string, isActive: boolean, textTokens: Array<{ id: string, tokenKey: string, defaultText: string, maxLength: number, sortOrder: number, isRequired: boolean }> } | null } };
+export type AdminProductQuery = { adminProduct: { storeIsActive: boolean, description: string | null, purchaseNotice: string | null, preparationTimeMinutes: number, imageUrls: Array<string>, reviewCount: number, orderItemCount: number, product: { id: string, storeId: string, storeName: string, name: string, regularPrice: number, salePrice: number | null, currency: string, customMode: CustomModeType, isActive: boolean, createdAt: string, updatedAt: string }, categories: Array<{ id: string, categoryType: CategoryType, name: string, isActive: boolean }>, tags: Array<{ id: string, name: string }>, optionGroups: Array<{ id: string, name: string, description: string | null, isRequired: boolean, minSelect: number, maxSelect: number, sortOrder: number, isActive: boolean, optionItems: Array<{ id: string, title: string, description: string | null, imageUrl: string | null, priceDelta: number, sortOrder: number, isActive: boolean, threeDKey: string | null }> }>, customTemplate: { id: string, baseImageUrl: string, freeEditEnabled: boolean, textTokens: Array<{ id: string, tokenKey: string, label: string, defaultText: string, maxLength: number, sortOrder: number, isRequired: boolean, textColor: string, textAlign: CustomTextAlignType }> } | null } };
 
 export type AdminProductStoreOptionsQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
@@ -1228,6 +1545,72 @@ export type AdminResetSellerPasswordMutationVariables = Exact<{
 
 export type AdminResetSellerPasswordMutation = { adminResetSellerPassword: boolean };
 
+export type AdminSettlementsQueryVariables = Exact<{
+  input?: AdminSettlementListInput | null | undefined;
+}>;
+
+
+export type AdminSettlementsQuery = { adminSettlements: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, periodStart: string, periodEnd: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, status: SettlementStatusType, paidAt: string | null, accountRegistered: boolean, createdAt: string }> } };
+
+export type AdminSettlementQueryVariables = Exact<{
+  settlementId: string | number;
+}>;
+
+
+export type AdminSettlementQuery = { adminSettlement: { id: string, storeId: string, storeName: string, periodStart: string, periodEnd: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, status: SettlementStatusType, paidAt: string | null, accountRegistered: boolean, createdAt: string, paidByLabel: string | null, paidNote: string | null, paidAccount: { accountHolder: string, accountNumberMasked: string, bank: { code: string, name: string } } | null, currentAccount: { storeId: string, accountHolder: string, accountNumber: string, accountNumberMasked: string, updatedByRole: OrderActorType, updatedAt: string, bank: { code: string, name: string } } | null, orders: Array<{ orderId: string, orderNumber: string, productName: string | null, status: OrderStatusType, commissionRateBps: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, settlementFinalizedAt: string }> } };
+
+export type AdminMarkSettlementPaidMutationVariables = Exact<{
+  input: AdminMarkSettlementPaidInput;
+}>;
+
+
+export type AdminMarkSettlementPaidMutation = { adminMarkSettlementPaid: { id: string, status: SettlementStatusType } };
+
+export type AdminMonthlyCommissionsQueryVariables = Exact<{
+  input: AdminMonthlyCommissionInput;
+}>;
+
+
+export type AdminMonthlyCommissionsQuery = { adminMonthlyCommissions: { month: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, stores: Array<{ storeId: string, storeName: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number }> } };
+
+export type AdminStoreSettlementAccountQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminStoreSettlementAccountQuery = { adminStoreSettlementAccount: { storeId: string, accountHolder: string, accountNumber: string, accountNumberMasked: string, updatedByRole: OrderActorType, updatedAt: string, bank: { code: string, name: string } } | null };
+
+export type AdminUpsertStoreSettlementAccountMutationVariables = Exact<{
+  input: AdminUpsertStoreSettlementAccountInput;
+}>;
+
+
+export type AdminUpsertStoreSettlementAccountMutation = { adminUpsertStoreSettlementAccount: { storeId: string } };
+
+export type AdminSettlementStorePickerQueryVariables = Exact<{
+  input?: AdminStoreListInput | null | undefined;
+}>;
+
+
+export type AdminSettlementStorePickerQuery = { adminStores: { items: Array<{ id: string, storeName: string, isActive: boolean }> } };
+
+export type AdminPaymentSettingQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminPaymentSettingQuery = { adminPaymentSetting: { commissionRateBps: number, depositAccountNumber: string | null, depositAccountHolder: string | null, updatedAt: string | null, depositBank: { code: string, name: string } | null } };
+
+export type AdminUpdatePaymentSettingMutationVariables = Exact<{
+  input: AdminUpdatePaymentSettingInput;
+}>;
+
+
+export type AdminUpdatePaymentSettingMutation = { adminUpdatePaymentSetting: { updatedAt: string | null } };
+
+export type AdminPaymentBanksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminPaymentBanksQuery = { paymentBanks: Array<{ code: string, name: string }> };
+
 export type AdminStoresQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
 }>;
@@ -1242,6 +1625,13 @@ export type AdminStoreQueryVariables = Exact<{
 
 export type AdminStoreQuery = { adminStore: { productCount: number, orderItemCount: number, store: { id: string, sellerAccountId: string, sellerLabel: string | null, storeName: string, storePhone: string, addressFull: string, addressCity: string | null, addressDistrict: string | null, addressNeighborhood: string | null, regionId: string | null, latitude: string | null, longitude: string | null, mapProvider: StoreMapProvider, websiteUrl: string | null, businessHoursText: string | null, profileImageUrl: string | null, greetingMessage: string | null, pickupSlotIntervalMinutes: number, minLeadTimeMinutes: number, maxDaysAhead: number, isActive: boolean, createdAt: string, updatedAt: string }, seller: { accountId: string, username: string | null, email: string | null, name: string | null, status: AccountStatus } } };
 
+export type AdminStoreInProgressOrderSummaryQueryVariables = Exact<{
+  storeId: string | number;
+}>;
+
+
+export type AdminStoreInProgressOrderSummaryQuery = { adminStoreInProgressOrderSummary: { totalCount: number, byStatus: Array<{ status: OrderStatusType, count: number }> } };
+
 export type AdminSetStoreActiveMutationVariables = Exact<{
   input: AdminSetStoreActiveInput;
 }>;
@@ -1255,6 +1645,109 @@ export type AdminUpdateStoreBasicInfoMutationVariables = Exact<{
 
 
 export type AdminUpdateStoreBasicInfoMutation = { adminUpdateStoreBasicInfo: { id: string, updatedAt: string } };
+
+export type AdminTaskCountsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminTaskCountsQuery = { adminTaskCounts: { claimedPayments: number, pendingPayments: number, refundsAwaitingAccount: number, refundsAwaitingTransfer: number, pendingSettlements: number } };
+
+export type AdminTasksPendingPaymentsQueryVariables = Exact<{
+  input?: AdminPendingPaymentListInput | null | undefined;
+}>;
+
+
+export type AdminTasksPendingPaymentsQuery = { adminPendingPayments: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ orderId: string, orderNumber: string, storeName: string | null, productName: string | null, amount: number, depositorName: string, buyerName: string, buyerPhone: string, createdAt: string, expiresAt: string, buyerClaimedAt: string | null, pickupAt: string }> } };
+
+export type AdminTasksOrderQueryVariables = Exact<{
+  orderId: string | number;
+}>;
+
+
+export type AdminTasksOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, totalPrice: number, createdAt: string, items: Array<{ id: string, productName: string }>, payment: { status: PaymentStatusType, amount: number, depositorName: string, expiresAt: string, buyerClaimedAt: string | null, confirmedAt: string | null, confirmedByLabel: string | null, confirmNote: string | null } | null, cancellation: { actorType: OrderActorType, reasonLabel: string, note: string | null, canceledAt: string } | null } };
+
+export type AdminTasksConfirmPaymentMutationVariables = Exact<{
+  input: AdminConfirmPaymentInput;
+}>;
+
+
+export type AdminTasksConfirmPaymentMutation = { adminConfirmPayment: { id: string, status: OrderStatusType } };
+
+export type AdminTasksCancelUnpaidMutationVariables = Exact<{
+  input: AdminCancelOrderInput;
+}>;
+
+
+export type AdminTasksCancelUnpaidMutation = { adminCancelOrder: { id: string, status: OrderStatusType } };
+
+export type AdminTasksDepositRecordsQueryVariables = Exact<{
+  input?: AdminDepositRecordListInput | null | undefined;
+}>;
+
+
+export type AdminTasksDepositRecordsQuery = { adminDepositRecords: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, kind: DepositRecordKindType, orderId: string | null, orderNumber: string | null, amount: number, depositorName: string, depositedAt: string | null, note: string | null, recordedByLabel: string | null, refundId: string | null, refundStatus: RefundStatusType | null, createdAt: string }> } };
+
+export type AdminTasksCreateDepositReturnMutationVariables = Exact<{
+  input: AdminCreateDepositReturnInput;
+}>;
+
+
+export type AdminTasksCreateDepositReturnMutation = { adminCreateDepositReturn: { id: string, refundId: string | null } };
+
+export type AdminTasksRecordUnidentifiedDepositMutationVariables = Exact<{
+  input: AdminRecordUnidentifiedDepositInput;
+}>;
+
+
+export type AdminTasksRecordUnidentifiedDepositMutation = { adminRecordUnidentifiedDeposit: { id: string } };
+
+export type AdminTasksLinkUnidentifiedDepositMutationVariables = Exact<{
+  input: AdminLinkUnidentifiedDepositInput;
+}>;
+
+
+export type AdminTasksLinkUnidentifiedDepositMutation = { adminLinkUnidentifiedDeposit: { id: string } };
+
+export type AdminTasksOrderOptionsQueryVariables = Exact<{
+  input?: AdminOrderListInput | null | undefined;
+}>;
+
+
+export type AdminTasksOrderOptionsQuery = { adminOrders: { items: Array<{ id: string, orderNumber: string, buyerName: string, totalPrice: number }> } };
+
+export type AdminTasksRefundsQueryVariables = Exact<{
+  input?: AdminRefundListInput | null | undefined;
+}>;
+
+
+export type AdminTasksRefundsQuery = { adminRefunds: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, kind: RefundKindType, amount: number, status: RefundStatusType, accountHolder: string | null, accountNumberMasked: string | null, requestedAt: string, accountSubmittedAt: string | null, orderId: string, orderNumber: string, buyerName: string, buyerPhone: string, storeName: string | null, productName: string | null, bank: { code: string, name: string } | null }> } };
+
+export type AdminTasksRefundQueryVariables = Exact<{
+  refundId: string | number;
+}>;
+
+
+export type AdminTasksRefundQuery = { adminRefund: { accountNumber: string | null, refund: { id: string, kind: RefundKindType, amount: number, status: RefundStatusType, accountHolder: string | null, accountNumberMasked: string | null, requestedAt: string, accountSubmittedAt: string | null, completedAt: string | null, orderId: string, orderNumber: string, buyerName: string, buyerPhone: string, storeName: string | null, productName: string | null, completedByLabel: string | null, completeNote: string | null, bank: { code: string, name: string } | null }, depositRecord: { id: string, depositorName: string, depositedAt: string | null, note: string | null } | null } };
+
+export type AdminTasksCompleteRefundMutationVariables = Exact<{
+  input: AdminCompleteRefundInput;
+}>;
+
+
+export type AdminTasksCompleteRefundMutation = { adminCompleteRefund: { id: string, status: RefundStatusType } };
+
+export type AdminTasksSettlementsQueryVariables = Exact<{
+  input?: AdminSettlementListInput | null | undefined;
+}>;
+
+
+export type AdminTasksSettlementsQuery = { adminSettlements: { totalCount: number, hasMore: boolean, nextCursor: string | null, items: Array<{ id: string, storeId: string, storeName: string, periodStart: string, periodEnd: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, status: SettlementStatusType, accountRegistered: boolean, createdAt: string }> } };
+
+export type AdminTasksSettlementQueryVariables = Exact<{
+  settlementId: string | number;
+}>;
+
+
+export type AdminTasksSettlementQuery = { adminSettlement: { id: string, storeId: string, storeName: string, periodStart: string, periodEnd: string, orderCount: number, settlementBaseAmount: number, commissionAmount: number, payoutAmount: number, status: SettlementStatusType, paidAt: string | null, accountRegistered: boolean, paidByLabel: string | null, paidNote: string | null, paidAccount: { accountHolder: string, accountNumberMasked: string, bank: { code: string, name: string } } | null, currentAccount: { accountHolder: string, accountNumber: string, bank: { code: string, name: string } } | null } };
 
 export type AdminCategoriesQueryVariables = Exact<{
   input?: AdminCategoryListInput | null | undefined;
@@ -1639,10 +2132,12 @@ export const AdminDashboardSummaryDocument = new TypedDocumentString(`
     newUserCount
     newSellerCount
     orderCounts {
+      pendingPayment
       submitted
       confirmed
       made
       pickedUp
+      noShow
       canceled
     }
     orderAmountSum
@@ -1754,6 +2249,7 @@ export const AdminOrdersDocument = new TypedDocumentString(`
       buyerPhone
       totalPrice
       createdAt
+      hasCustom
     }
     totalCount
     hasMore
@@ -1776,6 +2272,25 @@ export const AdminOrderDocument = new TypedDocumentString(`
     pickupAt
     buyerName
     buyerPhone
+    requestNote
+    payment {
+      method
+      status
+      amount
+      depositorName
+      depositBank {
+        code
+        name
+      }
+      depositAccountNumber
+      depositAccountHolder
+      expiresAt
+      buyerClaimedAt
+      confirmedAt
+      confirmSource
+      confirmedByLabel
+      confirmNote
+    }
     subtotalPrice
     discountPrice
     totalPrice
@@ -1801,16 +2316,34 @@ export const AdminOrderDocument = new TypedDocumentString(`
         optionTitle
         priceDelta
       }
+      customMode
+      customPreviewImageUrl
+      customBaseImageUrl
+      customImages {
+        id
+        kind
+        imageUrl
+      }
       customTexts {
         id
         tokenKey
+        label
         defaultText
         valueText
+        posX
+        posY
+        width
+        height
+        textColor
+        textAlign
         sortOrder
       }
       freeEdits {
         id
-        cropImageUrl
+        posX
+        posY
+        width
+        height
         descriptionText
         sortOrder
         attachments {
@@ -1826,7 +2359,59 @@ export const AdminOrderDocument = new TypedDocumentString(`
       toStatus
       changedAt
       note
+      actorType
+      cancelReason
+      cancelFault
+      refundAmount
     }
+    refunds {
+      id
+      kind
+      amount
+      status
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumberMasked
+      requestedAt
+      accountSubmittedAt
+      completedAt
+    }
+    cancellation {
+      actorType
+      reason
+      reasonLabel
+      note
+      fault
+      refundAmount
+      refundStatus
+      refundCompletedAt
+      canceledAt
+    }
+    cancelOptions {
+      cancelable
+      reasons
+      refundRule
+      paidAmount
+    }
+    confirmDeadlineAt
+    autoPickupAt
+    noShowAt
+    pickupChanges {
+      id
+      fromPickupAt
+      toPickupAt
+      changedAt
+      note
+    }
+    commissionRateBps
+    expectedPayoutAmount
+    settlementBaseAmount
+    commissionAmount
+    settlementFinalizedAt
+    settlementId
   }
 }
     `) as unknown as TypedDocumentString<AdminOrderQuery, AdminOrderQueryVariables>;
@@ -1859,6 +2444,7 @@ export const AdminOrdersStoreNameDocument = new TypedDocumentString(`
     store {
       id
       storeName
+      isActive
     }
   }
 }
@@ -1881,6 +2467,14 @@ export const AdminCancelOrderDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminCancelOrderMutation, AdminCancelOrderMutationVariables>;
+export const AdminCompleteOrderPickupDocument = new TypedDocumentString(`
+    mutation AdminCompleteOrderPickup($input: AdminCompleteOrderPickupInput!) {
+  adminCompleteOrderPickup(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCompleteOrderPickupMutation, AdminCompleteOrderPickupMutationVariables>;
 export const AdminProductsDocument = new TypedDocumentString(`
     query AdminProducts($input: AdminProductListInput) {
   adminProducts(input: $input) {
@@ -1892,7 +2486,7 @@ export const AdminProductsDocument = new TypedDocumentString(`
       regularPrice
       salePrice
       currency
-      baseDesignImageUrl
+      thumbnailUrl
       isActive
       createdAt
       updatedAt
@@ -1914,7 +2508,7 @@ export const AdminProductDocument = new TypedDocumentString(`
       regularPrice
       salePrice
       currency
-      baseDesignImageUrl
+      customMode
       isActive
       createdAt
       updatedAt
@@ -1943,8 +2537,6 @@ export const AdminProductDocument = new TypedDocumentString(`
       isRequired
       minSelect
       maxSelect
-      optionRequiresDescription
-      optionRequiresImage
       sortOrder
       isActive
       optionItems {
@@ -1955,19 +2547,23 @@ export const AdminProductDocument = new TypedDocumentString(`
         priceDelta
         sortOrder
         isActive
+        threeDKey
       }
     }
     customTemplate {
       id
       baseImageUrl
-      isActive
+      freeEditEnabled
       textTokens {
         id
         tokenKey
+        label
         defaultText
         maxLength
         sortOrder
         isRequired
+        textColor
+        textAlign
       }
     }
   }
@@ -2306,6 +2902,170 @@ export const AdminResetSellerPasswordDocument = new TypedDocumentString(`
   adminResetSellerPassword(input: $input)
 }
     `) as unknown as TypedDocumentString<AdminResetSellerPasswordMutation, AdminResetSellerPasswordMutationVariables>;
+export const AdminSettlementsDocument = new TypedDocumentString(`
+    query AdminSettlements($input: AdminSettlementListInput) {
+  adminSettlements(input: $input) {
+    items {
+      id
+      storeId
+      storeName
+      periodStart
+      periodEnd
+      orderCount
+      settlementBaseAmount
+      commissionAmount
+      payoutAmount
+      status
+      paidAt
+      accountRegistered
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSettlementsQuery, AdminSettlementsQueryVariables>;
+export const AdminSettlementDocument = new TypedDocumentString(`
+    query AdminSettlement($settlementId: ID!) {
+  adminSettlement(settlementId: $settlementId) {
+    id
+    storeId
+    storeName
+    periodStart
+    periodEnd
+    orderCount
+    settlementBaseAmount
+    commissionAmount
+    payoutAmount
+    status
+    paidAt
+    accountRegistered
+    createdAt
+    paidByLabel
+    paidNote
+    paidAccount {
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumberMasked
+    }
+    currentAccount {
+      storeId
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumber
+      accountNumberMasked
+      updatedByRole
+      updatedAt
+    }
+    orders {
+      orderId
+      orderNumber
+      productName
+      status
+      commissionRateBps
+      settlementBaseAmount
+      commissionAmount
+      payoutAmount
+      settlementFinalizedAt
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSettlementQuery, AdminSettlementQueryVariables>;
+export const AdminMarkSettlementPaidDocument = new TypedDocumentString(`
+    mutation AdminMarkSettlementPaid($input: AdminMarkSettlementPaidInput!) {
+  adminMarkSettlementPaid(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminMarkSettlementPaidMutation, AdminMarkSettlementPaidMutationVariables>;
+export const AdminMonthlyCommissionsDocument = new TypedDocumentString(`
+    query AdminMonthlyCommissions($input: AdminMonthlyCommissionInput!) {
+  adminMonthlyCommissions(input: $input) {
+    month
+    orderCount
+    settlementBaseAmount
+    commissionAmount
+    stores {
+      storeId
+      storeName
+      orderCount
+      settlementBaseAmount
+      commissionAmount
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminMonthlyCommissionsQuery, AdminMonthlyCommissionsQueryVariables>;
+export const AdminStoreSettlementAccountDocument = new TypedDocumentString(`
+    query AdminStoreSettlementAccount($storeId: ID!) {
+  adminStoreSettlementAccount(storeId: $storeId) {
+    storeId
+    bank {
+      code
+      name
+    }
+    accountHolder
+    accountNumber
+    accountNumberMasked
+    updatedByRole
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminStoreSettlementAccountQuery, AdminStoreSettlementAccountQueryVariables>;
+export const AdminUpsertStoreSettlementAccountDocument = new TypedDocumentString(`
+    mutation AdminUpsertStoreSettlementAccount($input: AdminUpsertStoreSettlementAccountInput!) {
+  adminUpsertStoreSettlementAccount(input: $input) {
+    storeId
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpsertStoreSettlementAccountMutation, AdminUpsertStoreSettlementAccountMutationVariables>;
+export const AdminSettlementStorePickerDocument = new TypedDocumentString(`
+    query AdminSettlementStorePicker($input: AdminStoreListInput) {
+  adminStores(input: $input) {
+    items {
+      id
+      storeName
+      isActive
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminSettlementStorePickerQuery, AdminSettlementStorePickerQueryVariables>;
+export const AdminPaymentSettingDocument = new TypedDocumentString(`
+    query AdminPaymentSetting {
+  adminPaymentSetting {
+    commissionRateBps
+    depositBank {
+      code
+      name
+    }
+    depositAccountNumber
+    depositAccountHolder
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminPaymentSettingQuery, AdminPaymentSettingQueryVariables>;
+export const AdminUpdatePaymentSettingDocument = new TypedDocumentString(`
+    mutation AdminUpdatePaymentSetting($input: AdminUpdatePaymentSettingInput!) {
+  adminUpdatePaymentSetting(input: $input) {
+    updatedAt
+  }
+}
+    `) as unknown as TypedDocumentString<AdminUpdatePaymentSettingMutation, AdminUpdatePaymentSettingMutationVariables>;
+export const AdminPaymentBanksDocument = new TypedDocumentString(`
+    query AdminPaymentBanks {
+  paymentBanks {
+    code
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<AdminPaymentBanksQuery, AdminPaymentBanksQueryVariables>;
 export const AdminStoresDocument = new TypedDocumentString(`
     query AdminStores($input: AdminStoreListInput) {
   adminStores(input: $input) {
@@ -2367,6 +3127,17 @@ export const AdminStoreDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminStoreQuery, AdminStoreQueryVariables>;
+export const AdminStoreInProgressOrderSummaryDocument = new TypedDocumentString(`
+    query AdminStoreInProgressOrderSummary($storeId: ID!) {
+  adminStoreInProgressOrderSummary(storeId: $storeId) {
+    totalCount
+    byStatus {
+      status
+      count
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminStoreInProgressOrderSummaryQuery, AdminStoreInProgressOrderSummaryQueryVariables>;
 export const AdminSetStoreActiveDocument = new TypedDocumentString(`
     mutation AdminSetStoreActive($input: AdminSetStoreActiveInput!) {
   adminSetStoreActive(input: $input) {
@@ -2383,6 +3154,279 @@ export const AdminUpdateStoreBasicInfoDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminUpdateStoreBasicInfoMutation, AdminUpdateStoreBasicInfoMutationVariables>;
+export const AdminTaskCountsDocument = new TypedDocumentString(`
+    query AdminTaskCounts {
+  adminTaskCounts {
+    claimedPayments
+    pendingPayments
+    refundsAwaitingAccount
+    refundsAwaitingTransfer
+    pendingSettlements
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTaskCountsQuery, AdminTaskCountsQueryVariables>;
+export const AdminTasksPendingPaymentsDocument = new TypedDocumentString(`
+    query AdminTasksPendingPayments($input: AdminPendingPaymentListInput) {
+  adminPendingPayments(input: $input) {
+    items {
+      orderId
+      orderNumber
+      storeName
+      productName
+      amount
+      depositorName
+      buyerName
+      buyerPhone
+      createdAt
+      expiresAt
+      buyerClaimedAt
+      pickupAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksPendingPaymentsQuery, AdminTasksPendingPaymentsQueryVariables>;
+export const AdminTasksOrderDocument = new TypedDocumentString(`
+    query AdminTasksOrder($orderId: ID!) {
+  adminOrder(orderId: $orderId) {
+    id
+    orderNumber
+    status
+    pickupAt
+    buyerName
+    buyerPhone
+    totalPrice
+    createdAt
+    items {
+      id
+      productName
+    }
+    payment {
+      status
+      amount
+      depositorName
+      expiresAt
+      buyerClaimedAt
+      confirmedAt
+      confirmedByLabel
+      confirmNote
+    }
+    cancellation {
+      actorType
+      reasonLabel
+      note
+      canceledAt
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksOrderQuery, AdminTasksOrderQueryVariables>;
+export const AdminTasksConfirmPaymentDocument = new TypedDocumentString(`
+    mutation AdminTasksConfirmPayment($input: AdminConfirmPaymentInput!) {
+  adminConfirmPayment(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksConfirmPaymentMutation, AdminTasksConfirmPaymentMutationVariables>;
+export const AdminTasksCancelUnpaidDocument = new TypedDocumentString(`
+    mutation AdminTasksCancelUnpaid($input: AdminCancelOrderInput!) {
+  adminCancelOrder(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksCancelUnpaidMutation, AdminTasksCancelUnpaidMutationVariables>;
+export const AdminTasksDepositRecordsDocument = new TypedDocumentString(`
+    query AdminTasksDepositRecords($input: AdminDepositRecordListInput) {
+  adminDepositRecords(input: $input) {
+    items {
+      id
+      kind
+      orderId
+      orderNumber
+      amount
+      depositorName
+      depositedAt
+      note
+      recordedByLabel
+      refundId
+      refundStatus
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksDepositRecordsQuery, AdminTasksDepositRecordsQueryVariables>;
+export const AdminTasksCreateDepositReturnDocument = new TypedDocumentString(`
+    mutation AdminTasksCreateDepositReturn($input: AdminCreateDepositReturnInput!) {
+  adminCreateDepositReturn(input: $input) {
+    id
+    refundId
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksCreateDepositReturnMutation, AdminTasksCreateDepositReturnMutationVariables>;
+export const AdminTasksRecordUnidentifiedDepositDocument = new TypedDocumentString(`
+    mutation AdminTasksRecordUnidentifiedDeposit($input: AdminRecordUnidentifiedDepositInput!) {
+  adminRecordUnidentifiedDeposit(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksRecordUnidentifiedDepositMutation, AdminTasksRecordUnidentifiedDepositMutationVariables>;
+export const AdminTasksLinkUnidentifiedDepositDocument = new TypedDocumentString(`
+    mutation AdminTasksLinkUnidentifiedDeposit($input: AdminLinkUnidentifiedDepositInput!) {
+  adminLinkUnidentifiedDeposit(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksLinkUnidentifiedDepositMutation, AdminTasksLinkUnidentifiedDepositMutationVariables>;
+export const AdminTasksOrderOptionsDocument = new TypedDocumentString(`
+    query AdminTasksOrderOptions($input: AdminOrderListInput) {
+  adminOrders(input: $input) {
+    items {
+      id
+      orderNumber
+      buyerName
+      totalPrice
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksOrderOptionsQuery, AdminTasksOrderOptionsQueryVariables>;
+export const AdminTasksRefundsDocument = new TypedDocumentString(`
+    query AdminTasksRefunds($input: AdminRefundListInput) {
+  adminRefunds(input: $input) {
+    items {
+      id
+      kind
+      amount
+      status
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumberMasked
+      requestedAt
+      accountSubmittedAt
+      orderId
+      orderNumber
+      buyerName
+      buyerPhone
+      storeName
+      productName
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksRefundsQuery, AdminTasksRefundsQueryVariables>;
+export const AdminTasksRefundDocument = new TypedDocumentString(`
+    query AdminTasksRefund($refundId: ID!) {
+  adminRefund(refundId: $refundId) {
+    refund {
+      id
+      kind
+      amount
+      status
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumberMasked
+      requestedAt
+      accountSubmittedAt
+      completedAt
+      orderId
+      orderNumber
+      buyerName
+      buyerPhone
+      storeName
+      productName
+      completedByLabel
+      completeNote
+    }
+    accountNumber
+    depositRecord {
+      id
+      depositorName
+      depositedAt
+      note
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksRefundQuery, AdminTasksRefundQueryVariables>;
+export const AdminTasksCompleteRefundDocument = new TypedDocumentString(`
+    mutation AdminTasksCompleteRefund($input: AdminCompleteRefundInput!) {
+  adminCompleteRefund(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksCompleteRefundMutation, AdminTasksCompleteRefundMutationVariables>;
+export const AdminTasksSettlementsDocument = new TypedDocumentString(`
+    query AdminTasksSettlements($input: AdminSettlementListInput) {
+  adminSettlements(input: $input) {
+    items {
+      id
+      storeId
+      storeName
+      periodStart
+      periodEnd
+      orderCount
+      settlementBaseAmount
+      commissionAmount
+      payoutAmount
+      status
+      accountRegistered
+      createdAt
+    }
+    totalCount
+    hasMore
+    nextCursor
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksSettlementsQuery, AdminTasksSettlementsQueryVariables>;
+export const AdminTasksSettlementDocument = new TypedDocumentString(`
+    query AdminTasksSettlement($settlementId: ID!) {
+  adminSettlement(settlementId: $settlementId) {
+    id
+    storeId
+    storeName
+    periodStart
+    periodEnd
+    orderCount
+    settlementBaseAmount
+    commissionAmount
+    payoutAmount
+    status
+    paidAt
+    accountRegistered
+    paidByLabel
+    paidNote
+    paidAccount {
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumberMasked
+    }
+    currentAccount {
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumber
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<AdminTasksSettlementQuery, AdminTasksSettlementQueryVariables>;
 export const AdminCategoriesDocument = new TypedDocumentString(`
     query AdminCategories($input: AdminCategoryListInput) {
   adminCategories(input: $input) {

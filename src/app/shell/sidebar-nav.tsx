@@ -27,6 +27,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             >
               <item.icon className="size-4 shrink-0 opacity-70" aria-hidden />
               {item.label}
+              {item.badge && <item.badge />}
             </Link>
           ))}
         </div>

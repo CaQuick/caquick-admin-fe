@@ -52,7 +52,11 @@ const columns: ColumnDef<AuditRow, unknown>[] = [
     id: 'target',
     header: '대상',
     cell: ({ row }) => (
-      <TargetLink targetType={row.original.targetType} targetId={row.original.targetId} />
+      <TargetLink
+        targetType={row.original.targetType}
+        targetId={row.original.targetId}
+        storeId={row.original.storeId}
+      />
     ),
   },
   {

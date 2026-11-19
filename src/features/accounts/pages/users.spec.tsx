@@ -128,6 +128,8 @@ describe('구매자', () => {
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('즉시 로그아웃되고 앱·판매자 센터를 이용할 수 없게 됩니다.');
     expect(dialog).not.toHaveTextContent('API');
+    // 매장도 숨기기는 판매자 정지에만 있다
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: '계정 정지' })).toBeDisabled();
     await userEvent.type(within(dialog).getByLabelText('정지 사유 (필수)'), ' 욕설 신고 누적 ');
     await userEvent.click(within(dialog).getByRole('button', { name: '계정 정지' }));

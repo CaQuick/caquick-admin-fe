@@ -21,6 +21,7 @@ import { Route as AuthedShellRegionsRouteImport } from './routes/_authed/_shell/
 import { Route as AuthedShellReviewCommentsRouteImport } from './routes/_authed/_shell/review-comments'
 import { Route as AuthedShellReviewsRouteImport } from './routes/_authed/_shell/reviews'
 import { Route as AuthedShellSearchChipsRouteImport } from './routes/_authed/_shell/search-chips'
+import { Route as AuthedShellSettingsRouteImport } from './routes/_authed/_shell/settings'
 import { Route as AuthedShellTagsRouteImport } from './routes/_authed/_shell/tags'
 import { Route as AuthedShellBannersIndexRouteImport } from './routes/_authed/_shell/banners/index'
 import { Route as AuthedShellBannersBannerIdRouteImport } from './routes/_authed/_shell/banners/$bannerId'
@@ -36,8 +37,15 @@ import { Route as AuthedShellReportsReportIdRouteImport } from './routes/_authed
 import { Route as AuthedShellSellersIndexRouteImport } from './routes/_authed/_shell/sellers/index'
 import { Route as AuthedShellSellersAccountIdRouteImport } from './routes/_authed/_shell/sellers/$accountId'
 import { Route as AuthedShellSellersNewRouteImport } from './routes/_authed/_shell/sellers/new'
+import { Route as AuthedShellSettlementsIndexRouteImport } from './routes/_authed/_shell/settlements/index'
+import { Route as AuthedShellSettlementsSettlementIdRouteImport } from './routes/_authed/_shell/settlements/$settlementId'
+import { Route as AuthedShellSettlementsMonthlyRouteImport } from './routes/_authed/_shell/settlements/monthly'
 import { Route as AuthedShellStoresIndexRouteImport } from './routes/_authed/_shell/stores/index'
 import { Route as AuthedShellStoresStoreIdRouteImport } from './routes/_authed/_shell/stores/$storeId'
+import { Route as AuthedShellTasksIndexRouteImport } from './routes/_authed/_shell/tasks/index'
+import { Route as AuthedShellTasksDepositsRouteImport } from './routes/_authed/_shell/tasks/deposits'
+import { Route as AuthedShellTasksRefundsRouteImport } from './routes/_authed/_shell/tasks/refunds'
+import { Route as AuthedShellTasksSettlementsRouteImport } from './routes/_authed/_shell/tasks/settlements'
 import { Route as AuthedShellUsersIndexRouteImport } from './routes/_authed/_shell/users/index'
 import { Route as AuthedShellUsersAccountIdRouteImport } from './routes/_authed/_shell/users/$accountId'
 
@@ -98,6 +106,11 @@ const AuthedShellReviewsRoute = AuthedShellReviewsRouteImport.update({
 const AuthedShellSearchChipsRoute = AuthedShellSearchChipsRouteImport.update({
   id: '/search-chips',
   path: '/search-chips',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellSettingsRoute = AuthedShellSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthedShellRoute,
 } as any)
 const AuthedShellTagsRoute = AuthedShellTagsRouteImport.update({
@@ -183,6 +196,24 @@ const AuthedShellSellersNewRoute = AuthedShellSellersNewRouteImport.update({
   path: '/sellers/new',
   getParentRoute: () => AuthedShellRoute,
 } as any)
+const AuthedShellSettlementsIndexRoute =
+  AuthedShellSettlementsIndexRouteImport.update({
+    id: '/settlements/',
+    path: '/settlements/',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellSettlementsSettlementIdRoute =
+  AuthedShellSettlementsSettlementIdRouteImport.update({
+    id: '/settlements/$settlementId',
+    path: '/settlements/$settlementId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellSettlementsMonthlyRoute =
+  AuthedShellSettlementsMonthlyRouteImport.update({
+    id: '/settlements/monthly',
+    path: '/settlements/monthly',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
 const AuthedShellStoresIndexRoute = AuthedShellStoresIndexRouteImport.update({
   id: '/stores/',
   path: '/stores/',
@@ -192,6 +223,28 @@ const AuthedShellStoresStoreIdRoute =
   AuthedShellStoresStoreIdRouteImport.update({
     id: '/stores/$storeId',
     path: '/stores/$storeId',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellTasksIndexRoute = AuthedShellTasksIndexRouteImport.update({
+  id: '/tasks/',
+  path: '/tasks/',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellTasksDepositsRoute =
+  AuthedShellTasksDepositsRouteImport.update({
+    id: '/tasks/deposits',
+    path: '/tasks/deposits',
+    getParentRoute: () => AuthedShellRoute,
+  } as any)
+const AuthedShellTasksRefundsRoute = AuthedShellTasksRefundsRouteImport.update({
+  id: '/tasks/refunds',
+  path: '/tasks/refunds',
+  getParentRoute: () => AuthedShellRoute,
+} as any)
+const AuthedShellTasksSettlementsRoute =
+  AuthedShellTasksSettlementsRouteImport.update({
+    id: '/tasks/settlements',
+    path: '/tasks/settlements',
     getParentRoute: () => AuthedShellRoute,
   } as any)
 const AuthedShellUsersIndexRoute = AuthedShellUsersIndexRouteImport.update({
@@ -217,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/review-comments': typeof AuthedShellReviewCommentsRoute
   '/reviews': typeof AuthedShellReviewsRoute
   '/search-chips': typeof AuthedShellSearchChipsRoute
+  '/settings': typeof AuthedShellSettingsRoute
   '/tags': typeof AuthedShellTagsRoute
   '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
   '/banners/new': typeof AuthedShellBannersNewRoute
@@ -226,7 +280,12 @@ export interface FileRoutesByFullPath {
   '/reports/$reportId': typeof AuthedShellReportsReportIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
+  '/settlements/$settlementId': typeof AuthedShellSettlementsSettlementIdRoute
+  '/settlements/monthly': typeof AuthedShellSettlementsMonthlyRoute
   '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
+  '/tasks/deposits': typeof AuthedShellTasksDepositsRoute
+  '/tasks/refunds': typeof AuthedShellTasksRefundsRoute
+  '/tasks/settlements': typeof AuthedShellTasksSettlementsRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/banners/': typeof AuthedShellBannersIndexRoute
   '/notifications/': typeof AuthedShellNotificationsIndexRoute
@@ -234,7 +293,9 @@ export interface FileRoutesByFullPath {
   '/products/': typeof AuthedShellProductsIndexRoute
   '/reports/': typeof AuthedShellReportsIndexRoute
   '/sellers/': typeof AuthedShellSellersIndexRoute
+  '/settlements/': typeof AuthedShellSettlementsIndexRoute
   '/stores/': typeof AuthedShellStoresIndexRoute
+  '/tasks/': typeof AuthedShellTasksIndexRoute
   '/users/': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -248,6 +309,7 @@ export interface FileRoutesByTo {
   '/review-comments': typeof AuthedShellReviewCommentsRoute
   '/reviews': typeof AuthedShellReviewsRoute
   '/search-chips': typeof AuthedShellSearchChipsRoute
+  '/settings': typeof AuthedShellSettingsRoute
   '/tags': typeof AuthedShellTagsRoute
   '/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
   '/banners/new': typeof AuthedShellBannersNewRoute
@@ -257,7 +319,12 @@ export interface FileRoutesByTo {
   '/reports/$reportId': typeof AuthedShellReportsReportIdRoute
   '/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/sellers/new': typeof AuthedShellSellersNewRoute
+  '/settlements/$settlementId': typeof AuthedShellSettlementsSettlementIdRoute
+  '/settlements/monthly': typeof AuthedShellSettlementsMonthlyRoute
   '/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
+  '/tasks/deposits': typeof AuthedShellTasksDepositsRoute
+  '/tasks/refunds': typeof AuthedShellTasksRefundsRoute
+  '/tasks/settlements': typeof AuthedShellTasksSettlementsRoute
   '/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/banners': typeof AuthedShellBannersIndexRoute
   '/notifications': typeof AuthedShellNotificationsIndexRoute
@@ -265,7 +332,9 @@ export interface FileRoutesByTo {
   '/products': typeof AuthedShellProductsIndexRoute
   '/reports': typeof AuthedShellReportsIndexRoute
   '/sellers': typeof AuthedShellSellersIndexRoute
+  '/settlements': typeof AuthedShellSettlementsIndexRoute
   '/stores': typeof AuthedShellStoresIndexRoute
+  '/tasks': typeof AuthedShellTasksIndexRoute
   '/users': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRoutesById {
@@ -281,6 +350,7 @@ export interface FileRoutesById {
   '/_authed/_shell/review-comments': typeof AuthedShellReviewCommentsRoute
   '/_authed/_shell/reviews': typeof AuthedShellReviewsRoute
   '/_authed/_shell/search-chips': typeof AuthedShellSearchChipsRoute
+  '/_authed/_shell/settings': typeof AuthedShellSettingsRoute
   '/_authed/_shell/tags': typeof AuthedShellTagsRoute
   '/_authed/_shell/': typeof AuthedShellIndexRoute
   '/_authed/_shell/banners/$bannerId': typeof AuthedShellBannersBannerIdRoute
@@ -291,7 +361,12 @@ export interface FileRoutesById {
   '/_authed/_shell/reports/$reportId': typeof AuthedShellReportsReportIdRoute
   '/_authed/_shell/sellers/$accountId': typeof AuthedShellSellersAccountIdRoute
   '/_authed/_shell/sellers/new': typeof AuthedShellSellersNewRoute
+  '/_authed/_shell/settlements/$settlementId': typeof AuthedShellSettlementsSettlementIdRoute
+  '/_authed/_shell/settlements/monthly': typeof AuthedShellSettlementsMonthlyRoute
   '/_authed/_shell/stores/$storeId': typeof AuthedShellStoresStoreIdRoute
+  '/_authed/_shell/tasks/deposits': typeof AuthedShellTasksDepositsRoute
+  '/_authed/_shell/tasks/refunds': typeof AuthedShellTasksRefundsRoute
+  '/_authed/_shell/tasks/settlements': typeof AuthedShellTasksSettlementsRoute
   '/_authed/_shell/users/$accountId': typeof AuthedShellUsersAccountIdRoute
   '/_authed/_shell/banners/': typeof AuthedShellBannersIndexRoute
   '/_authed/_shell/notifications/': typeof AuthedShellNotificationsIndexRoute
@@ -299,7 +374,9 @@ export interface FileRoutesById {
   '/_authed/_shell/products/': typeof AuthedShellProductsIndexRoute
   '/_authed/_shell/reports/': typeof AuthedShellReportsIndexRoute
   '/_authed/_shell/sellers/': typeof AuthedShellSellersIndexRoute
+  '/_authed/_shell/settlements/': typeof AuthedShellSettlementsIndexRoute
   '/_authed/_shell/stores/': typeof AuthedShellStoresIndexRoute
+  '/_authed/_shell/tasks/': typeof AuthedShellTasksIndexRoute
   '/_authed/_shell/users/': typeof AuthedShellUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -315,6 +392,7 @@ export interface FileRouteTypes {
     | '/review-comments'
     | '/reviews'
     | '/search-chips'
+    | '/settings'
     | '/tags'
     | '/banners/$bannerId'
     | '/banners/new'
@@ -324,7 +402,12 @@ export interface FileRouteTypes {
     | '/reports/$reportId'
     | '/sellers/$accountId'
     | '/sellers/new'
+    | '/settlements/$settlementId'
+    | '/settlements/monthly'
     | '/stores/$storeId'
+    | '/tasks/deposits'
+    | '/tasks/refunds'
+    | '/tasks/settlements'
     | '/users/$accountId'
     | '/banners/'
     | '/notifications/'
@@ -332,7 +415,9 @@ export interface FileRouteTypes {
     | '/products/'
     | '/reports/'
     | '/sellers/'
+    | '/settlements/'
     | '/stores/'
+    | '/tasks/'
     | '/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -346,6 +431,7 @@ export interface FileRouteTypes {
     | '/review-comments'
     | '/reviews'
     | '/search-chips'
+    | '/settings'
     | '/tags'
     | '/banners/$bannerId'
     | '/banners/new'
@@ -355,7 +441,12 @@ export interface FileRouteTypes {
     | '/reports/$reportId'
     | '/sellers/$accountId'
     | '/sellers/new'
+    | '/settlements/$settlementId'
+    | '/settlements/monthly'
     | '/stores/$storeId'
+    | '/tasks/deposits'
+    | '/tasks/refunds'
+    | '/tasks/settlements'
     | '/users/$accountId'
     | '/banners'
     | '/notifications'
@@ -363,7 +454,9 @@ export interface FileRouteTypes {
     | '/products'
     | '/reports'
     | '/sellers'
+    | '/settlements'
     | '/stores'
+    | '/tasks'
     | '/users'
   id:
     | '__root__'
@@ -378,6 +471,7 @@ export interface FileRouteTypes {
     | '/_authed/_shell/review-comments'
     | '/_authed/_shell/reviews'
     | '/_authed/_shell/search-chips'
+    | '/_authed/_shell/settings'
     | '/_authed/_shell/tags'
     | '/_authed/_shell/'
     | '/_authed/_shell/banners/$bannerId'
@@ -388,7 +482,12 @@ export interface FileRouteTypes {
     | '/_authed/_shell/reports/$reportId'
     | '/_authed/_shell/sellers/$accountId'
     | '/_authed/_shell/sellers/new'
+    | '/_authed/_shell/settlements/$settlementId'
+    | '/_authed/_shell/settlements/monthly'
     | '/_authed/_shell/stores/$storeId'
+    | '/_authed/_shell/tasks/deposits'
+    | '/_authed/_shell/tasks/refunds'
+    | '/_authed/_shell/tasks/settlements'
     | '/_authed/_shell/users/$accountId'
     | '/_authed/_shell/banners/'
     | '/_authed/_shell/notifications/'
@@ -396,7 +495,9 @@ export interface FileRouteTypes {
     | '/_authed/_shell/products/'
     | '/_authed/_shell/reports/'
     | '/_authed/_shell/sellers/'
+    | '/_authed/_shell/settlements/'
     | '/_authed/_shell/stores/'
+    | '/_authed/_shell/tasks/'
     | '/_authed/_shell/users/'
   fileRoutesById: FileRoutesById
 }
@@ -489,6 +590,13 @@ declare module '@tanstack/react-router' {
       path: '/search-chips'
       fullPath: '/search-chips'
       preLoaderRoute: typeof AuthedShellSearchChipsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/settings': {
+      id: '/_authed/_shell/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedShellSettingsRouteImport
       parentRoute: typeof AuthedShellRoute
     }
     '/_authed/_shell/tags': {
@@ -596,6 +704,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedShellSellersNewRouteImport
       parentRoute: typeof AuthedShellRoute
     }
+    '/_authed/_shell/settlements/': {
+      id: '/_authed/_shell/settlements/'
+      path: '/settlements'
+      fullPath: '/settlements/'
+      preLoaderRoute: typeof AuthedShellSettlementsIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/settlements/$settlementId': {
+      id: '/_authed/_shell/settlements/$settlementId'
+      path: '/settlements/$settlementId'
+      fullPath: '/settlements/$settlementId'
+      preLoaderRoute: typeof AuthedShellSettlementsSettlementIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/settlements/monthly': {
+      id: '/_authed/_shell/settlements/monthly'
+      path: '/settlements/monthly'
+      fullPath: '/settlements/monthly'
+      preLoaderRoute: typeof AuthedShellSettlementsMonthlyRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
     '/_authed/_shell/stores/': {
       id: '/_authed/_shell/stores/'
       path: '/stores'
@@ -608,6 +737,34 @@ declare module '@tanstack/react-router' {
       path: '/stores/$storeId'
       fullPath: '/stores/$storeId'
       preLoaderRoute: typeof AuthedShellStoresStoreIdRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/tasks/': {
+      id: '/_authed/_shell/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks/'
+      preLoaderRoute: typeof AuthedShellTasksIndexRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/tasks/deposits': {
+      id: '/_authed/_shell/tasks/deposits'
+      path: '/tasks/deposits'
+      fullPath: '/tasks/deposits'
+      preLoaderRoute: typeof AuthedShellTasksDepositsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/tasks/refunds': {
+      id: '/_authed/_shell/tasks/refunds'
+      path: '/tasks/refunds'
+      fullPath: '/tasks/refunds'
+      preLoaderRoute: typeof AuthedShellTasksRefundsRouteImport
+      parentRoute: typeof AuthedShellRoute
+    }
+    '/_authed/_shell/tasks/settlements': {
+      id: '/_authed/_shell/tasks/settlements'
+      path: '/tasks/settlements'
+      fullPath: '/tasks/settlements'
+      preLoaderRoute: typeof AuthedShellTasksSettlementsRouteImport
       parentRoute: typeof AuthedShellRoute
     }
     '/_authed/_shell/users/': {
@@ -635,6 +792,7 @@ interface AuthedShellRouteChildren {
   AuthedShellReviewCommentsRoute: typeof AuthedShellReviewCommentsRoute
   AuthedShellReviewsRoute: typeof AuthedShellReviewsRoute
   AuthedShellSearchChipsRoute: typeof AuthedShellSearchChipsRoute
+  AuthedShellSettingsRoute: typeof AuthedShellSettingsRoute
   AuthedShellTagsRoute: typeof AuthedShellTagsRoute
   AuthedShellIndexRoute: typeof AuthedShellIndexRoute
   AuthedShellBannersBannerIdRoute: typeof AuthedShellBannersBannerIdRoute
@@ -645,7 +803,12 @@ interface AuthedShellRouteChildren {
   AuthedShellReportsReportIdRoute: typeof AuthedShellReportsReportIdRoute
   AuthedShellSellersAccountIdRoute: typeof AuthedShellSellersAccountIdRoute
   AuthedShellSellersNewRoute: typeof AuthedShellSellersNewRoute
+  AuthedShellSettlementsSettlementIdRoute: typeof AuthedShellSettlementsSettlementIdRoute
+  AuthedShellSettlementsMonthlyRoute: typeof AuthedShellSettlementsMonthlyRoute
   AuthedShellStoresStoreIdRoute: typeof AuthedShellStoresStoreIdRoute
+  AuthedShellTasksDepositsRoute: typeof AuthedShellTasksDepositsRoute
+  AuthedShellTasksRefundsRoute: typeof AuthedShellTasksRefundsRoute
+  AuthedShellTasksSettlementsRoute: typeof AuthedShellTasksSettlementsRoute
   AuthedShellUsersAccountIdRoute: typeof AuthedShellUsersAccountIdRoute
   AuthedShellBannersIndexRoute: typeof AuthedShellBannersIndexRoute
   AuthedShellNotificationsIndexRoute: typeof AuthedShellNotificationsIndexRoute
@@ -653,7 +816,9 @@ interface AuthedShellRouteChildren {
   AuthedShellProductsIndexRoute: typeof AuthedShellProductsIndexRoute
   AuthedShellReportsIndexRoute: typeof AuthedShellReportsIndexRoute
   AuthedShellSellersIndexRoute: typeof AuthedShellSellersIndexRoute
+  AuthedShellSettlementsIndexRoute: typeof AuthedShellSettlementsIndexRoute
   AuthedShellStoresIndexRoute: typeof AuthedShellStoresIndexRoute
+  AuthedShellTasksIndexRoute: typeof AuthedShellTasksIndexRoute
   AuthedShellUsersIndexRoute: typeof AuthedShellUsersIndexRoute
 }
 
@@ -665,6 +830,7 @@ const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellReviewCommentsRoute: AuthedShellReviewCommentsRoute,
   AuthedShellReviewsRoute: AuthedShellReviewsRoute,
   AuthedShellSearchChipsRoute: AuthedShellSearchChipsRoute,
+  AuthedShellSettingsRoute: AuthedShellSettingsRoute,
   AuthedShellTagsRoute: AuthedShellTagsRoute,
   AuthedShellIndexRoute: AuthedShellIndexRoute,
   AuthedShellBannersBannerIdRoute: AuthedShellBannersBannerIdRoute,
@@ -675,7 +841,13 @@ const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellReportsReportIdRoute: AuthedShellReportsReportIdRoute,
   AuthedShellSellersAccountIdRoute: AuthedShellSellersAccountIdRoute,
   AuthedShellSellersNewRoute: AuthedShellSellersNewRoute,
+  AuthedShellSettlementsSettlementIdRoute:
+    AuthedShellSettlementsSettlementIdRoute,
+  AuthedShellSettlementsMonthlyRoute: AuthedShellSettlementsMonthlyRoute,
   AuthedShellStoresStoreIdRoute: AuthedShellStoresStoreIdRoute,
+  AuthedShellTasksDepositsRoute: AuthedShellTasksDepositsRoute,
+  AuthedShellTasksRefundsRoute: AuthedShellTasksRefundsRoute,
+  AuthedShellTasksSettlementsRoute: AuthedShellTasksSettlementsRoute,
   AuthedShellUsersAccountIdRoute: AuthedShellUsersAccountIdRoute,
   AuthedShellBannersIndexRoute: AuthedShellBannersIndexRoute,
   AuthedShellNotificationsIndexRoute: AuthedShellNotificationsIndexRoute,
@@ -683,7 +855,9 @@ const AuthedShellRouteChildren: AuthedShellRouteChildren = {
   AuthedShellProductsIndexRoute: AuthedShellProductsIndexRoute,
   AuthedShellReportsIndexRoute: AuthedShellReportsIndexRoute,
   AuthedShellSellersIndexRoute: AuthedShellSellersIndexRoute,
+  AuthedShellSettlementsIndexRoute: AuthedShellSettlementsIndexRoute,
   AuthedShellStoresIndexRoute: AuthedShellStoresIndexRoute,
+  AuthedShellTasksIndexRoute: AuthedShellTasksIndexRoute,
   AuthedShellUsersIndexRoute: AuthedShellUsersIndexRoute,
 }
 
