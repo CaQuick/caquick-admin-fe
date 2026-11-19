@@ -78,6 +78,19 @@ export function TargetLink({
           {text}
         </Link>
       );
+    case 'REFUND':
+      return (
+        <Link to="/tasks/refunds" search={{ refundId: targetId }} className={linkClass}>
+          {text}
+        </Link>
+      );
+    case 'DEPOSIT_RECORD':
+      // 입금 기록은 단건 조회가 없어 목록으로 연다
+      return (
+        <Link to="/tasks/deposits" search={{ view: 'records' }} className={linkClass}>
+          {text}
+        </Link>
+      );
     default:
       return <span>{text}</span>;
   }

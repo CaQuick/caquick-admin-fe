@@ -131,6 +131,8 @@ describe('감사 로그', () => {
     ['BANNER', '배너 #5', '/banners/5'],
     ['REVIEW', '리뷰 #5', '/reviews?reviewId=5&deleted=true'],
     ['REVIEW_REPORT', '신고 #5', '/reports/5'],
+    ['REFUND', '환불 #5', '/tasks/refunds?refundId=5'],
+    ['DEPOSIT_RECORD', '입금 기록 #5', '/tasks/deposits?view=records'],
     ['ACCOUNT', '계정 #5', null],
     ['CHANGE_PASSWORD', '비밀번호 변경 #5', null],
     ['CATEGORY', '카테고리 #5', null],

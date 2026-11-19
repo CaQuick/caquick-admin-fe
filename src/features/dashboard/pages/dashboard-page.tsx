@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { TasksTile } from '@/features/tasks';
 import { messageFor } from '@/shared/api';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -26,6 +27,7 @@ export function DashboardPage({ period, onPeriodChange }: Props) {
         meta={periodLabel(period)}
         actions={<PeriodPicker period={period} onChange={onPeriodChange} />}
       />
+      <TasksTile />
       {summary.isError ? (
         <p role="alert" className="text-sm text-negative-foreground">
           {messageFor(summary.error)}
