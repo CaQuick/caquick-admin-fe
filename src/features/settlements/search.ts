@@ -44,8 +44,12 @@ export function mondayOf(ymd: string): string | undefined {
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+export function isMonth(v: string): boolean {
+  return MONTH.test(v);
+}
+
 export const monthlySearchSchema = z.object({
-  month: optionalText.refine((v) => v === undefined || MONTH.test(v)).catch(undefined),
+  month: optionalText.refine((v) => v === undefined || isMonth(v)).catch(undefined),
 });
 
 export function currentKstMonth(now: Date = new Date()): string {

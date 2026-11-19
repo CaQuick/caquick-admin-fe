@@ -1516,10 +1516,10 @@ export type AdminUpdatePaymentSettingMutationVariables = Exact<{
 
 export type AdminUpdatePaymentSettingMutation = { adminUpdatePaymentSetting: { updatedAt: string | null } };
 
-export type PaymentBanksQueryVariables = Exact<{ [key: string]: never; }>;
+export type AdminPaymentBanksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PaymentBanksQuery = { paymentBanks: Array<{ code: string, name: string }> };
+export type AdminPaymentBanksQuery = { paymentBanks: Array<{ code: string, name: string }> };
 
 export type AdminStoresQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
@@ -2865,14 +2865,14 @@ export const AdminUpdatePaymentSettingDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminUpdatePaymentSettingMutation, AdminUpdatePaymentSettingMutationVariables>;
-export const PaymentBanksDocument = new TypedDocumentString(`
-    query PaymentBanks {
+export const AdminPaymentBanksDocument = new TypedDocumentString(`
+    query AdminPaymentBanks {
   paymentBanks {
     code
     name
   }
 }
-    `) as unknown as TypedDocumentString<PaymentBanksQuery, PaymentBanksQueryVariables>;
+    `) as unknown as TypedDocumentString<AdminPaymentBanksQuery, AdminPaymentBanksQueryVariables>;
 export const AdminStoresDocument = new TypedDocumentString(`
     query AdminStores($input: AdminStoreListInput) {
   adminStores(input: $input) {

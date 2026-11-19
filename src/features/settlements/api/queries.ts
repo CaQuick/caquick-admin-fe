@@ -187,8 +187,8 @@ const AdminUpdatePaymentSettingDocument = graphql(/* GraphQL */ `
   }
 `);
 
-const PaymentBanksDocument = graphql(/* GraphQL */ `
-  query PaymentBanks {
+const AdminPaymentBanksDocument = graphql(/* GraphQL */ `
+  query AdminPaymentBanks {
     paymentBanks {
       code
       name
@@ -242,7 +242,7 @@ export function paymentSettingQueryOptions() {
 export function banksQueryOptions() {
   return queryOptions({
     queryKey: settlementsKeys.banks(),
-    queryFn: async () => (await gqlRequest(PaymentBanksDocument)).paymentBanks,
+    queryFn: async () => (await gqlRequest(AdminPaymentBanksDocument)).paymentBanks,
     staleTime: Infinity,
   });
 }

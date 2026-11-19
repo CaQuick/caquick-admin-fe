@@ -85,7 +85,7 @@ function boot(path: string) {
       mustChangePassword: false,
     }),
     gqlOk('AdminMe', { adminMe: me }),
-    gqlOk('PaymentBanks', { paymentBanks: [kb, { code: '088', name: '신한은행' }] }),
+    gqlOk('AdminPaymentBanks', { paymentBanks: [kb, { code: '088', name: '신한은행' }] }),
     gqlOk('AdminSettlementStorePicker', {
       adminStores: {
         items: [
@@ -411,6 +411,47 @@ describe('정산·결제 설정', () => {
     await vi.waitFor(() => expect(window.location.search).toBe('?month=2026-01'));
     // 실패는 한 번 재시도하므로 같은 달이 두 번 올 수 있다
     expect([...new Set(months)]).toEqual(['2026-11', '2025-12', '2026-01']);
+  });
+
+  it('월 수수료: 월 입력이 글자 칸인 브라우저에서도 다 친 월만 옮기고, 치다 만 값은 칸을 떠나면 되돌린다', async () => {
+    const months: string[] = [];
+    server.use(
+      graphql.query('AdminMonthlyCommissions', ({ variables }) => {
+        const { month } = (variables as { input: { month: string } }).input;
+        months.push(month);
+        return HttpResponse.json({
+          data: {
+            adminMonthlyCommissions: {
+              month,
+              orderCount: 0,
+              settlementBaseAmount: 0,
+              commissionAmount: 0,
+              stores: [],
+            },
+          },
+        });
+      }),
+    );
+    boot('/settlements/monthly?month=2026-11');
+    const input = await screen.findByLabelText('집계 월');
+    // Safari·Firefox는 month 입력을 글자 칸으로 그린다. React가 렌더마다 type을 다시 써도 글자 칸으로 둔다
+    Object.defineProperty(input, 'type', { get: () => 'text', set: () => undefined });
+    input.setAttribute('type', 'text');
+    await userEvent.clear(input);
+    await userEvent.type(input, '2025-0');
+    expect(input).toHaveValue('2025-0');
+    expect(window.location.search).toBe('?month=2026-11');
+    await userEvent.type(input, '3');
+    await vi.waitFor(() => expect(window.location.search).toBe('?month=2025-03'));
+
+    await userEvent.clear(input);
+    await userEvent.type(input, '2024');
+    await userEvent.tab();
+    expect(input).toHaveValue('2025-03');
+    expect(window.location.search).toBe('?month=2025-03');
+    await userEvent.click(screen.getByRole('button', { name: '다음 달' }));
+    await vi.waitFor(() => expect(input).toHaveValue('2025-04'));
+    expect([...new Set(months)]).toEqual(['2026-11', '2025-03', '2025-04']);
   });
 
   it('월 수수료: 월이 없으면 이번 달(KST)을 집계한다', async () => {

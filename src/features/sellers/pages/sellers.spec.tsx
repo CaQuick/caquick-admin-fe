@@ -324,6 +324,12 @@ describe('판매자', () => {
           data: { adminSuspendAccount: { accountId: '20', accountType: 'SELLER', status } },
         });
       }),
+      graphql.mutation('AdminReinstateAccount', () => {
+        status = 'ACTIVE';
+        return HttpResponse.json({
+          data: { adminReinstateAccount: { accountId: '20', accountType: 'SELLER', status } },
+        });
+      }),
       graphql.mutation('AdminSetStoreActive', ({ variables }) => {
         calls.push({ op: 'hide', input: (variables as { input: unknown }).input });
         if (opts.hide === 'fail') {
@@ -393,14 +399,19 @@ describe('판매자', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('정지: 매장도 숨기기를 끄면 매장을 건드리지 않는다', async () => {
+  it('정지: 매장도 숨기기를 끄면 매장을 건드리지 않고, 해제 뒤 다시 정지할 때는 다시 켜져 있다', async () => {
     const calls = suspendFlow();
     const dialog = await openSuspend();
     await userEvent.click(within(dialog).getByRole('checkbox', { name: '매장도 숨기기' }));
     await userEvent.type(within(dialog).getByLabelText('정지 사유 (필수)'), '계약 위반');
     await userEvent.click(within(dialog).getByRole('button', { name: '계정 정지' }));
-    expect(await screen.findByRole('button', { name: '정지 해제' })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: '정지 해제' }));
     expect(calls.map((c) => c.op)).toEqual(['suspend']);
+
+    const confirm = await screen.findByRole('alertdialog');
+    await userEvent.click(within(confirm).getByRole('button', { name: '정지 해제' }));
+    const again = await openSuspend();
+    expect(within(again).getByRole('checkbox', { name: '매장도 숨기기' })).toBeChecked();
   });
 
   it('정지: 이미 숨긴 매장이면 매장도 숨기기를 두지 않는다', async () => {

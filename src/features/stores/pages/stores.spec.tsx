@@ -718,7 +718,7 @@ describe('매장', () => {
     let upsertInput: unknown;
     server.use(
       gqlOk('AdminStore', { adminStore: detail() }),
-      gqlOk('PaymentBanks', {
+      gqlOk('AdminPaymentBanks', {
         paymentBanks: [
           { code: '004', name: 'KB국민은행' },
           { code: '088', name: '신한은행' },
@@ -760,6 +760,66 @@ describe('매장', () => {
     expect(screen.getByText(/^관리자 · /)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '계좌번호 복사' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '변경' })).toBeInTheDocument();
+  });
+
+  it('정산 계좌: 등록하고 정산 상세로 돌아가면 바로 송금 완료를 누를 수 있다', async () => {
+    let current: typeof settlementAccount | null = null;
+    server.use(
+      gqlOk('AdminStore', { adminStore: detail() }),
+      gqlOk('AdminPaymentBanks', { paymentBanks: [{ code: '004', name: 'KB국민은행' }] }),
+      graphql.query('AdminStoreSettlementAccount', () =>
+        HttpResponse.json({ data: { adminStoreSettlementAccount: current } }),
+      ),
+      graphql.query('AdminSettlement', () =>
+        HttpResponse.json({
+          data: {
+            adminSettlement: {
+              id: '31',
+              storeId: '17',
+              storeName: '루미 케이크',
+              periodStart: '2026-11-09',
+              periodEnd: '2026-11-15',
+              orderCount: 0,
+              settlementBaseAmount: 0,
+              commissionAmount: 0,
+              payoutAmount: 0,
+              status: 'PENDING',
+              paidAt: null,
+              accountRegistered: current !== null,
+              createdAt: '2026-11-16T20:00:00.000Z',
+              paidByLabel: null,
+              paidNote: null,
+              paidAccount: null,
+              currentAccount: current,
+              orders: [],
+            },
+          },
+        }),
+      ),
+      graphql.mutation('AdminUpsertStoreSettlementAccount', () => {
+        current = settlementAccount;
+        return HttpResponse.json({
+          data: { adminUpsertStoreSettlementAccount: { storeId: '17' } },
+        });
+      }),
+    );
+    boot('/settlements/31');
+    expect(await screen.findByRole('button', { name: '송금 완료' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('link', { name: '매장에서 계좌 등록' }));
+    await userEvent.click(await screen.findByRole('button', { name: '등록' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('combobox', { name: '은행' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'KB국민은행' }));
+    await userEvent.type(within(dialog).getByLabelText('계좌번호'), '110123456789');
+    await userEvent.type(within(dialog).getByLabelText('예금주'), '박사장');
+    await userEvent.type(within(dialog).getByLabelText('변경 사유 (필수)'), '판매자 전화 요청');
+    await userEvent.click(within(dialog).getByRole('button', { name: '저장' }));
+    expect(await screen.findByText('110123456789')).toBeInTheDocument();
+
+    // staleTime 안이라 정산을 무효화하지 않으면 미등록 캐시를 그대로 보인다
+    window.history.back();
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: '송금 완료' })).toBeEnabled());
+    expect(screen.queryByRole('link', { name: '매장에서 계좌 등록' })).not.toBeInTheDocument();
   });
 
   it('정산 계좌를 못 받으면 카드에 이유를 보이고 등록 버튼을 두지 않는다', async () => {

@@ -24,6 +24,12 @@ interface Props {
 export function SellerStatusActions({ accountId, status, label, store, onChanged }: Props) {
   const queryClient = useQueryClient();
   const [hideStore, setHideStore] = useState(true);
+  // 정지·해제를 거치면 다음 정지는 다시 기본값(켬)에서 시작한다
+  const [shownStatus, setShownStatus] = useState(status);
+  if (shownStatus !== status) {
+    setShownStatus(status);
+    setHideStore(true);
+  }
   const canHide = store?.isActive === true;
   return (
     <AccountStatusActions

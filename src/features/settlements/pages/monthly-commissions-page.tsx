@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { type ColumnDef } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { useState } from 'react';
 
 import { type AdminMonthlyCommissionsQuery } from '@/graphql/generated/graphql';
 import { messageFor } from '@/shared/api';
@@ -13,7 +14,7 @@ import { Input } from '@/shared/ui/input';
 import { PageHeader } from '@/shared/ui/page-header';
 
 import { monthlyCommissionsQueryOptions } from '../api/queries';
-import { currentKstMonth, shiftMonth } from '../search';
+import { currentKstMonth, isMonth, shiftMonth } from '../search';
 
 type Row = AdminMonthlyCommissionsQuery['adminMonthlyCommissions']['stores'][number];
 
@@ -60,6 +61,33 @@ function Total({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * month 입력을 못 그리는 브라우저(Safari·Firefox)에서는 글자 칸이 된다.
+ * 치는 중인 값은 칸에만 두고 'YYYY-MM'을 다 쳤을 때만 옮기며, 치다 만 값은 칸을 떠나면 되돌린다.
+ */
+function MonthInput({ month, onChange }: { month: string; onChange: (month: string) => void }) {
+  const [draft, setDraft] = useState(month);
+  const [shown, setShown] = useState(month);
+  if (shown !== month) {
+    setShown(month);
+    setDraft(month);
+  }
+  return (
+    <Input
+      type="month"
+      aria-label="집계 월"
+      placeholder="YYYY-MM"
+      className="h-9 w-40"
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        if (isMonth(e.target.value)) onChange(e.target.value);
+      }}
+      onBlur={() => setDraft(month)}
+    />
+  );
+}
+
 interface Props {
   /** 'YYYY-MM'. 없으면 이번 달(KST) */
   month: string | undefined;
@@ -80,13 +108,7 @@ export function MonthlyCommissionsPage({ month: picked, onMonthChange }: Props) 
         <IconButton label="이전 달" onClick={() => onMonthChange(shiftMonth(month, -1))}>
           <ChevronLeftIcon className="size-4" />
         </IconButton>
-        <Input
-          type="month"
-          aria-label="집계 월"
-          className="h-9 w-40"
-          value={month}
-          onChange={(e) => e.target.value && onMonthChange(e.target.value)}
-        />
+        <MonthInput month={month} onChange={onMonthChange} />
         <IconButton label="다음 달" onClick={() => onMonthChange(shiftMonth(month, 1))}>
           <ChevronRightIcon className="size-4" />
         </IconButton>
