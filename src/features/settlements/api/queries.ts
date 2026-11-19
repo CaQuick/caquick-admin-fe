@@ -1,5 +1,6 @@
 import { type QueryClient, queryOptions } from '@tanstack/react-query';
 
+import { invalidateTasks } from '@/features/tasks';
 import { graphql } from '@/graphql/generated';
 import {
   type AdminSettlementListInput,
@@ -264,7 +265,7 @@ export function storePickerQuery(keyword: string) {
   });
 }
 
-/** 다른 관리자가 먼저 처리했을 때(409)도 불러 처리자·시각을 다시 받는다 */
+/** 정산 목록·상세를 다시 읽게 한다. 처리 대기 화면도 처리 뒤 부른다 */
 export async function invalidateSettlements(queryClient: QueryClient) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: settlementsKeys.lists() }),
@@ -272,15 +273,18 @@ export async function invalidateSettlements(queryClient: QueryClient) {
   ]);
 }
 
+/** 처리했든 409로 거절됐든 다시 읽어 처리자·시각을 보인다. 처리 대기 건수·목록도 함께 줄어든다 */
 export async function markSettlementPaid(
   queryClient: QueryClient,
   settlementId: string,
   note: string | null,
 ) {
-  const r = (await gqlRequest(AdminMarkSettlementPaidDocument, { input: { settlementId, note } }))
-    .adminMarkSettlementPaid;
-  await invalidateSettlements(queryClient);
-  return r;
+  try {
+    return (await gqlRequest(AdminMarkSettlementPaidDocument, { input: { settlementId, note } }))
+      .adminMarkSettlementPaid;
+  } finally {
+    await Promise.all([invalidateSettlements(queryClient), invalidateTasks(queryClient)]);
+  }
 }
 
 export async function upsertStoreSettlementAccount(
@@ -289,12 +293,13 @@ export async function upsertStoreSettlementAccount(
 ) {
   const r = (await gqlRequest(AdminUpsertStoreSettlementAccountDocument, { input }))
     .adminUpsertStoreSettlementAccount;
-  // 정산 목록·상세의 계좌 등록 여부와 현재 계좌도 바뀐다
+  // 정산 목록·상세(처리 대기 정산 송금 포함)의 계좌 등록 여부와 현재 계좌도 바뀐다
   await Promise.all([
     queryClient.invalidateQueries({
       queryKey: settlementsKeys.storeAccount(String(input.storeId)),
     }),
     invalidateSettlements(queryClient),
+    invalidateTasks(queryClient),
   ]);
   return r;
 }

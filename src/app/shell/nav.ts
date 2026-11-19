@@ -1,6 +1,7 @@
 import {
   type LucideIcon,
   BriefcaseIcon,
+  InboxIcon,
   LayoutDashboardIcon,
   PackageIcon,
   TagsIcon,
@@ -20,11 +21,15 @@ import {
   UsersIcon,
   WalletIcon,
 } from 'lucide-react';
+import { type ComponentType } from 'react';
+
+import { TaskCountBadge } from '@/features/tasks';
 
 /** 사이드바 메뉴. 각 영역 PR이 자기 항목을 붙인다 — Link의 to가 라우트 타입으로 검사되므로 있는 경로만 둔다. */
 interface NavItem {
   to:
     | '/'
+    | '/tasks'
     | '/orders'
     | '/settlements'
     | '/users'
@@ -45,6 +50,8 @@ interface NavItem {
     | '/settings';
   label: string;
   icon: LucideIcon;
+  /** 메뉴 오른쪽 건수 배지 */
+  badge?: ComponentType;
 }
 export interface NavGroup {
   label: string | null;
@@ -56,6 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: '운영',
     items: [
+      { to: '/tasks', label: '처리 대기', icon: InboxIcon, badge: TaskCountBadge },
       { to: '/orders', label: '주문', icon: ShoppingBagIcon },
       { to: '/settlements', label: '정산', icon: WalletIcon },
       { to: '/reports', label: '신고', icon: FlagIcon },

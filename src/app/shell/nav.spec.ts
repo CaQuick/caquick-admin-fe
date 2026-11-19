@@ -14,6 +14,7 @@ describe('nav', () => {
     { path: '/settlements/monthly', want: '정산' },
     { path: '/settlements/31', want: '정산' },
     { path: '/settings', want: '결제 설정' },
+    { path: '/tasks/deposits', want: '처리 대기' },
   ])('하위 화면도 메뉴 제목을 따른다: $path → $want', ({ path, want }) => {
     expect(titleFor(path)).toBe(want);
   });
