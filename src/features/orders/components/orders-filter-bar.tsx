@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { Button } from '@/shared/ui/button';
 import { EntityPicker } from '@/shared/ui/entity-picker';
 import { FilterBar } from '@/shared/ui/filter-bar';
 import { FilterField } from '@/shared/ui/filter-field';
@@ -9,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   buyerNameQueryOptions,
   buyerOptionsQueryOptions,
-  storeNameQueryOptions,
   storeOptionsQueryOptions,
+  storeRefQueryOptions,
 } from '../api/queries';
 import { type OrdersSearch, hasOrderFilters } from '../search';
 import { ORDER_STATUS } from '../status';
@@ -24,9 +25,10 @@ interface Props {
 }
 
 export function OrdersFilterBar({ search, onChange, onReset }: Props) {
+  const inProgress = search.inProgress === 'true';
   // 주소로 들어온 ID(매장 상세의 '주문 보기' 등)는 이름을 따로 불러 선택기에 보인다
-  const storeName = useQuery({
-    ...storeNameQueryOptions(search.storeId ?? ''),
+  const store = useQuery({
+    ...storeRefQueryOptions(search.storeId ?? ''),
     enabled: search.storeId !== undefined,
   });
   const buyerName = useQuery({
@@ -61,6 +63,16 @@ export function OrdersFilterBar({ search, onChange, onReset }: Props) {
           </SelectContent>
         </Select>
       </FilterField>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        aria-pressed={inProgress}
+        onClick={() => onChange({ inProgress: inProgress ? undefined : 'true' })}
+        className="h-9 rounded-full aria-pressed:border-primary aria-pressed:bg-primary-soft aria-pressed:text-primary-soft-foreground"
+      >
+        진행 중
+      </Button>
       <FilterField label="주문일">
         <Input
           type="date"
@@ -84,7 +96,7 @@ export function OrdersFilterBar({ search, onChange, onReset }: Props) {
         <EntityPicker
           label="매장"
           value={search.storeId}
-          selectedLabel={storeName.data}
+          selectedLabel={store.data?.storeName}
           searchQuery={storeOptionsQueryOptions}
           onChange={(storeId) => onChange({ storeId })}
         />

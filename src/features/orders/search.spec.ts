@@ -8,6 +8,7 @@ describe('orders search', () => {
       cursor: null,
       keyword: null,
       status: null,
+      inProgress: false,
       storeId: null,
       accountId: null,
       fromCreatedAt: null,
@@ -36,6 +37,22 @@ describe('orders search', () => {
       toCreatedAt: null,
     });
     expect(hasOrderFilters(s)).toBe(true);
+  });
+
+  it.each([
+    ['true', true, true],
+    [true, true, true],
+    ['false', false, false],
+    [false, false, false],
+    ['yes', false, false],
+  ])('진행 중 %j → inProgress=%s, 필터 표시=%s', (inProgress, sent, active) => {
+    const s = ordersSearchSchema.parse({ inProgress });
+    expect(toOrderListInput(s).inProgress).toBe(sent);
+    expect(hasOrderFilters(s)).toBe(active);
+  });
+
+  it.each(['PENDING_PAYMENT', 'NO_SHOW'])('새 상태 %s도 상태 필터로 받는다', (status) => {
+    expect(toOrderListInput(ordersSearchSchema.parse({ status })).status).toBe(status);
   });
 
   it('이상한 값은 버린다(상태·limit 범위·빈 문자열)', () => {

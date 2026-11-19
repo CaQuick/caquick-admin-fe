@@ -77,6 +77,13 @@ export type AdminCategoryListInput = {
   includeInactive?: boolean | null | undefined;
 };
 
+/** 주문 픽업 완료 입력. 확정·제작 완료 주문만 처리할 수 있다. */
+export type AdminCompleteOrderPickupInput = {
+  /** 처리 메모. 선택, 최대 500자. 상태 이력과 감사 로그에 남는다. */
+  note?: string | null | undefined;
+  orderId: string | number;
+};
+
 /** 관리자 계정 생성 입력. */
 export type AdminCreateAdminInput = {
   /** 이메일. 선택. */
@@ -719,6 +726,15 @@ export type BannerPlacement =
   /** 예약값. 이 자리를 읽는 구매자 쿼리가 없어 등록해도 노출되지 않는다. */
   | 'STORE';
 
+/** 지금 상태에서 취소할 때의 환불 규칙. */
+export type CancelRefundRuleType =
+  /** 사정에 따라: 판매자 사정은 전액, 구매자 사정은 0~결제액 중 입력한 금액(확정·제작 완료). */
+  | 'BY_FAULT'
+  /** 결제액 전액 환불(접수). */
+  | 'FULL_REFUND'
+  /** 환불 없음(입금 대기). */
+  | 'NO_REFUND';
+
 /** 상품 카테고리 분류. */
 export type CategoryType =
   /** 상황·이벤트 기준 분류(생일, 기념일 등). 홈 화면 칩에는 이 분류만 노출된다. */
@@ -779,6 +795,17 @@ export type IdentityProvider =
   /** 카카오 OIDC. */
   | 'KAKAO';
 
+/** 주문·결제·정산 기록을 남긴 주체. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type OrderActorType =
+  /** 관리자. */
+  | 'ADMIN'
+  /** 구매자. */
+  | 'BUYER'
+  /** 판매자. */
+  | 'SELLER'
+  /** 시스템 자동 처리. */
+  | 'SYSTEM';
+
 /** 확정·제작 완료 뒤 취소의 사정. 환불액이 갈린다(판매자 사정 = 전액, 구매자 사정 = 취소자가 정한 금액). */
 export type OrderCancelFaultType =
   /** 구매자 사정. */
@@ -833,6 +860,45 @@ export type OrderStatusType =
   | 'PICKED_UP'
   /** 입금이 확인돼 접수된 상태. 판매자 확인 대기. */
   | 'SUBMITTED';
+
+/** 입금을 확인한 경로. */
+export type PaymentConfirmSourceType =
+  /** 관리자가 은행 앱에서 확인. */
+  | 'ADMIN'
+  /** 입금 알림 자동 매칭. 아직 쓰지 않는다. */
+  | 'AUTO';
+
+/** 결제 수단. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type PaymentMethodType =
+  /** 계좌이체(케이퀵 계좌로 입금). */
+  | 'BANK_TRANSFER'
+  /** 토스 결제. 아직 쓰지 않는다. */
+  | 'TOSS';
+
+/** 결제 상태. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type PaymentStatusType =
+  /** 입금 전에 주문이 취소됨. */
+  | 'CANCELED'
+  /** 입금 확인됨. 주문이 나중에 취소돼도 이 값으로 남고 돌려줄 돈은 환불이 맡는다. */
+  | 'CONFIRMED'
+  /** 입금 대기. */
+  | 'PENDING';
+
+/** 환불 종류. */
+export type RefundKindType =
+  /** 주문 취소 환불. */
+  | 'CANCEL'
+  /** 주문과 별개로 들어온 입금을 돌려주는 반환. */
+  | 'DEPOSIT_RETURN';
+
+/** 환불 진행 상태. 값은 늘어날 수 있으니 모르는 값을 받아도 화면이 죽지 않게 처리한다. */
+export type RefundStatusType =
+  /** 구매자의 환불 계좌 입력 대기. */
+  | 'AWAITING_ACCOUNT'
+  /** 계좌가 입력돼 케이퀵 송금 대기. */
+  | 'AWAITING_TRANSFER'
+  /** 송금 완료. */
+  | 'COMPLETED';
 
 /** 리뷰 첨부 미디어 종류. */
 export type ReviewMediaType =
@@ -1043,7 +1109,7 @@ export type AdminDashboardSummaryQueryVariables = Exact<{
 }>;
 
 
-export type AdminDashboardSummaryQuery = { adminDashboardSummary: { from: string, to: string, newUserCount: number, newSellerCount: number, orderAmountSum: number, activeStoreCount: number, activeProductCount: number, pendingReportCount: number, orderCounts: { submitted: number, confirmed: number, made: number, pickedUp: number, canceled: number } } };
+export type AdminDashboardSummaryQuery = { adminDashboardSummary: { from: string, to: string, newUserCount: number, newSellerCount: number, orderAmountSum: number, activeStoreCount: number, activeProductCount: number, pendingReportCount: number, orderCounts: { pendingPayment: number, submitted: number, confirmed: number, made: number, pickedUp: number, noShow: number, canceled: number } } };
 
 export type AdminSearchKeywordSnapshotQueryVariables = Exact<{
   input?: AdminSearchKeywordSnapshotInput | null | undefined;
@@ -1097,7 +1163,7 @@ export type AdminOrderQueryVariables = Exact<{
 }>;
 
 
-export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, customMode: CustomModeType, customPreviewImageUrl: string | null, customBaseImageUrl: string | null, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customImages: Array<{ id: string, kind: CustomImageKindType, imageUrl: string }>, customTexts: Array<{ id: string, tokenKey: string, label: string, defaultText: string, valueText: string | null, posX: number, posY: number, width: number, height: number, textColor: string, textAlign: CustomTextAlignType, sortOrder: number }>, freeEdits: Array<{ id: string, posX: number, posY: number, width: number, height: number, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null }> } };
+export type AdminOrderQuery = { adminOrder: { id: string, orderNumber: string, status: OrderStatusType, pickupAt: string, buyerName: string, buyerPhone: string, requestNote: string | null, subtotalPrice: number, discountPrice: number, totalPrice: number, submittedAt: string | null, confirmedAt: string | null, madeAt: string | null, pickedUpAt: string | null, canceledAt: string | null, createdAt: string, updatedAt: string, confirmDeadlineAt: string | null, autoPickupAt: string | null, noShowAt: string | null, commissionRateBps: number, expectedPayoutAmount: number | null, settlementBaseAmount: number | null, commissionAmount: number | null, settlementFinalizedAt: string | null, settlementId: string | null, buyer: { accountId: string, email: string | null, nickname: string | null, status: AccountStatus }, payment: { method: PaymentMethodType, status: PaymentStatusType, amount: number, depositorName: string, depositAccountNumber: string, depositAccountHolder: string, expiresAt: string, buyerClaimedAt: string | null, confirmedAt: string | null, confirmSource: PaymentConfirmSourceType | null, confirmedByLabel: string | null, confirmNote: string | null, depositBank: { code: string, name: string } } | null, items: Array<{ id: string, storeId: string, productId: string, productName: string, regularPrice: number, salePrice: number | null, quantity: number, itemSubtotalPrice: number, customMode: CustomModeType, customPreviewImageUrl: string | null, customBaseImageUrl: string | null, optionItems: Array<{ id: string, groupName: string, optionTitle: string, priceDelta: number }>, customImages: Array<{ id: string, kind: CustomImageKindType, imageUrl: string }>, customTexts: Array<{ id: string, tokenKey: string, label: string, defaultText: string, valueText: string | null, posX: number, posY: number, width: number, height: number, textColor: string, textAlign: CustomTextAlignType, sortOrder: number }>, freeEdits: Array<{ id: string, posX: number, posY: number, width: number, height: number, descriptionText: string, sortOrder: number, attachments: Array<{ id: string, imageUrl: string, sortOrder: number }> }> }>, statusHistories: Array<{ id: string, fromStatus: OrderStatusType | null, toStatus: OrderStatusType, changedAt: string, note: string | null, actorType: OrderActorType, cancelReason: OrderCancelReasonType | null, cancelFault: OrderCancelFaultType | null, refundAmount: number | null }>, refunds: Array<{ id: string, kind: RefundKindType, amount: number, status: RefundStatusType, accountHolder: string | null, accountNumberMasked: string | null, requestedAt: string, accountSubmittedAt: string | null, completedAt: string | null, bank: { code: string, name: string } | null }>, cancellation: { actorType: OrderActorType, reason: OrderCancelReasonType, reasonLabel: string, note: string | null, fault: OrderCancelFaultType | null, refundAmount: number, refundStatus: RefundStatusType | null, refundCompletedAt: string | null, canceledAt: string } | null, cancelOptions: { cancelable: boolean, reasons: Array<OrderCancelReasonType>, refundRule: CancelRefundRuleType | null, paidAmount: number }, pickupChanges: Array<{ id: string, fromPickupAt: string, toPickupAt: string, changedAt: string, note: string | null }> } };
 
 export type AdminOrdersStoreOptionsQueryVariables = Exact<{
   input?: AdminStoreListInput | null | undefined;
@@ -1118,7 +1184,7 @@ export type AdminOrdersStoreNameQueryVariables = Exact<{
 }>;
 
 
-export type AdminOrdersStoreNameQuery = { adminStore: { store: { id: string, storeName: string } } };
+export type AdminOrdersStoreNameQuery = { adminStore: { store: { id: string, storeName: string, isActive: boolean } } };
 
 export type AdminOrdersBuyerNameQueryVariables = Exact<{
   accountId: string | number;
@@ -1133,6 +1199,13 @@ export type AdminCancelOrderMutationVariables = Exact<{
 
 
 export type AdminCancelOrderMutation = { adminCancelOrder: { id: string, status: OrderStatusType } };
+
+export type AdminCompleteOrderPickupMutationVariables = Exact<{
+  input: AdminCompleteOrderPickupInput;
+}>;
+
+
+export type AdminCompleteOrderPickupMutation = { adminCompleteOrderPickup: { id: string, status: OrderStatusType } };
 
 export type AdminProductsQueryVariables = Exact<{
   input?: AdminProductListInput | null | undefined;
@@ -1732,10 +1805,12 @@ export const AdminDashboardSummaryDocument = new TypedDocumentString(`
     newUserCount
     newSellerCount
     orderCounts {
+      pendingPayment
       submitted
       confirmed
       made
       pickedUp
+      noShow
       canceled
     }
     orderAmountSum
@@ -1870,6 +1945,25 @@ export const AdminOrderDocument = new TypedDocumentString(`
     pickupAt
     buyerName
     buyerPhone
+    requestNote
+    payment {
+      method
+      status
+      amount
+      depositorName
+      depositBank {
+        code
+        name
+      }
+      depositAccountNumber
+      depositAccountHolder
+      expiresAt
+      buyerClaimedAt
+      confirmedAt
+      confirmSource
+      confirmedByLabel
+      confirmNote
+    }
     subtotalPrice
     discountPrice
     totalPrice
@@ -1938,7 +2032,59 @@ export const AdminOrderDocument = new TypedDocumentString(`
       toStatus
       changedAt
       note
+      actorType
+      cancelReason
+      cancelFault
+      refundAmount
     }
+    refunds {
+      id
+      kind
+      amount
+      status
+      bank {
+        code
+        name
+      }
+      accountHolder
+      accountNumberMasked
+      requestedAt
+      accountSubmittedAt
+      completedAt
+    }
+    cancellation {
+      actorType
+      reason
+      reasonLabel
+      note
+      fault
+      refundAmount
+      refundStatus
+      refundCompletedAt
+      canceledAt
+    }
+    cancelOptions {
+      cancelable
+      reasons
+      refundRule
+      paidAmount
+    }
+    confirmDeadlineAt
+    autoPickupAt
+    noShowAt
+    pickupChanges {
+      id
+      fromPickupAt
+      toPickupAt
+      changedAt
+      note
+    }
+    commissionRateBps
+    expectedPayoutAmount
+    settlementBaseAmount
+    commissionAmount
+    settlementFinalizedAt
+    settlementId
   }
 }
     `) as unknown as TypedDocumentString<AdminOrderQuery, AdminOrderQueryVariables>;
@@ -1971,6 +2117,7 @@ export const AdminOrdersStoreNameDocument = new TypedDocumentString(`
     store {
       id
       storeName
+      isActive
     }
   }
 }
@@ -1993,6 +2140,14 @@ export const AdminCancelOrderDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AdminCancelOrderMutation, AdminCancelOrderMutationVariables>;
+export const AdminCompleteOrderPickupDocument = new TypedDocumentString(`
+    mutation AdminCompleteOrderPickup($input: AdminCompleteOrderPickupInput!) {
+  adminCompleteOrderPickup(input: $input) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<AdminCompleteOrderPickupMutation, AdminCompleteOrderPickupMutationVariables>;
 export const AdminProductsDocument = new TypedDocumentString(`
     query AdminProducts($input: AdminProductListInput) {
   adminProducts(input: $input) {

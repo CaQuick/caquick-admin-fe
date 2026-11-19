@@ -1,7 +1,7 @@
 import { type QueryClient, queryOptions } from '@tanstack/react-query';
 
 import { graphql } from '@/graphql/generated';
-import { type AdminOrderListInput } from '@/graphql/generated/graphql';
+import { type AdminCancelOrderInput, type AdminOrderListInput } from '@/graphql/generated/graphql';
 import { gqlRequest } from '@/shared/api';
 import { type EntityOption } from '@/shared/ui/entity-picker';
 
@@ -14,7 +14,7 @@ const ordersKeys = {
   // 필터 선택기·링크 이름. 매장·구매자 화면의 캐시와 섞이지 않게 주문 아래에 둔다
   storeOptions: (keyword: string) => [...ordersKeys.all, 'store-options', keyword] as const,
   buyerOptions: (keyword: string) => [...ordersKeys.all, 'buyer-options', keyword] as const,
-  storeName: (storeId: string) => [...ordersKeys.all, 'store-name', storeId] as const,
+  store: (storeId: string) => [...ordersKeys.all, 'store', storeId] as const,
   buyerName: (accountId: string) => [...ordersKeys.all, 'buyer-name', accountId] as const,
 };
 
@@ -57,6 +57,25 @@ const AdminOrderDocument = graphql(/* GraphQL */ `
       pickupAt
       buyerName
       buyerPhone
+      requestNote
+      payment {
+        method
+        status
+        amount
+        depositorName
+        depositBank {
+          code
+          name
+        }
+        depositAccountNumber
+        depositAccountHolder
+        expiresAt
+        buyerClaimedAt
+        confirmedAt
+        confirmSource
+        confirmedByLabel
+        confirmNote
+      }
       subtotalPrice
       discountPrice
       totalPrice
@@ -125,7 +144,59 @@ const AdminOrderDocument = graphql(/* GraphQL */ `
         toStatus
         changedAt
         note
+        actorType
+        cancelReason
+        cancelFault
+        refundAmount
       }
+      refunds {
+        id
+        kind
+        amount
+        status
+        bank {
+          code
+          name
+        }
+        accountHolder
+        accountNumberMasked
+        requestedAt
+        accountSubmittedAt
+        completedAt
+      }
+      cancellation {
+        actorType
+        reason
+        reasonLabel
+        note
+        fault
+        refundAmount
+        refundStatus
+        refundCompletedAt
+        canceledAt
+      }
+      cancelOptions {
+        cancelable
+        reasons
+        refundRule
+        paidAmount
+      }
+      confirmDeadlineAt
+      autoPickupAt
+      noShowAt
+      pickupChanges {
+        id
+        fromPickupAt
+        toPickupAt
+        changedAt
+        note
+      }
+      commissionRateBps
+      expectedPayoutAmount
+      settlementBaseAmount
+      commissionAmount
+      settlementFinalizedAt
+      settlementId
     }
   }
 `);
@@ -163,6 +234,7 @@ const AdminOrdersStoreNameDocument = graphql(/* GraphQL */ `
       store {
         id
         storeName
+        isActive
       }
     }
   }
@@ -182,6 +254,15 @@ const AdminOrdersBuyerNameDocument = graphql(/* GraphQL */ `
 const AdminCancelOrderDocument = graphql(/* GraphQL */ `
   mutation AdminCancelOrder($input: AdminCancelOrderInput!) {
     adminCancelOrder(input: $input) {
+      id
+      status
+    }
+  }
+`);
+
+const AdminCompleteOrderPickupDocument = graphql(/* GraphQL */ `
+  mutation AdminCompleteOrderPickup($input: AdminCompleteOrderPickupInput!) {
+    adminCompleteOrderPickup(input: $input) {
       id
       status
     }
@@ -248,12 +329,12 @@ export function buyerOptionsQueryOptions(keyword: string) {
   });
 }
 
-/** 주소로 들어온 매장 ID의 이름. 찾지 못하면 오류로 두고 부르는 쪽은 #ID를 보인다 */
-export function storeNameQueryOptions(storeId: string) {
+/** 매장 이름·숨김 여부. 찾지 못하면 오류로 두고 부르는 쪽은 #ID를 보인다 */
+export function storeRefQueryOptions(storeId: string) {
   return queryOptions({
-    queryKey: ordersKeys.storeName(storeId),
+    queryKey: ordersKeys.store(storeId),
     queryFn: async () =>
-      (await gqlRequest(AdminOrdersStoreNameDocument, { storeId })).adminStore.store.storeName,
+      (await gqlRequest(AdminOrdersStoreNameDocument, { storeId })).adminStore.store,
     retry: false,
   });
 }
@@ -267,14 +348,35 @@ export function buyerNameQueryOptions(accountId: string) {
   });
 }
 
-/** 사유 코드 선택은 아직 없어 '기타' + 입력한 메모로 보낸다 */
-export async function cancelOrder(queryClient: QueryClient, orderId: string, note: string) {
-  const result = (
-    await gqlRequest(AdminCancelOrderDocument, { input: { orderId, reason: 'OTHER', note } })
-  ).adminCancelOrder;
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) }),
-    queryClient.invalidateQueries({ queryKey: ordersKeys.lists() }),
-  ]);
-  return result;
+/** 처리했든 거절됐든(다른 곳에서 상태가 바뀐 경우 등) 상세·목록을 다시 불러 지금 상태와 선택지를 보인다 */
+async function withRefresh<T>(queryClient: QueryClient, orderId: string, run: () => Promise<T>) {
+  try {
+    return await run();
+  } finally {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ordersKeys.detail(orderId) }),
+      queryClient.invalidateQueries({ queryKey: ordersKeys.lists() }),
+    ]);
+  }
+}
+
+export function cancelOrder(queryClient: QueryClient, input: AdminCancelOrderInput) {
+  return withRefresh(
+    queryClient,
+    String(input.orderId),
+    async () => (await gqlRequest(AdminCancelOrderDocument, { input })).adminCancelOrder,
+  );
+}
+
+export function completeOrderPickup(queryClient: QueryClient, orderId: string, note: string) {
+  return withRefresh(
+    queryClient,
+    orderId,
+    async () =>
+      (
+        await gqlRequest(AdminCompleteOrderPickupDocument, {
+          input: { orderId, note: note || null },
+        })
+      ).adminCompleteOrderPickup,
+  );
 }

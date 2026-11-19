@@ -147,29 +147,115 @@ const detail = {
       toStatus: 'CONFIRMED',
       changedAt: '2026-09-27T02:34:00.000Z',
       note: null,
+      actorType: 'SELLER',
+      cancelReason: null,
+      cancelFault: null,
+      refundAmount: null,
     },
     {
       id: 'h1',
-      fromStatus: null,
+      fromStatus: 'PENDING_PAYMENT',
       toStatus: 'SUBMITTED',
       changedAt: '2026-09-27T02:20:00.000Z',
       note: null,
+      actorType: 'ADMIN',
+      cancelReason: null,
+      cancelFault: null,
+      refundAmount: null,
     },
   ],
+  requestNote: null as string | null,
+  payment: {
+    method: 'BANK_TRANSFER',
+    status: 'CONFIRMED',
+    amount: 48000,
+    depositorName: '김서연',
+    depositBank: { code: '020', name: '우리은행' },
+    depositAccountNumber: '1002123456789',
+    depositAccountHolder: '케이퀵',
+    expiresAt: '2026-09-27T03:10:00.000Z',
+    buyerClaimedAt: null,
+    confirmedAt: '2026-09-27T02:20:00.000Z',
+    confirmSource: 'ADMIN',
+    confirmedByLabel: '운영자(ops.admin)',
+    confirmNote: null,
+  } as Record<string, unknown> | null,
+  refunds: [] as Record<string, unknown>[],
+  cancellation: null as Record<string, unknown> | null,
+  cancelOptions: {
+    cancelable: true,
+    reasons: ['OUT_OF_MATERIALS', 'BUYER_REQUEST', 'OTHER'],
+    refundRule: 'BY_FAULT' as string | null,
+    paidAmount: 48000,
+  },
+  confirmDeadlineAt: null as string | null,
+  autoPickupAt: '2026-09-29T05:00:00.000Z' as string | null,
+  noShowAt: null as string | null,
+  pickupChanges: [] as Record<string, unknown>[],
+  commissionRateBps: 1000,
+  expectedPayoutAmount: 43200 as number | null,
+  settlementBaseAmount: null as number | null,
+  commissionAmount: null as number | null,
+  settlementFinalizedAt: null as string | null,
+  settlementId: null as string | null,
 };
-// 확정·제작 완료는 사정(fault) 선택이 필요해 지금 다이얼로그로는 취소할 수 없다
 const submitted = {
   ...detail,
   status: 'SUBMITTED',
   confirmedAt: null,
   statusHistories: detail.statusHistories.slice(1),
+  cancelOptions: { ...detail.cancelOptions, refundRule: 'FULL_REFUND' },
+  confirmDeadlineAt: '2026-09-28T02:20:00.000Z',
+  autoPickupAt: null,
 };
+const canceledBy = (refundAmount: number) => ({
+  ...detail,
+  status: 'CANCELED',
+  canceledAt: '2026-09-27T03:00:00.000Z',
+  cancelOptions: { cancelable: false, reasons: [], refundRule: null, paidAmount: 48000 },
+  autoPickupAt: null,
+  cancellation: {
+    actorType: 'ADMIN',
+    reason: 'BUYER_REQUEST',
+    reasonLabel: '구매자 요청',
+    note: '구매자가 전화로 요청',
+    fault: 'BUYER',
+    refundAmount,
+    refundStatus: 'AWAITING_ACCOUNT',
+    refundCompletedAt: null,
+    canceledAt: '2026-09-27T03:00:00.000Z',
+  },
+});
+
+const pendingPayment = {
+  ...submitted,
+  status: 'PENDING_PAYMENT',
+  submittedAt: null,
+  statusHistories: [],
+  payment: {
+    ...detail.payment,
+    status: 'PENDING',
+    confirmedAt: null,
+    confirmSource: null,
+    confirmedByLabel: null,
+  },
+  cancelOptions: {
+    cancelable: true,
+    reasons: ['PAYMENT_NOT_RECEIVED', 'OTHER'],
+    refundRule: 'NO_REFUND',
+    paidAmount: 0,
+  },
+  confirmDeadlineAt: null,
+  expectedPayoutAmount: null,
+};
+const AUTO_PICKUP_UNKNOWN =
+  '09-29 14:00에 자동 픽업 완료 예정입니다. 매장이 숨김이면 자동으로 처리되지 않습니다.';
 
 /** 매장·구매자 이름 조회 기본 응답. 테스트가 뒤에 등록한 핸들러가 이긴다 */
 function useNameLookups() {
   server.use(
     gqlOk('AdminOrdersStoreName', {
-      adminStore: { store: { id: '17', storeName: '달빛 케이크' } },
+      adminStore: { store: { id: '17', storeName: '달빛 케이크', isActive: true } },
     }),
     gqlOk('AdminOrdersBuyerName', {
       adminUser: { accountId: '17', nickname: 'seoyeon', name: null, email: 'a@b.c' },
@@ -245,6 +331,51 @@ describe('주문 목록', () => {
     await screen.findByText('CQ-2609-1');
     expect(window.location.search).not.toContain('status');
     expect(inputs.at(-1)).toMatchObject({ status: null, keyword: null });
+  });
+
+  it('진행 중 칩은 첫 페이지부터 inProgress를 켜고 끄며 상태 필터에 7개 상태가 있다', async () => {
+    const inputs: Record<string, unknown>[] = [];
+    server.use(
+      graphql.query('AdminOrders', ({ variables }) => {
+        inputs.push((variables as { input: Record<string, unknown> }).input);
+        return HttpResponse.json({
+          data: {
+            adminOrders: {
+              items: [row('1', 'PENDING_PAYMENT'), row('2', 'NO_SHOW')],
+              totalCount: 2,
+              hasMore: false,
+              nextCursor: null,
+            },
+          },
+        });
+      }),
+    );
+    boot('/orders?cursor=zzz');
+    const table = await screen.findByRole('table');
+    expect(await within(table).findByText('입금 대기')).toBeInTheDocument();
+    expect(within(table).getByText('노쇼')).toBeInTheDocument();
+    expect(inputs[0]).toMatchObject({ inProgress: false });
+    const chip = screen.getByRole('button', { name: '진행 중' });
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(chip);
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ inProgress: true, cursor: null }));
+    expect(window.location.search).toContain('inProgress=true');
+    expect(screen.getByRole('button', { name: '진행 중' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: '진행 중' }));
+    await vi.waitFor(() => expect(inputs.at(-1)).toMatchObject({ inProgress: false }));
+    expect(window.location.search).not.toContain('inProgress');
+
+    await userEvent.click(screen.getByRole('combobox', { name: '주문 상태' }));
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      '전체',
+      '입금 대기',
+      '접수',
+      '주문 확정',
+      '제작 완료',
+      '픽업 완료',
+      '노쇼',
+      '취소',
+    ]);
   });
 
   it('이전은 지나온 커서로 돌아가고 필터를 유지한다', async () => {
@@ -422,7 +553,7 @@ describe('주문 목록', () => {
         });
       }),
       gqlOk('AdminOrdersStoreName', {
-        adminStore: { store: { id: '0', storeName: '달빛 베이커리' } },
+        adminStore: { store: { id: '0', storeName: '달빛 베이커리', isActive: false } },
       }),
       gqlOk('AdminOrdersBuyerOptions', {
         adminUsers: {
@@ -522,7 +653,7 @@ describe('주문 상세', () => {
     forgetSearches();
   });
 
-  it('구매자·상품·옵션·문구·이력을 보여주고 취소 시 사유를 보내며 목록·상세를 갱신한다', async () => {
+  it('구매자·상품·옵션·문구·이력을 보여주고 접수 주문은 사유를 골라 전액 환불로 취소한다', async () => {
     let detailCalls = 0;
     let cancelInput: unknown;
     server.use(
@@ -533,7 +664,23 @@ describe('주문 상세', () => {
             adminOrder:
               detailCalls === 1
                 ? submitted
-                : { ...submitted, status: 'CANCELED', canceledAt: '2026-09-27T03:00:00.000Z' },
+                : {
+                    ...canceledBy(48000),
+                    statusHistories: [
+                      {
+                        id: 'h3',
+                        fromStatus: 'SUBMITTED',
+                        toStatus: 'CANCELED',
+                        changedAt: '2026-09-27T03:00:00.000Z',
+                        note: '재고 없음',
+                        actorType: 'ADMIN',
+                        cancelReason: 'OUT_OF_MATERIALS',
+                        cancelFault: null,
+                        refundAmount: 48000,
+                      },
+                      ...submitted.statusHistories,
+                    ],
+                  },
           },
         });
       }),
@@ -550,32 +697,455 @@ describe('주문 상세', () => {
     expect(screen.getByText('seoyeon')).toBeInTheDocument();
     const history = screen.getByText('상태 이력').closest<HTMLElement>('[data-slot="card"]')!;
     expect(within(history).getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: '픽업 완료' })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: '주문 취소' }));
+    await userEvent.click(screen.getByRole('button', { name: '강제 취소' }));
     const dialog = await screen.findByRole('dialog');
-    const confirm = within(dialog).getByRole('button', { name: '주문 취소' });
+    const confirm = within(dialog).getByRole('button', { name: '강제 취소' });
     expect(confirm).toBeDisabled();
-    await userEvent.type(within(dialog).getByLabelText('취소 사유 (필수)'), '  재고 없음  ');
+    // 접수 주문은 사정을 묻지 않는다
+    expect(within(dialog).queryByRole('radio')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      '결제액 48,000원을 전액 환불합니다.',
+    );
+    await userEvent.click(within(dialog).getByRole('combobox', { name: '취소 사유' }));
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      '재료 소진',
+      '구매자 요청',
+      '기타',
+    ]);
+    await userEvent.click(screen.getByRole('option', { name: '재료 소진' }));
+    await userEvent.type(within(dialog).getByLabelText('메모 (선택)'), '  재고 없음 🎂 ');
+    expect(within(dialog).getByText('7 / 500')).toBeInTheDocument();
     await userEvent.click(confirm);
     await vi.waitFor(() =>
-      expect(cancelInput).toEqual({ orderId: '1', reason: 'OTHER', note: '재고 없음' }),
+      expect(cancelInput).toEqual({
+        orderId: '1',
+        reason: 'OUT_OF_MATERIALS',
+        note: '재고 없음 🎂',
+      }),
     );
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(await screen.findByText(/취소됨/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '주문 취소' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '강제 취소' })).not.toBeInTheDocument();
     expect(detailCalls).toBe(2);
+    const canceled = within(history).getAllByRole('listitem')[0]!;
+    expect(canceled).toHaveTextContent('관리자');
+    expect(canceled).toHaveTextContent('사유 재료 소진 · 환불 48,000원');
+  });
+
+  it('확정 주문은 사정을 골라야 하고 구매자 사정이면 0원~결제액 금액을 받는다', async () => {
+    const inputs: unknown[] = [];
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      graphql.mutation('AdminCancelOrder', ({ variables }) => {
+        inputs.push((variables as { input: unknown }).input);
+        return HttpResponse.json({
+          data: null,
+          errors: [
+            {
+              message: '테스트는 다이얼로그를 남긴다',
+              extensions: { code: 'TEST', classification: 'CONFLICT', statusCode: 409 },
+            },
+          ],
+        });
+      }),
+    );
+    boot('/orders/1');
+    await userEvent.click(await screen.findByRole('button', { name: '강제 취소' }));
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: '강제 취소' });
+    await userEvent.click(within(dialog).getByRole('combobox', { name: '취소 사유' }));
+    await userEvent.click(screen.getByRole('option', { name: '구매자 요청' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      '사정을 고르면 환불 금액이 정해집니다.',
+    );
+    expect(confirm).toBeDisabled();
+    expect(within(dialog).queryByLabelText('환불 금액 (필수)')).not.toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('radio', { name: '판매자 사정' }));
+    expect(within(dialog).queryByLabelText('환불 금액 (필수)')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      '판매자 사정이라 결제액 48,000원을 전액 환불합니다.',
+    );
+    await userEvent.click(confirm);
+    await vi.waitFor(() =>
+      expect(inputs.at(-1)).toEqual({
+        orderId: '1',
+        reason: 'BUYER_REQUEST',
+        note: null,
+        fault: 'SELLER',
+      }),
+    );
+    // 입력 오류가 아닌 거절은 폼이 아니라 토스트로 알린다
+    expect(await screen.findByText('테스트는 다이얼로그를 남긴다')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('radio', { name: '구매자 사정' }));
+    const amount = within(dialog).getByLabelText('환불 금액 (필수)');
+    expect(confirm).toBeDisabled();
+    await userEvent.type(amount, '48001');
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
+    expect(confirm).toBeDisabled();
+    await userEvent.click(within(dialog).getByRole('button', { name: '전액' }));
+    expect(amount).toHaveValue('48000');
+    expect(amount).toHaveAttribute('aria-invalid', 'false');
+    await userEvent.click(within(dialog).getByRole('button', { name: '0원' }));
+    expect(amount).toHaveValue('0');
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      '0원을 환불하고, 남은 48,000원은 수수료를 뺀 뒤 매장 정산에 포함합니다.',
+    );
+    // '0'도 금액이다
+    await userEvent.click(confirm);
+    await vi.waitFor(() =>
+      expect(inputs.at(-1)).toEqual({
+        orderId: '1',
+        reason: 'BUYER_REQUEST',
+        note: null,
+        fault: 'BUYER',
+        refundAmount: 0,
+      }),
+    );
+    expect(inputs).toHaveLength(2);
+  });
+
+  it('입금 대기 주문은 미입금 사유로 환불 없이 취소하고 입금 기한을 안내한다', async () => {
+    let cancelInput: unknown;
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: pendingPayment }),
+      graphql.mutation('AdminCancelOrder', ({ variables }) => {
+        cancelInput = (variables as { input: unknown }).input;
+        return HttpResponse.json({ data: { adminCancelOrder: { id: '1', status: 'CANCELED' } } });
+      }),
+    );
+    boot('/orders/1');
+    expect(await screen.findByRole('note', { name: '자동 처리 예정' })).toHaveTextContent(
+      '09-27 12:10까지 입금이 확인되지 않으면 자동 취소됩니다.',
+    );
+    const progress = screen.getByText('진행 상태').closest<HTMLElement>('[data-slot="card"]')!;
+    expect(within(progress).getAllByRole('listitem')[0]).toHaveTextContent('입금 대기09-27 11:20');
+    await userEvent.click(screen.getByRole('button', { name: '강제 취소' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      '입금 전 주문이라 환불 없이 취소합니다.',
+    );
+    await userEvent.click(within(dialog).getByRole('combobox', { name: '취소 사유' }));
+    await userEvent.click(screen.getByRole('option', { name: '미입금' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '강제 취소' }));
+    await vi.waitFor(() =>
+      expect(cancelInput).toEqual({ orderId: '1', reason: 'PAYMENT_NOT_RECEIVED', note: null }),
+    );
+  });
+
+  it.each([
+    ['PICKED_UP', '픽업 완료'],
+    ['NO_SHOW', '노쇼'],
+  ])('%s처럼 취소할 수 없는 주문은 강제 취소·픽업 완료 버튼이 없다', async (status, label) => {
+    server.use(
+      gqlOk('AdminOrder', {
+        adminOrder: {
+          ...detail,
+          status,
+          noShowAt: status === 'NO_SHOW' ? '2026-09-28T06:00:00.000Z' : null,
+          autoPickupAt: null,
+          cancelOptions: { cancelable: false, reasons: [], refundRule: null, paidAmount: 48000 },
+        },
+      }),
+    );
+    boot('/orders/1');
+    await screen.findByText('레터링 생크림 케이크');
+    expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: '강제 취소' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '픽업 완료' })).not.toBeInTheDocument();
+    if (status === 'NO_SHOW')
+      expect(screen.getByText('노쇼 · 2026-09-28 15:00')).toBeInTheDocument();
   });
 
   it.each(['CONFIRMED', 'MADE'])(
-    '%s 주문은 사정 선택이 필요해 취소 버튼이 없다',
+    '%s 주문은 메모와 함께 픽업 완료로 처리하고 상세·목록을 갱신한다',
     async (status) => {
-      server.use(gqlOk('AdminOrder', { adminOrder: { ...detail, status } }));
+      let detailCalls = 0;
+      let pickupInput: unknown;
+      server.use(
+        graphql.query('AdminOrder', () => {
+          detailCalls += 1;
+          return HttpResponse.json({
+            data: {
+              adminOrder:
+                detailCalls === 1
+                  ? { ...detail, status }
+                  : {
+                      ...detail,
+                      status: 'PICKED_UP',
+                      pickedUpAt: '2026-09-28T06:00:00.000Z',
+                      autoPickupAt: null,
+                      cancelOptions: { ...detail.cancelOptions, cancelable: false },
+                    },
+            },
+          });
+        }),
+        graphql.mutation('AdminCompleteOrderPickup', ({ variables }) => {
+          pickupInput = (variables as { input: unknown }).input;
+          return HttpResponse.json({
+            data: { adminCompleteOrderPickup: { id: '1', status: 'PICKED_UP' } },
+          });
+        }),
+      );
       boot('/orders/1');
-      await screen.findByText('레터링 생크림 케이크');
-      expect(screen.queryByRole('button', { name: '주문 취소' })).not.toBeInTheDocument();
+      // 숨김 매장 진행 주문에서 강제 취소와 나란히 쓴다
+      expect(await screen.findByRole('button', { name: '강제 취소' })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: '픽업 완료' }));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText(/정산을 확정합니다/)).toBeInTheDocument();
+      await userEvent.type(
+        within(dialog).getByLabelText('메모 (선택)'),
+        '매장 숨김, 전화로 수령 확인',
+      );
+      await userEvent.click(within(dialog).getByRole('button', { name: '픽업 완료' }));
+      await vi.waitFor(() =>
+        expect(pickupInput).toEqual({ orderId: '1', note: '매장 숨김, 전화로 수령 확인' }),
+      );
+      await vi.waitFor(() => expect(detailCalls).toBe(2));
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('button', { name: '픽업 완료' })).not.toBeInTheDocument(),
+      );
+      // 앞 케이스의 토스트가 남아 있을 수 있다
+      expect(await screen.findAllByText(/픽업 완료로 처리했습니다/)).not.toHaveLength(0);
     },
   );
 
+  it.each([
+    ['ORDER_STATUS_UNCHANGED', '이미 픽업 완료된 주문입니다.'],
+    ['INVALID_ORDER_STATUS_TRANSITION', '지금 상태에서는 픽업 완료로 처리할 수 없습니다.'],
+    ['ORDER_NOT_FOUND', '주문을 찾을 수 없습니다.'],
+  ])('픽업 완료가 %s로 거절되면 문구를 알리고 상세를 다시 불러온다', async (code, message) => {
+    let detailCalls = 0;
+    let pickupInput: unknown;
+    server.use(
+      graphql.query('AdminOrder', () => {
+        detailCalls += 1;
+        return HttpResponse.json({ data: { adminOrder: detail } });
+      }),
+      graphql.mutation('AdminCompleteOrderPickup', ({ variables }) => {
+        pickupInput = (variables as { input: unknown }).input;
+        return HttpResponse.json({
+          data: null,
+          errors: [
+            {
+              message: '주문을 찾을 수 없습니다.',
+              extensions: {
+                code,
+                classification: code === 'ORDER_NOT_FOUND' ? 'NOT_FOUND' : 'BAD_USER_INPUT',
+                statusCode: code === 'ORDER_NOT_FOUND' ? 404 : 400,
+              },
+            },
+          ],
+        });
+      }),
+    );
+    boot('/orders/1');
+    await userEvent.click(await screen.findByRole('button', { name: '픽업 완료' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: '픽업 완료' }));
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(pickupInput).toEqual({ orderId: '1', note: null });
+    await vi.waitFor(() => expect(detailCalls).toBe(2));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('결제·정산 카드와 자동 픽업 완료 예정을 보이고 입금 계좌는 끝 4자리만 보인다', async () => {
+    server.use(gqlOk('AdminOrder', { adminOrder: detail }));
+    boot('/orders/1');
+    const card = (title: string) =>
+      screen
+        .getAllByText(title)
+        .find((el) => el.dataset.slot === 'card-title')!
+        .closest<HTMLElement>('[data-slot="card"]')!;
+    await screen.findByText('레터링 생크림 케이크');
+    const pay = card('결제');
+    expect(within(pay).getByText('계좌이체')).toBeInTheDocument();
+    expect(within(pay).getByText('입금 확인')).toBeInTheDocument();
+    expect(within(pay).getByText('우리은행 ****6789 · 케이퀵')).toBeInTheDocument();
+    expect(pay).not.toHaveTextContent('1002123456789');
+    expect(
+      within(pay).getByText('2026-09-27 11:20 · 관리자 확인 · 운영자(ops.admin)'),
+    ).toBeInTheDocument();
+    expect(within(pay).queryByText('확인 메모')).not.toBeInTheDocument();
+    const settle = card('정산');
+    expect(within(settle).getByText('10% (주문 시점)')).toBeInTheDocument();
+    expect(within(settle).getByText('정산 예정')).toBeInTheDocument();
+    expect(within(settle).getByText('43,200원')).toBeInTheDocument();
+    expect(within(settle).getByText('묶이기 전')).toBeInTheDocument();
+    expect(within(settle).queryByText('수수료')).not.toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByRole('note', { name: '자동 처리 예정' })).toHaveTextContent(
+        '09-29 14:00에 자동으로 픽업 완료됩니다.',
+      ),
+    );
+    expect(screen.queryByText('요청 사항')).not.toBeInTheDocument();
+    expect(screen.queryByText('픽업 일시 변경')).not.toBeInTheDocument();
+    expect(screen.queryByText('환불')).not.toBeInTheDocument();
+  });
+
+  it('숨김 매장의 확정 주문은 자동 픽업 완료되지 않는다고 알린다', async () => {
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      gqlOk('AdminOrdersStoreName', {
+        adminStore: { store: { id: '17', storeName: '달빛 케이크', isActive: false } },
+      }),
+    );
+    boot('/orders/1');
+    await vi.waitFor(() =>
+      expect(screen.getByRole('note', { name: '자동 처리 예정' })).toHaveTextContent(
+        '매장이 숨김이라 09-29 14:00에 자동 픽업 완료되지 않습니다. 픽업 완료나 강제 취소로 직접 처리하세요.',
+      ),
+    );
+  });
+
+  it('매장 조회가 끝나기 전에는 자동 픽업 완료를 단정하지 않는다', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      graphql.query('AdminOrdersStoreName', async () => {
+        await gate;
+        return HttpResponse.json({
+          data: { adminStore: { store: { id: '17', storeName: '달빛 케이크', isActive: false } } },
+        });
+      }),
+    );
+    boot('/orders/1');
+    const note = await screen.findByRole('note', { name: '자동 처리 예정' });
+    expect(note).toHaveTextContent(AUTO_PICKUP_UNKNOWN);
+    release();
+    await vi.waitFor(() => expect(note).toHaveTextContent(/^매장이 숨김이라/));
+  });
+
+  it('상세를 다시 열면 매장 숨김 여부를 다시 확인한다', async () => {
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      gqlOk('AdminOrders', {
+        adminOrders: { items: [row('1')], totalCount: 1, hasMore: false, nextCursor: null },
+      }),
+    );
+    boot('/orders/1');
+    const note = () => screen.getByRole('note', { name: '자동 처리 예정' });
+    await vi.waitFor(() =>
+      expect(note()).toHaveTextContent('09-29 14:00에 자동으로 픽업 완료됩니다.'),
+    );
+    // 그사이 매장 화면에서 숨겼다
+    server.use(
+      gqlOk('AdminOrdersStoreName', {
+        adminStore: { store: { id: '17', storeName: '달빛 케이크', isActive: false } },
+      }),
+    );
+    await userEvent.click(screen.getByRole('link', { name: '목록으로' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'CQ-2609-1' }));
+    await vi.waitFor(() => expect(note()).toHaveTextContent(/^매장이 숨김이라/));
+  });
+
+  it('취소 주문은 취소·환불 카드와 확정된 정산을, 요청 사항·픽업 변경 이력을 보인다', async () => {
+    server.use(
+      gqlOk('AdminOrder', {
+        adminOrder: {
+          ...canceledBy(10000),
+          requestNote: '초는 빼 주세요.\n포장은 따로',
+          refunds: [
+            {
+              id: 'r1',
+              kind: 'CANCEL',
+              amount: 10000,
+              status: 'AWAITING_ACCOUNT',
+              bank: null,
+              accountHolder: null,
+              accountNumberMasked: null,
+              requestedAt: '2026-09-27T03:00:00.000Z',
+              accountSubmittedAt: null,
+              completedAt: null,
+            },
+            {
+              id: 'r2',
+              kind: 'DEPOSIT_RETURN',
+              amount: 5000,
+              status: 'COMPLETED',
+              bank: { code: '004', name: 'KB국민은행' },
+              accountHolder: '김서연',
+              accountNumberMasked: '****4321',
+              requestedAt: '2026-09-27T04:00:00.000Z',
+              accountSubmittedAt: '2026-09-27T05:00:00.000Z',
+              completedAt: '2026-09-27T06:00:00.000Z',
+            },
+          ],
+          pickupChanges: [
+            {
+              id: 'p1',
+              fromPickupAt: '2026-09-28T03:00:00.000Z',
+              toPickupAt: '2026-09-28T05:00:00.000Z',
+              changedAt: '2026-09-27T02:40:00.000Z',
+              note: '오전 재료 입고 지연',
+            },
+          ],
+          expectedPayoutAmount: 34200,
+          settlementBaseAmount: 38000,
+          commissionAmount: 3800,
+          settlementFinalizedAt: '2026-09-27T03:00:00.000Z',
+          settlementId: '12',
+        },
+      }),
+    );
+    boot('/orders/1');
+    const card = (title: string) =>
+      screen
+        .getAllByText(title)
+        .find((el) => el.dataset.slot === 'card-title')!
+        .closest<HTMLElement>('[data-slot="card"]')!;
+    await screen.findByText('취소됨 · 2026-09-27 12:00');
+    expect(screen.queryByRole('note', { name: '자동 처리 예정' })).not.toBeInTheDocument();
+    const cancel = card('취소');
+    for (const text of [
+      '주체관리자',
+      '사유구매자 요청',
+      '사정구매자 사정',
+      '환불 금액10,000원계좌 입력 대기',
+      '메모구매자가 전화로 요청',
+    ])
+      expect(cancel).toHaveTextContent(text);
+    const [first, second] = within(card('환불')).getAllByRole('listitem');
+    expect(first).toHaveTextContent('취소 환불10,000원계좌 입력 대기');
+    expect(first).toHaveTextContent('환불 계좌 입력 전');
+    expect(second).toHaveTextContent('입금 반환5,000원송금 완료');
+    expect(second).toHaveTextContent('KB국민은행 ****4321 · 김서연');
+    expect(second).toHaveTextContent(
+      '요청 2026-09-27 13:00 · 계좌 입력 2026-09-27 14:00 · 송금 2026-09-27 15:00',
+    );
+    const settle = card('정산');
+    for (const text of ['매장 지급액', '34,200원', '38,000원', '3,800원', '#12'])
+      expect(within(settle).getByText(text)).toBeInTheDocument();
+    expect(within(card('요청 사항')).getByText(/초는 빼 주세요/)).toHaveClass(
+      'whitespace-pre-wrap',
+    );
+    expect(within(card('픽업 일시 변경')).getByRole('listitem')).toHaveTextContent(
+      '2026-09-28 12:00 → 2026-09-28 14:00변경 2026-09-27 11:40오전 재료 입고 지연',
+    );
+  });
+
+  it('결제 도입 전 주문은 결제 기록이 없다고 알리고 진행 단계는 접수부터 보인다', async () => {
+    server.use(
+      gqlOk('AdminOrder', {
+        adminOrder: { ...detail, payment: null, expectedPayoutAmount: null },
+      }),
+    );
+    boot('/orders/1');
+    expect(
+      await screen.findByText('결제 도입 전 주문이라 결제 기록이 없습니다.'),
+    ).toBeInTheDocument();
+    const progress = screen.getByText('진행 상태').closest<HTMLElement>('[data-slot="card"]')!;
+    expect(
+      within(progress)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent?.slice(0, 2)),
+    ).toEqual(['접수', '주문', '제작', '픽업']);
+  });
   it('상품·매장·구매자를 해당 상세로 잇고 계정 상태는 한국어로 보인다', async () => {
     server.use(gqlOk('AdminOrder', { adminOrder: detail }));
     boot('/orders/1');
@@ -850,23 +1420,166 @@ describe('주문 상세', () => {
     expect(screen.queryByText('확인')).not.toBeInTheDocument();
   });
 
-  it('취소 실패는 토스트로 알리고 다이얼로그는 남는다', async () => {
+  it('선택지 밖 사유로 거절되면 폼 위에 알리고 다시 받은 선택지에 맞춰 사유를 비운다', async () => {
+    let detailCalls = 0;
     server.use(
-      gqlOk('AdminOrder', { adminOrder: submitted }),
+      graphql.query('AdminOrder', () => {
+        detailCalls += 1;
+        // 그사이 다른 관리자가 입금을 확인해 접수가 됐다
+        return HttpResponse.json({
+          data: { adminOrder: detailCalls === 1 ? pendingPayment : submitted },
+        });
+      }),
       gqlError('AdminCancelOrder', {
-        message: '이미 픽업된 주문',
-        code: 'ORDER_NOT_CANCELABLE',
+        message: '이 주문에는 선택할 수 없는 취소 사유입니다.',
+        code: 'CANCEL_REASON_NOT_ALLOWED',
         classification: 'BAD_USER_INPUT',
         statusCode: 400,
       }),
     );
     boot('/orders/1');
-    await userEvent.click(await screen.findByRole('button', { name: '주문 취소' }));
+    await userEvent.click(await screen.findByRole('button', { name: '강제 취소' }));
     const dialog = await screen.findByRole('dialog');
-    await userEvent.type(within(dialog).getByLabelText('취소 사유 (필수)'), '사유');
-    await userEvent.click(within(dialog).getByRole('button', { name: '주문 취소' }));
-    expect(await screen.findByText('이미 픽업된 주문')).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    const reason = () => within(dialog).getByRole('combobox', { name: '취소 사유' });
+    await userEvent.click(reason());
+    await userEvent.click(screen.getByRole('option', { name: '미입금' }));
+    await userEvent.type(within(dialog).getByLabelText('메모 (선택)'), '입금 안 됨');
+    await userEvent.click(within(dialog).getByRole('button', { name: '강제 취소' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      '이 주문에는 선택할 수 없는 취소 사유입니다.',
+    );
+    await vi.waitFor(() =>
+      expect(within(dialog).getByRole('status')).toHaveTextContent(
+        '결제액 48,000원을 전액 환불합니다.',
+      ),
+    );
+    expect(detailCalls).toBe(2);
+    expect(reason()).toHaveTextContent('사유 선택');
+    expect(within(dialog).getByRole('button', { name: '강제 취소' })).toBeDisabled();
+
+    // 입력을 바꾸면 알림을 지운다
+    await userEvent.click(reason());
+    await userEvent.click(screen.getByRole('option', { name: '기타' }));
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: '강제 취소' })).toBeEnabled();
+
+    // 닫았다 다시 열면 새로 입력받는다
+    const footer = dialog.querySelector<HTMLElement>('[data-slot="dialog-footer"]')!;
+    await userEvent.click(within(footer).getByRole('button', { name: '닫기' }));
+    await userEvent.click(screen.getByRole('button', { name: '강제 취소' }));
+    const reopened = await screen.findByRole('dialog');
+    expect(within(reopened).getByRole('combobox', { name: '취소 사유' })).toHaveTextContent(
+      '사유 선택',
+    );
+    expect(within(reopened).getByLabelText('메모 (선택)')).toHaveValue('');
+  });
+
+  it('취소할 수 없게 된 주문은 토스트로 알리고 다이얼로그는 버튼과 함께 사라진다', async () => {
+    let detailCalls = 0;
+    server.use(
+      graphql.query('AdminOrder', () => {
+        detailCalls += 1;
+        return HttpResponse.json({
+          data: { adminOrder: detailCalls === 1 ? submitted : canceledBy(48000) },
+        });
+      }),
+      gqlError('AdminCancelOrder', {
+        message: '현재 상태에서는 주문을 취소할 수 없습니다.',
+        code: 'ORDER_NOT_CANCELLABLE',
+        classification: 'BAD_USER_INPUT',
+        statusCode: 400,
+      }),
+    );
+    boot('/orders/1');
+    await userEvent.click(await screen.findByRole('button', { name: '강제 취소' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('combobox', { name: '취소 사유' }));
+    await userEvent.click(screen.getByRole('option', { name: '기타' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: '강제 취소' }));
+    expect(
+      await screen.findByText('현재 상태에서는 주문을 취소할 수 없습니다.'),
+    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: '강제 취소' })).not.toBeInTheDocument();
+    expect(detailCalls).toBe(2);
+  });
+
+  it('픽업 완료 메모는 BE처럼 앞뒤 공백을 뺀 코드 포인트로 500자까지 받는다', async () => {
+    server.use(gqlOk('AdminOrder', { adminOrder: detail }));
+    boot('/orders/1');
+    await userEvent.click(await screen.findByRole('button', { name: '픽업 완료' }));
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: '픽업 완료' });
+    await userEvent.click(within(dialog).getByLabelText('메모 (선택)'));
+    await userEvent.paste(` ${'🎂'.repeat(500)}`);
+    expect(within(dialog).getByText('500 / 500')).toBeInTheDocument();
+    expect(confirm).toBeEnabled();
+    await userEvent.paste('🎂');
+    expect(within(dialog).getByText('501 / 500')).toBeInTheDocument();
+    expect(confirm).toBeDisabled();
+  });
+
+  /** 목록 → 상세에서 처리한 뒤 '목록으로' 돌아갈 때까지 목록 조회 횟수 */
+  async function listCallsAfter(handle: () => Promise<void>) {
+    let listCalls = 0;
+    server.use(
+      graphql.query('AdminOrders', () => {
+        listCalls += 1;
+        return HttpResponse.json({
+          data: {
+            adminOrders: { items: [row('1')], totalCount: 1, hasMore: false, nextCursor: null },
+          },
+        });
+      }),
+    );
+    boot('/orders');
+    await userEvent.click(await screen.findByRole('link', { name: 'CQ-2609-1' }));
+    await handle();
+    expect(listCalls).toBe(1);
+    await userEvent.click(screen.getByRole('link', { name: '목록으로' }));
+    await screen.findByText('전체 1건');
+    return () => listCalls;
+  }
+
+  it('강제 취소가 성공하면 목록으로 돌아갈 때 목록을 다시 불러온다', async () => {
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: submitted }),
+      graphql.mutation('AdminCancelOrder', () =>
+        HttpResponse.json({ data: { adminCancelOrder: { id: '1', status: 'CANCELED' } } }),
+      ),
+    );
+    const listCalls = await listCallsAfter(async () => {
+      await userEvent.click(await screen.findByRole('button', { name: '강제 취소' }));
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('combobox', { name: '취소 사유' }));
+      await userEvent.click(screen.getByRole('option', { name: '기타' }));
+      await userEvent.click(within(dialog).getByRole('button', { name: '강제 취소' }));
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+    await vi.waitFor(() => expect(listCalls()).toBe(2));
+  });
+
+  it('픽업 완료가 거절돼도 목록으로 돌아갈 때 목록을 다시 불러온다', async () => {
+    server.use(
+      gqlOk('AdminOrder', { adminOrder: detail }),
+      gqlError('AdminCompleteOrderPickup', {
+        message: '허용되지 않는 주문 상태 전이입니다.',
+        code: 'INVALID_ORDER_STATUS_TRANSITION',
+        classification: 'BAD_USER_INPUT',
+        statusCode: 400,
+      }),
+    );
+    const listCalls = await listCallsAfter(async () => {
+      await userEvent.click(await screen.findByRole('button', { name: '픽업 완료' }));
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: '픽업 완료' }));
+      // 앞 케이스의 토스트가 남아 있을 수 있다
+      expect(
+        await screen.findAllByText('지금 상태에서는 픽업 완료로 처리할 수 없습니다.'),
+      ).not.toHaveLength(0);
+      await userEvent.keyboard('{Escape}');
+    });
+    await vi.waitFor(() => expect(listCalls()).toBe(2));
   });
 
   it('없는 주문은 NOT_FOUND 문구와 목록 링크', async () => {

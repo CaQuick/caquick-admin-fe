@@ -18,10 +18,12 @@ const AdminDashboardSummaryDocument = graphql(/* GraphQL */ `
       newUserCount
       newSellerCount
       orderCounts {
+        pendingPayment
         submitted
         confirmed
         made
         pickedUp
+        noShow
         canceled
       }
       orderAmountSum
